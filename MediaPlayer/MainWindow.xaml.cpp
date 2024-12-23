@@ -9,8 +9,8 @@ using namespace Microsoft::UI::Xaml;
 
 namespace winrt::MediaPlayer::implementation
 {
-    void MainWindow::myButton_Click(IInspectable const&, RoutedEventArgs const&)
+    MainWindow::MainWindow()
     {
-        myButton().Content(box_value(L"Clicked"));
+        this->Title(L"MediaPlayer");
     }
 }

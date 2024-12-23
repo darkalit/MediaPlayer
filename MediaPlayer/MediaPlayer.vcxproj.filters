@@ -4,6 +4,9 @@
     <ApplicationDefinition Include="App.xaml" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="MainWindow.xaml" />
+  </ItemGroup>
+  <ItemGroup>
     <Midl Include="MainWindow.idl" />
   </ItemGroup>
   <ItemGroup>
@@ -38,10 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Assets">
-      <UniqueIdentifier>{c6c00ccf-1b3e-4923-9279-0cf3ebcb8731}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Pages">
-      <UniqueIdentifier>{bdfff367-47ef-4e53-b990-3d17d806711e}</UniqueIdentifier>
+      <UniqueIdentifier>{46508b76-36b6-44b4-82f0-3443e8b5401e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -55,10 +55,5 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="Pages\MainWindow.xaml">
-      <Filter>Pages</Filter>
-    </Page>
   </ItemGroup>
 </Project>

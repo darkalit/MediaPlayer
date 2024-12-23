@@ -7,7 +7,7 @@
     <CppWinRTOptimized>true</CppWinRTOptimized>
     <CppWinRTRootNamespaceAutoMerge>true</CppWinRTRootNamespaceAutoMerge>
     <MinimalCoreWin>true</MinimalCoreWin>
-    <ProjectGuid>{c6c00ccf-1b3e-4923-9279-0cf3ebcb8731}</ProjectGuid>
+    <ProjectGuid>{46508b76-36b6-44b4-82f0-3443e8b5401e}</ProjectGuid>
     <ProjectName>MediaPlayer</ProjectName>
     <RootNamespace>MediaPlayer</RootNamespace>
     <!--
@@ -113,13 +113,13 @@
     <ClInclude Include="App.xaml.h">
       <DependentUpon>App.xaml</DependentUpon>
     </ClInclude>
-    <ClInclude Include="Pages\MainWindow.xaml.h">
-      <DependentUpon>Pages\MainWindow.xaml</DependentUpon>
+    <ClInclude Include="MainWindow.xaml.h">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml" />
-    <Page Include="Pages\MainWindow.xaml" />
+    <Page Include="MainWindow.xaml" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -128,15 +128,15 @@
     <ClCompile Include="App.xaml.cpp">
       <DependentUpon>App.xaml</DependentUpon>
     </ClCompile>
-    <ClCompile Include="Pages\MainWindow.xaml.cpp">
-      <DependentUpon>Pages\MainWindow.xaml</DependentUpon>
+    <ClCompile Include="MainWindow.xaml.cpp">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
     </ClCompile>
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="Pages\MainWindow.idl">
+    <Midl Include="MainWindow.idl">
       <SubType>Code</SubType>
-      <DependentUpon>Pages\MainWindow.xaml</DependentUpon>
+      <DependentUpon>MainWindow.xaml</DependentUpon>
     </Midl>
   </ItemGroup>
   <ItemGroup>
