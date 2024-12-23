@@ -5,6 +5,9 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="MainWindow.xaml" />
+    <Page Include="MainPage.xaml">
+      <Filter>Pages</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />
@@ -42,6 +45,9 @@
   <ItemGroup>
     <Filter Include="Assets">
       <UniqueIdentifier>{46508b76-36b6-44b4-82f0-3443e8b5401e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pages">
+      <UniqueIdentifier>{694894a6-3cc9-4f45-b2d6-d171d48b7143}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

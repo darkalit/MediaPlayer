@@ -4,6 +4,7 @@
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
+using namespace Microsoft::UI::Xaml::Controls;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -38,6 +39,35 @@ namespace winrt::MediaPlayer::implementation
     void App::OnLaunched([[maybe_unused]] LaunchActivatedEventArgs const& e)
     {
         window = make<MainWindow>();
+        Frame rootFrame = CreateRootFrame();
+        if (!rootFrame.Content())
+        {
+            rootFrame.Navigate(xaml_typename<MediaPlayer::MainPage>());
+        }
         window.Activate();
+    }
+
+    void App::OnNavigationFailed(const IInspectable, const Microsoft::UI::Xaml::Navigation::INavigationFailedEventArgs e)
+    {
+        throw hresult_error(E_FAIL, hstring(L"Failed to load page ") + e.SourcePageType().Name);
+    }
+
+    Microsoft::UI::Xaml::Controls::Frame App::CreateRootFrame()
+    {
+        Frame rootFrame = nullptr;
+        auto content = window.Content();
+        if (content)
+        {
+            rootFrame = content.try_as<Frame>();
+        }
+
+        if (!rootFrame)
+        {
+            rootFrame = Frame();
+            rootFrame.NavigationFailed({ this, &App::OnNavigationFailed });
+            window.Content(rootFrame);
+        }
+
+        return rootFrame;
     }
 }
