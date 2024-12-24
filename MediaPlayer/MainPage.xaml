@@ -9,7 +9,6 @@
     mc:Ignorable="d">
 
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Button x:Name="myButton" Click="myButton_Click">Click Me</Button>
-        <Button x:Name="ButtonTwo" Click="myButton_Click">Button2</Button>
+        <Button x:Name="OpenFileButton" Click="OpenFileButton_Click">Open file</Button>
     </StackPanel>
 </Page>

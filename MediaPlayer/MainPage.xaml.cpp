@@ -4,26 +4,43 @@
 #include "MainPage.g.cpp"
 #endif
 
+#include "App.xaml.h"
+#include "winrt/Windows.Storage.Pickers.h"
+#include "winrt/Windows.Foundation.h"
+#include "ShObjIdl.h"
+
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
+using namespace Windows::Media;
+using namespace Windows::Storage;
+using namespace Windows::Storage::Pickers;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace winrt::MediaPlayer::implementation
 {
-    int32_t MainPage::MyProperty()
+    winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> MainPage::OpenFilePickerAsync()
     {
-        throw hresult_not_implemented();
+        FileOpenPicker filePicker{};
+        filePicker.as<IInitializeWithWindow>()->Initialize(App::GetMainWindow());
+        filePicker.SuggestedStartLocation(PickerLocationId::Desktop);
+        filePicker.FileTypeFilter().ReplaceAll({
+            L".3g2", L".3gp", L".3gp2", L".3gpp",
+            L".asf", L".wma", L".wmv",
+            L".aac", L".adts",
+            L".avi",
+            L".mp3",
+            L".m4a", L".m4v", L".mov", L".mp4",
+            L".sami", L".smi",
+            L".wav"
+        });
+
+        co_return co_await filePicker.PickSingleFileAsync();
     }
 
-    void MainPage::MyProperty(int32_t /* value */)
+    fire_and_forget MainPage::OpenFileButton_Click(IInspectable const&, RoutedEventArgs const&)
     {
-        throw hresult_not_implemented();
-    }
-
-    void MainPage::myButton_Click(IInspectable const&, RoutedEventArgs const&)
-    {
-        ButtonTwo().Content(box_value(L"Clicked"));
+        auto file = co_await OpenFilePickerAsync();
     }
 }

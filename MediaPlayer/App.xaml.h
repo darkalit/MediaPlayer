@@ -11,9 +11,11 @@ namespace winrt::MediaPlayer::implementation
         void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
         void OnNavigationFailed(const IInspectable, const Microsoft::UI::Xaml::Navigation::INavigationFailedEventArgs e);
 
-        Microsoft::UI::Xaml::Controls::Frame CreateRootFrame();
+        static HWND GetMainWindow();
 
     private:
-        winrt::Microsoft::UI::Xaml::Window window{ nullptr };
+        Microsoft::UI::Xaml::Controls::Frame CreateRootFrame();
+
+        static winrt::Microsoft::UI::Xaml::Window s_Window;
     };
 }
