@@ -10,5 +10,6 @@
 
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
         <Button x:Name="OpenFileButton" Click="OpenFileButton_Click">Open file</Button>
+        <TextBlock x:Name="MetadataTextBlock"/>
     </StackPanel>
 </Page>

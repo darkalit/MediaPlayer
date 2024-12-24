@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MainPage.g.h"
+#include "Services/PlayerService.h"
 
 namespace winrt::MediaPlayer::implementation
 {
@@ -15,6 +16,9 @@ namespace winrt::MediaPlayer::implementation
         winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> OpenFilePickerAsync();
 
         fire_and_forget OpenFileButton_Click(IInspectable const& sender, Microsoft::UI::Xaml::RoutedEventArgs const& args);
+
+    private:
+        PlayerService m_PlayerService;
     };
 }
 

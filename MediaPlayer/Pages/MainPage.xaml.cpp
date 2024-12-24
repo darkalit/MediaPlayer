@@ -14,6 +14,7 @@ using namespace Microsoft::UI::Xaml;
 using namespace Windows::Media;
 using namespace Windows::Storage;
 using namespace Windows::Storage::Pickers;
+using namespace Windows::Foundation;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -42,5 +43,7 @@ namespace winrt::MediaPlayer::implementation
     fire_and_forget MainPage::OpenFileButton_Click(IInspectable const&, RoutedEventArgs const&)
     {
         auto file = co_await OpenFilePickerAsync();
+        m_PlayerService.SetSource(Uri(file.Path()));
+        MetadataTextBlock().Text(m_PlayerService.GetMetadata());
     }
 }

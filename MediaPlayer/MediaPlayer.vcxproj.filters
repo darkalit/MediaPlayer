@@ -15,9 +15,15 @@
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
+    <ClCompile Include="Services\PlayerService.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Services\PlayerService.h">
+      <Filter>Services</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -48,6 +54,9 @@
     </Filter>
     <Filter Include="Pages">
       <UniqueIdentifier>{694894a6-3cc9-4f45-b2d6-d171d48b7143}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services">
+      <UniqueIdentifier>{5eb1d097-c39b-4b4c-8b04-3924927a145d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
