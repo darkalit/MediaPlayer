@@ -40,16 +40,53 @@ namespace winrt::MediaPlayer::implementation
         co_return co_await filePicker.PickSingleFileAsync();
     }
 
-    fire_and_forget MainPage::OpenFileButton_Click(IInspectable const&, RoutedEventArgs const&)
+    fire_and_forget MainPage::MenuItem_OpenFile_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
     {
         auto file = co_await OpenFilePickerAsync();
         if (!file) {
-            MetadataTextBlock().Text(L"");
             co_return;
         }
 
         m_PlayerService.SetSource(Uri(file.Path()));
         auto metadata = m_PlayerService.GetMetadata();
-        MetadataTextBlock().Text(metadata.albumTitle.value_or(L"empty"));
+
+        std::wstring title = L"";
+
+        if (metadata && metadata->title)
+        {
+            title += *metadata->title;
+        }
+        else
+        {
+            title += file.Name();
+        }
+
+        if (metadata && metadata->author)
+        {
+            title += L" - " + *metadata->author;
+        }
+
+        TextBlock_Title().Text(title);
+
+        UpdateTimeline();
+    }
+
+    void MainPage::MenuItem_Exit_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    {
+        Application::Current().Exit();
+    }
+
+    void MainPage::Slider_Timeline_PointerMoved(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
+    {
+        unsigned int time = m_PlayerService.GetMetadata()->duration * Slider_Timeline().Value() / Slider_Timeline().Maximum();
+        m_PlayerService.Seek(time);
+        UpdateTimeline();
+    }
+
+    void MainPage::UpdateTimeline()
+    {
+        Slider_Timeline().IsEnabled(m_PlayerService.HasSource());
+        TextBlock_Position().Text(m_PlayerService.DurationToWString(m_PlayerService.GetPosition()));
+        TextBlock_RemainingTime().Text(m_PlayerService.DurationToWString(m_PlayerService.GetRemaining()));
     }
 }

@@ -36,10 +36,22 @@ public:
     ~PlayerService();
 
     void SetSource(winrt::Windows::Foundation::Uri path);
+    bool HasSource();
 
-    MediaMetadata GetMetadata();
+    void Seek(unsigned int time);
+
+    unsigned int GetPosition();
+    unsigned int GetRemaining();
+    static std::wstring DurationToWString(unsigned int duration);
+
+    std::optional<MediaMetadata> GetMetadata();
 
 private:
+    std::optional<MediaMetadata> GetMetadataInternal();
+
+    unsigned int m_Position = 0;
+
+    std::optional<MediaMetadata> m_Metadata;
     IMFMediaSource* m_Source = nullptr;
 };
 

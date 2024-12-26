@@ -8,8 +8,39 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Button x:Name="OpenFileButton" Click="OpenFileButton_Click">Open file</Button>
-        <TextBlock x:Name="MetadataTextBlock"/>
-    </StackPanel>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <MenuBar x:Name="MenuBar" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0">
+            <MenuBarItem Title="File">
+                <MenuFlyoutItem x:Name="MenuItem_OpenFile" Icon="OpenFile" Click="MenuItem_OpenFile_Click" Text="Open file"/>
+                <MenuFlyoutItem x:Name="MenuItem_Exit" Icon="Cancel" Click="MenuItem_Exit_Click" Text="Exit"/>
+            </MenuBarItem>
+        </MenuBar>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.Row="1">
+            <TextBlock x:Name="TextBlock_Title" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+        </StackPanel>
+        <Grid HorizontalAlignment="Stretch" Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="TextBlock_Position" Text="00:00:00" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="0"/>
+            <Slider x:Name="Slider_Timeline" Minimum="0.0" Maximum="100.0" Value="0.0" IsEnabled="False" PointerMoved="Slider_Timeline_PointerMoved" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10,0,10,0" Grid.Column="1"/>
+            <TextBlock x:Name="TextBlock_RemainingTime" Text="00:00:00" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Grid.Column="2"/>
+        </Grid>
+        <Grid HorizontalAlignment="Stretch" Margin="10,10,10,30" Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="Button_PlayStop" Content="Play/Stop" HorizontalAlignment="Center" Grid.Column="1"/>
+        </Grid>
+    </Grid>
 </Page>

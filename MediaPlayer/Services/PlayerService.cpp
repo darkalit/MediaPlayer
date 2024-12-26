@@ -9,9 +9,8 @@
 #include "propkey.h"
 #include "shlwapi.h"
 
-#include "functional"
 #include "string"
-#include "sstream"
+#include "iostream"
 
 PlayerService::PlayerService()
 {
@@ -57,7 +56,19 @@ void PlayerService::SetSource(winrt::Windows::Foundation::Uri path)
     }
     catch (HRESULT e)
     {
-        throw std::exception(("PlayerService::SetSource: Failed to set media source;\nHRESULT: " + std::to_string(e)).c_str());
+        if (sourceResolver)
+        {
+            sourceResolver->Release();
+        }
+
+        if (source)
+        {
+            source->Release();
+        }
+
+        std::cerr << ("PlayerService::SetSource: Failed to set media source;\nHRESULT: " + std::to_string(e)).c_str();
+
+        return;
     }
 
     if (sourceResolver)
@@ -69,14 +80,63 @@ void PlayerService::SetSource(winrt::Windows::Foundation::Uri path)
     {
         source->Release();
     }
+
+    m_Metadata = GetMetadataInternal();
 }
 
-PlayerService::MediaMetadata PlayerService::GetMetadata()
+bool PlayerService::HasSource()
+{
+    return m_Source;
+}
+
+void PlayerService::Seek(unsigned int time)
+{
+    m_Position = time;
+}
+
+unsigned int PlayerService::GetPosition()
+{
+    return m_Position;
+}
+
+unsigned int PlayerService::GetRemaining()
+{
+    return m_Metadata ? m_Metadata->duration - m_Position : 0;
+}
+
+std::wstring PlayerService::DurationToWString(unsigned int duration)
+{
+    if (duration == 0)
+    {
+        return L"00:00:00";
+    }
+
+    unsigned int hours = duration / (1000 * 60 * 60);
+    unsigned int minutes = (duration / (1000 * 60)) % 60;
+    unsigned int seconds = (duration / 1000) % 60;
+
+    return (hours < 10 ? L"0" : L"") + std::to_wstring(hours) + L":" + (minutes < 10 ? L"0" : L"") + std::to_wstring(minutes) + L":" + (seconds < 10 ? L"0" : L"") + std::to_wstring(seconds);
+}
+
+std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadata()
+{
+    if (HasSource() && m_Metadata)
+    {
+        return m_Metadata;
+    }
+    else
+    {
+        return {};
+    }
+}
+
+std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadataInternal()
 {
     IPropertyStore* props = nullptr;
     MediaMetadata metadata;
-    
-    try {
+
+    try
+    {
         HRESULT hr;
         DWORD cProps;
 
@@ -189,7 +249,9 @@ PlayerService::MediaMetadata PlayerService::GetMetadata()
     }
     catch (HRESULT e)
     {
-        throw std::exception(("PlayerService::GetMetadata: Failed to get media metadata;\nHRESULT: " + std::to_string(e)).c_str());
+        std::cerr << ("PlayerService::GetMetadata: Failed to get media metadata;\nHRESULT: " + std::to_string(e)).c_str();
+
+        return {};
     }
 
     if (props)
