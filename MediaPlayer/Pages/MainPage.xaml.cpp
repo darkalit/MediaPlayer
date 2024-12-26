@@ -43,7 +43,13 @@ namespace winrt::MediaPlayer::implementation
     fire_and_forget MainPage::OpenFileButton_Click(IInspectable const&, RoutedEventArgs const&)
     {
         auto file = co_await OpenFilePickerAsync();
+        if (!file) {
+            MetadataTextBlock().Text(L"");
+            co_return;
+        }
+
         m_PlayerService.SetSource(Uri(file.Path()));
-        MetadataTextBlock().Text(m_PlayerService.GetMetadata());
+        auto metadata = m_PlayerService.GetMetadata();
+        MetadataTextBlock().Text(metadata.albumTitle.value_or(L"empty"));
     }
 }

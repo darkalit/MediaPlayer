@@ -5,7 +5,11 @@
 #include "mfobjects.h"
 #include "mfidl.h"
 #include "propvarutil.h"
+#include "propkeydef.h"
+#include "propkey.h"
 #include "shlwapi.h"
+
+#include "functional"
 #include "string"
 #include "sstream"
 
@@ -14,7 +18,7 @@ PlayerService::PlayerService()
     HRESULT hr = MFStartup(MF_VERSION);
     if (FAILED(hr))
     {
-        throw std::exception(("PlayerService::PlayerService: Failed to init Media Foundation; HRESULT: " + std::to_string(hr)).c_str());
+        throw std::exception(("PlayerService::PlayerService: Failed to init Media Foundation;\nHRESULT: " + std::to_string(hr)).c_str());
     }
 }
 
@@ -53,7 +57,7 @@ void PlayerService::SetSource(winrt::Windows::Foundation::Uri path)
     }
     catch (HRESULT e)
     {
-
+        throw std::exception(("PlayerService::SetSource: Failed to set media source;\nHRESULT: " + std::to_string(e)).c_str());
     }
 
     if (sourceResolver)
@@ -67,11 +71,10 @@ void PlayerService::SetSource(winrt::Windows::Foundation::Uri path)
     }
 }
 
-std::wstring PlayerService::GetMetadata()
+PlayerService::MediaMetadata PlayerService::GetMetadata()
 {
     IPropertyStore* props = nullptr;
-    wchar_t buffer[1024] = { 0 };
-    std::wostringstream wosstream;
+    MediaMetadata metadata;
     
     try {
         HRESULT hr;
@@ -94,17 +97,99 @@ std::wstring PlayerService::GetMetadata()
             hr = props->GetValue(key, &pv);
             if (FAILED(hr)) throw hr;
 
-            hr = PropVariantToString(pv, buffer, 1024);
-            if (FAILED(hr)) throw hr;
-
-            wosstream << std::wstring(buffer) << L"\n";
+            if (key == PKEY_Media_Duration)
+            {
+                PropVariantToUInt64(pv, &metadata.duration);
+                metadata.duration /= 10000;
+            }
+            else if (key == PKEY_Audio_ChannelCount)
+            {
+                metadata.audioChannelCount = 0;
+                PropVariantToUInt32(pv, &*metadata.audioChannelCount);
+            }
+            else if (key == PKEY_Audio_EncodingBitrate)
+            {
+                metadata.audioBitrate = 0;
+                PropVariantToUInt32(pv, &*metadata.audioBitrate);
+            }
+            else if (key == PKEY_Audio_SampleRate)
+            {
+                metadata.audioSampleRate = 0;
+                PropVariantToUInt32(pv, &*metadata.audioSampleRate);
+            }
+            else if (key == PKEY_Audio_SampleSize)
+            {
+                metadata.audioSampleSize = 0;
+                PropVariantToUInt32(pv, &*metadata.audioSampleSize);
+            }
+            else if (key == PKEY_Audio_StreamNumber)
+            {
+                metadata.audioStreamId = 0;
+                PropVariantToUInt32(pv, &*metadata.audioStreamId);
+            }
+            else if (key == PKEY_Video_EncodingBitrate)
+            {
+                metadata.videoBitrate = 0;
+                PropVariantToUInt32(pv, &*metadata.videoBitrate);
+            }
+            else if (key == PKEY_Video_FrameWidth)
+            {
+                metadata.videoWidth = 0;
+                PropVariantToUInt32(pv, &*metadata.videoWidth);
+            }
+            else if (key == PKEY_Video_FrameHeight)
+            {
+                metadata.videoHeight = 0;
+                PropVariantToUInt32(pv, &*metadata.videoHeight);
+            }
+            else if (key == PKEY_Video_FrameRate)
+            {
+                metadata.videoFrameRate = 0;
+                PropVariantToUInt32(pv, &*metadata.videoFrameRate);
+                *metadata.videoFrameRate /= 1000;
+            }
+            else if (key == PKEY_Video_StreamNumber)
+            {
+                metadata.videoStreamId = 0;
+                PropVariantToUInt32(pv, &*metadata.videoStreamId);
+            }
+            else if (key == PKEY_Author)
+            {
+                size_t bufferSize = wcslen(pv.pwszVal) + 1;
+                metadata.author = std::wstring(bufferSize, L'=');
+                PropVariantToString(pv, metadata.author->data(), bufferSize);
+            }
+            else if (key == PKEY_Title)
+            {
+                size_t bufferSize = wcslen(pv.pwszVal) + 1;
+                metadata.title = std::wstring(bufferSize, L'=');
+                PropVariantToString(pv, metadata.title->data(), bufferSize);
+            }
+            else if (key == PKEY_Music_AlbumTitle)
+            {
+                size_t bufferSize = wcslen(pv.pwszVal) + 1;
+                metadata.albumTitle = std::wstring(bufferSize, L'=');
+                PropVariantToString(pv, metadata.albumTitle->data(), bufferSize);
+            }
+            else if (key == PKEY_Audio_IsVariableBitRate)
+            {
+                BOOL val;
+                PropVariantToBoolean(pv, &val);
+                metadata.audioIsVariableBitrate = val;
+            }
+            else if (key == PKEY_Video_IsStereo)
+            {
+                BOOL val;
+                PropVariantToBoolean(pv, &val);
+                metadata.videoIsStereo = val;
+            }
 
             PropVariantClear(&pv);
         }
     }
     catch (HRESULT e)
     {
-
+        throw std::exception(("PlayerService::GetMetadata: Failed to get media metadata;\nHRESULT: " + std::to_string(e)).c_str());
     }
 
     if (props)
@@ -112,5 +197,5 @@ std::wstring PlayerService::GetMetadata()
         props->Release();
     }
 
-    return wosstream.str();
+    return metadata;
 }
