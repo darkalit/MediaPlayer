@@ -10,17 +10,26 @@
 #include "ShObjIdl.h"
 
 using namespace winrt;
-using namespace Microsoft::UI::Xaml;
+using namespace Microsoft::UI;
+using namespace Xaml;
 using namespace Windows::Media;
 using namespace Windows::Storage;
 using namespace Windows::Storage::Pickers;
 using namespace Windows::Foundation;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace winrt::MediaPlayer::implementation
 {
+    MainPage::MainPage()
+        :
+        m_TimelineDispatcherTimer(Dispatching::DispatcherQueue::GetForCurrentThread().CreateTimer())
+    {
+        m_TimelineDispatcherTimer.Interval(std::chrono::milliseconds(200));
+        m_TimelineDispatcherTimer.Tick([this](auto const&, auto const&) {
+            this->UpdateTimeline();
+        });
+        m_TimelineDispatcherTimer.Start();
+    }
+
     winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> MainPage::OpenFilePickerAsync()
     {
         FileOpenPicker filePicker{};
@@ -104,9 +113,7 @@ namespace winrt::MediaPlayer::implementation
 
     void MainPage::UpdateUI()
     {
-        Slider_Timeline().IsEnabled(m_PlayerService.HasSource());
-        TextBlock_Position().Text(m_PlayerService.DurationToWString(m_PlayerService.GetPosition()));
-        TextBlock_RemainingTime().Text(m_PlayerService.DurationToWString(m_PlayerService.GetRemaining()));
+        UpdateTimeline();
 
         if (m_PlayerService.GetState() == PlayerService::State::STOPPED || m_PlayerService.GetState() == PlayerService::State::PAUSED)
         {
@@ -116,5 +123,16 @@ namespace winrt::MediaPlayer::implementation
         {
             Button_PlayPause().Content(box_value(L"Pause"));
         }
+    }
+    void MainPage::UpdateTimeline()
+    {
+        Slider_Timeline().IsEnabled(m_PlayerService.HasSource());
+
+        if (!m_PlayerService.HasSource()) return;
+
+        double progress = static_cast<double>(m_PlayerService.GetPosition()) / static_cast<double>(m_PlayerService.GetRemaining()) * 100.0;
+        Slider_Timeline().Value(progress);
+        TextBlock_Position().Text(m_PlayerService.DurationToWString(m_PlayerService.GetPosition()));
+        TextBlock_RemainingTime().Text(m_PlayerService.DurationToWString(m_PlayerService.GetRemaining()));
     }
 }

@@ -7,11 +7,7 @@ namespace winrt::MediaPlayer::implementation
 {
     struct MainPage : MainPageT<MainPage>
     {
-        MainPage()
-        {
-            // Xaml objects should not call InitializeComponent during construction.
-            // See https://github.com/microsoft/cppwinrt/tree/master/nuget#initializecomponent
-        }
+        MainPage();
 
         winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> OpenFilePickerAsync();
 
@@ -22,7 +18,9 @@ namespace winrt::MediaPlayer::implementation
 
     private:
         void UpdateUI();
+        void UpdateTimeline();
 
+        winrt::Microsoft::UI::Dispatching::DispatcherQueueTimer m_TimelineDispatcherTimer;
         PlayerService m_PlayerService;
     };
 }

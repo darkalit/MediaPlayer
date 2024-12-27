@@ -193,6 +193,8 @@ long long PlayerService::GetPosition()
 
     try
     {
+        if (!m_MediaSession) return 0;
+
         winrt::check_hresult(m_MediaSession->GetClock(clock.put()));
         presentationClock = clock.as<IMFPresentationClock>();
 
