@@ -42,6 +42,11 @@ namespace winrt::MediaPlayer::implementation
 
     fire_and_forget MainPage::MenuItem_OpenFile_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
     {
+        if (m_PlayerService.HasSource())
+        {
+            m_PlayerService.Stop();
+        }
+
         auto file = co_await OpenFilePickerAsync();
         if (!file) {
             co_return;
@@ -68,7 +73,7 @@ namespace winrt::MediaPlayer::implementation
 
         TextBlock_Title().Text(title);
 
-        UpdateTimeline();
+        UpdateUI();
     }
 
     void MainPage::MenuItem_Exit_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
@@ -80,13 +85,36 @@ namespace winrt::MediaPlayer::implementation
     {
         unsigned int time = m_PlayerService.GetMetadata()->duration * Slider_Timeline().Value() / Slider_Timeline().Maximum();
         m_PlayerService.Seek(time);
-        UpdateTimeline();
+        UpdateUI();
     }
 
-    void MainPage::UpdateTimeline()
+    void MainPage::Button_PlayPause_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    {
+        if (m_PlayerService.GetState() == PlayerService::State::STOPPED || m_PlayerService.GetState() == PlayerService::State::PAUSED)
+        {
+            m_PlayerService.Play();
+        }
+        else if (m_PlayerService.GetState() == PlayerService::State::PLAYING)
+        {
+            m_PlayerService.Pause();
+        }
+
+        UpdateUI();
+    }
+
+    void MainPage::UpdateUI()
     {
         Slider_Timeline().IsEnabled(m_PlayerService.HasSource());
         TextBlock_Position().Text(m_PlayerService.DurationToWString(m_PlayerService.GetPosition()));
         TextBlock_RemainingTime().Text(m_PlayerService.DurationToWString(m_PlayerService.GetRemaining()));
+
+        if (m_PlayerService.GetState() == PlayerService::State::STOPPED || m_PlayerService.GetState() == PlayerService::State::PAUSED)
+        {
+            Button_PlayPause().Content(box_value(L"Play"));
+        }
+        else if (m_PlayerService.GetState() == PlayerService::State::PLAYING)
+        {
+            Button_PlayPause().Content(box_value(L"Pause"));
+        }
     }
 }

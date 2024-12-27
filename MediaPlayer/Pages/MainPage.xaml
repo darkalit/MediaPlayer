@@ -40,7 +40,7 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Button x:Name="Button_PlayStop" Content="Play/Stop" HorizontalAlignment="Center" Grid.Column="1"/>
+            <Button x:Name="Button_PlayPause" Click="Button_PlayPause_Click" Content="Play" HorizontalAlignment="Center" Grid.Column="1"/>
         </Grid>
     </Grid>
 </Page>

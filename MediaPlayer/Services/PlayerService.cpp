@@ -2,6 +2,7 @@
 #include "PlayerService.h"
 
 #include "mfapi.h"
+#include "mfplay.h"
 #include "mfobjects.h"
 #include "mfidl.h"
 #include "propvarutil.h"
@@ -22,21 +23,47 @@ PlayerService::PlayerService()
 }
 
 PlayerService::~PlayerService()
-{
-    if (m_Source)
-    {
-        m_Source->Release();
-    }
+{    
+    SafeRelease(m_Source);
+    SafeRelease(m_MediaSession);
+
+    MFShutdown();
 }
 
-void PlayerService::SetSource(winrt::Windows::Foundation::Uri path)
+void PlayerService::SetSource(const winrt::Windows::Foundation::Uri& path)
 {
     IMFSourceResolver* sourceResolver = nullptr;
     IUnknown* source = nullptr;
+    IMFTopology* topology = nullptr;
+    IMFActivate* audioRendererActivate = nullptr;
+    IMFTopologyNode* sourceNode = nullptr;
+    IMFTopologyNode* outputNode = nullptr;
+    IMFPresentationDescriptor* presentationDescriptor = nullptr;
+    IMFStreamDescriptor* streamDescriptor = nullptr;
 
     try
     {
-        HRESULT hr;
+        HRESULT hr = S_OK;
+
+        if (m_MediaSession)
+        {
+            hr = m_MediaSession->Close();
+        }
+
+        if (FAILED(hr)) throw hr;
+
+        if (m_Source)
+        {
+            m_Source->Shutdown();
+        }
+
+        if (m_MediaSession)
+        {
+            m_MediaSession->Shutdown();
+        }
+
+        SafeRelease(m_Source);
+        SafeRelease(m_MediaSession);
 
         hr = MFCreateSourceResolver(&sourceResolver);
         if (FAILED(hr)) throw hr;
@@ -53,35 +80,65 @@ void PlayerService::SetSource(winrt::Windows::Foundation::Uri path)
 
         hr = source->QueryInterface(IID_PPV_ARGS(&m_Source));
         if (FAILED(hr)) throw hr;
+
+        m_State = State::CLOSED;
+
+        hr = MFCreateMediaSession(nullptr, &m_MediaSession);
+        if (FAILED(hr)) throw hr;
+
+        m_State = State::READY;
+
+        hr = MFCreateTopology(&topology);
+        if (FAILED(hr)) throw hr;
+
+        m_Source->CreatePresentationDescriptor(&presentationDescriptor);
+        BOOL streamSelected = 0;
+        hr = presentationDescriptor->GetStreamDescriptorByIndex(0, &streamSelected, &streamDescriptor);
+
+        hr = MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, &sourceNode);
+        if (FAILED(hr)) throw hr;
+
+        if (streamSelected)
+        {
+            hr = sourceNode->SetUnknown(MF_TOPONODE_SOURCE, m_Source);
+            hr = sourceNode->SetUnknown(MF_TOPONODE_PRESENTATION_DESCRIPTOR, presentationDescriptor);
+            hr = sourceNode->SetUnknown(MF_TOPONODE_STREAM_DESCRIPTOR, streamDescriptor);
+        }
+        topology->AddNode(sourceNode);
+
+        hr = MFCreateAudioRendererActivate(&audioRendererActivate);
+        if (FAILED(hr)) throw hr;
+
+        hr = MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, &outputNode);
+        if (FAILED(hr)) throw hr;
+
+        hr = outputNode->SetObject(audioRendererActivate);
+        if (FAILED(hr)) throw hr;
+
+        topology->AddNode(outputNode);
+
+        sourceNode->ConnectOutput(0, outputNode, 0);        
+
+        hr = m_MediaSession->SetTopology(0, topology);
+        if (FAILED(hr)) throw hr;
+
+        m_State = State::STOPPED;
+
+        m_Metadata = GetMetadataInternal();
     }
     catch (HRESULT e)
     {
-        if (sourceResolver)
-        {
-            sourceResolver->Release();
-        }
-
-        if (source)
-        {
-            source->Release();
-        }
-
         std::cerr << ("PlayerService::SetSource: Failed to set media source;\nHRESULT: " + std::to_string(e)).c_str();
-
-        return;
     }
 
-    if (sourceResolver)
-    {
-        sourceResolver->Release();
-    }
-
-    if (source)
-    {
-        source->Release();
-    }
-
-    m_Metadata = GetMetadataInternal();
+    SafeRelease(sourceResolver);
+    SafeRelease(source);
+    SafeRelease(topology);
+    SafeRelease(audioRendererActivate);
+    SafeRelease(sourceNode);
+    SafeRelease(outputNode);
+    SafeRelease(presentationDescriptor);
+    SafeRelease(streamDescriptor);
 }
 
 bool PlayerService::HasSource()
@@ -89,22 +146,87 @@ bool PlayerService::HasSource()
     return m_Source;
 }
 
-void PlayerService::Seek(unsigned int time)
+PlayerService::State PlayerService::GetState()
+{
+    return m_State;
+}
+
+void PlayerService::Start()
+{
+    if (!m_MediaSession) return;
+
+    PROPVARIANT start;
+    PropVariantInit(&start);
+    start.vt = VT_I8;
+    start.hVal.QuadPart = GetPosition() * 10000;
+
+    m_MediaSession->Start(&GUID_NULL, &start);
+
+    PropVariantClear(&start);
+
+    m_State = State::PLAYING;
+}
+
+void PlayerService::Stop()
+{
+    m_State = State::STOPPED;
+    m_MediaSession->Stop();
+}
+
+void PlayerService::Pause()
+{
+    m_State = State::PAUSED;
+    m_MediaSession->Pause();
+}
+
+void PlayerService::Play()
+{
+    Start();
+}
+
+void PlayerService::Seek(long long time)
 {
     m_Position = time;
 }
 
-unsigned int PlayerService::GetPosition()
+long long PlayerService::GetPosition()
 {
+    IMFClock* clock = nullptr;
+    IMFPresentationClock* presentationClock = nullptr;
+
+    try
+    {
+        HRESULT hr;
+
+        hr = m_MediaSession->GetClock(&clock);
+        if (FAILED(hr)) throw hr;
+
+        hr = clock->QueryInterface(IID_PPV_ARGS(&presentationClock));
+        if (FAILED(hr)) throw hr;
+
+        LONGLONG llTime = 0;
+        hr = presentationClock->GetTime(&llTime);
+        if (FAILED(hr)) throw hr;
+
+        m_Position = llTime / 10000;
+    }
+    catch (HRESULT e)
+    {
+        std::cerr << ("PlayerService::GetPosition: Failed to get media playing position;\nHRESULT: " + std::to_string(e)).c_str();
+    }
+
+    SafeRelease(clock);
+    SafeRelease(presentationClock);
+
     return m_Position;
 }
 
-unsigned int PlayerService::GetRemaining()
+long long PlayerService::GetRemaining()
 {
     return m_Metadata ? m_Metadata->duration - m_Position : 0;
 }
 
-std::wstring PlayerService::DurationToWString(unsigned int duration)
+std::wstring PlayerService::DurationToWString(long long duration)
 {
     if (duration == 0)
     {
@@ -159,8 +281,9 @@ std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadataInternal()
 
             if (key == PKEY_Media_Duration)
             {
-                PropVariantToUInt64(pv, &metadata.duration);
-                metadata.duration /= 10000;
+                ULONGLONG duration;
+                PropVariantToUInt64(pv, &duration);
+                metadata.duration = duration / 10000;
             }
             else if (key == PKEY_Audio_ChannelCount)
             {
@@ -251,13 +374,12 @@ std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadataInternal()
     {
         std::cerr << ("PlayerService::GetMetadata: Failed to get media metadata;\nHRESULT: " + std::to_string(e)).c_str();
 
+        SafeRelease(props);
+
         return {};
     }
 
-    if (props)
-    {
-        props->Release();
-    }
+    SafeRelease(props);
 
     return metadata;
 }

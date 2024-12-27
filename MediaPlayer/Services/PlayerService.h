@@ -2,13 +2,14 @@
 
 struct winrt::Windows::Foundation::Uri;
 struct IMFMediaSource;
+struct IMFMediaSession;
 
 class PlayerService
 {
 public:
     struct MediaMetadata
     {
-        unsigned long long duration = 0; // duration in milliseconds
+        long long duration = 0; // duration in milliseconds
 
         std::optional<unsigned int> audioChannelCount;
         std::optional<unsigned int> audioBitrate; // bits per second
@@ -32,26 +33,55 @@ public:
         // { PKEY_Audio_Format, L"Audio format" },
     };
 
+    enum class State
+    {
+        CLOSED = 0,
+        READY,
+        STOPPED,
+        PLAYING,
+        PAUSED,
+    };
+
     PlayerService();
     ~PlayerService();
 
-    void SetSource(winrt::Windows::Foundation::Uri path);
+    void SetSource(const winrt::Windows::Foundation::Uri& path);
     bool HasSource();
 
-    void Seek(unsigned int time);
+    State GetState();
 
-    unsigned int GetPosition();
-    unsigned int GetRemaining();
-    static std::wstring DurationToWString(unsigned int duration);
+    void Start();
+    void Stop();
+    void Pause();
+    void Play();
+    void Seek(long long time);
+
+    long long GetPosition();
+    long long GetRemaining();
+    static std::wstring DurationToWString(long long duration);
 
     std::optional<MediaMetadata> GetMetadata();
 
 private:
+    template <typename T>
+    void SafeRelease(T*& object);
+
     std::optional<MediaMetadata> GetMetadataInternal();
 
-    unsigned int m_Position = 0;
+    long long m_Position = 0;
+    State m_State = State::CLOSED;
 
     std::optional<MediaMetadata> m_Metadata;
     IMFMediaSource* m_Source = nullptr;
+    IMFMediaSession* m_MediaSession = nullptr;
 };
 
+template <typename T>
+void PlayerService::SafeRelease(T*& object)
+{
+    if (object)
+    {
+        object->Release();
+        object = nullptr;
+    }
+}
