@@ -23,9 +23,9 @@ public:
         std::optional<unsigned int> videoFrameRate;
         std::optional<unsigned int> videoStreamId;
 
-        std::optional<std::wstring> author;
-        std::optional<std::wstring> title;
-        std::optional<std::wstring> albumTitle;
+        std::optional<winrt::hstring> author;
+        std::optional<winrt::hstring> title;
+        std::optional<winrt::hstring> albumTitle;
 
         std::optional<bool> audioIsVariableBitrate;
         std::optional<bool> videoIsStereo;
@@ -58,30 +58,17 @@ public:
 
     long long GetPosition();
     long long GetRemaining();
-    static std::wstring DurationToWString(long long duration);
+    static winrt::hstring DurationToWString(long long duration);
 
     std::optional<MediaMetadata> GetMetadata();
 
 private:
-    template <typename T>
-    void SafeRelease(T*& object);
-
     std::optional<MediaMetadata> GetMetadataInternal();
 
     long long m_Position = 0;
     State m_State = State::CLOSED;
 
     std::optional<MediaMetadata> m_Metadata;
-    IMFMediaSource* m_Source = nullptr;
-    IMFMediaSession* m_MediaSession = nullptr;
+    winrt::com_ptr<IMFMediaSource> m_Source;
+    winrt::com_ptr<IMFMediaSession> m_MediaSession;
 };
-
-template <typename T>
-void PlayerService::SafeRelease(T*& object)
-{
-    if (object)
-    {
-        object->Release();
-        object = nullptr;
-    }
-}

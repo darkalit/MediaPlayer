@@ -15,135 +15,109 @@
 
 PlayerService::PlayerService()
 {
-    HRESULT hr = MFStartup(MF_VERSION);
-    if (FAILED(hr))
+    try
     {
-        throw std::exception(("PlayerService::PlayerService: Failed to init Media Foundation;\nHRESULT: " + std::to_string(hr)).c_str());
+        winrt::check_hresult(MFStartup(MF_VERSION));
+    }
+    catch (const winrt::hresult_error& e)
+    {
+        std::wcerr << L"PlayerService::PlayerService: Failed to init Media Foundation;\n" << e.message() << '\n';
     }
 }
 
 PlayerService::~PlayerService()
-{    
-    SafeRelease(m_Source);
-    SafeRelease(m_MediaSession);
-
-    MFShutdown();
+{
+    try
+    {
+        winrt::check_hresult(MFShutdown());
+    }
+    catch (const winrt::hresult_error& e)
+    {
+        std::wcerr << L"PlayerService::~PlayerService: Failed to shutdown Media Foundation;\n" << e.message() << '\n';
+    }
 }
 
 void PlayerService::SetSource(const winrt::Windows::Foundation::Uri& path)
 {
-    IMFSourceResolver* sourceResolver = nullptr;
-    IUnknown* source = nullptr;
-    IMFTopology* topology = nullptr;
-    IMFActivate* audioRendererActivate = nullptr;
-    IMFTopologyNode* sourceNode = nullptr;
-    IMFTopologyNode* outputNode = nullptr;
-    IMFPresentationDescriptor* presentationDescriptor = nullptr;
-    IMFStreamDescriptor* streamDescriptor = nullptr;
+    winrt::com_ptr<IMFSourceResolver> sourceResolver;
+    winrt::com_ptr<IUnknown> source;
+    winrt::com_ptr<IMFTopology> topology;
+    winrt::com_ptr<IMFActivate> audioRendererActivate;
+    winrt::com_ptr<IMFTopologyNode> sourceNode;
+    winrt::com_ptr<IMFTopologyNode> outputNode;
+    winrt::com_ptr<IMFPresentationDescriptor> presentationDescriptor;
+    winrt::com_ptr<IMFStreamDescriptor> streamDescriptor;
 
     try
     {
-        HRESULT hr = S_OK;
-
         if (m_MediaSession)
         {
-            hr = m_MediaSession->Close();
+            winrt::check_hresult(m_MediaSession->Close());
         }
-
-        if (FAILED(hr)) throw hr;
 
         if (m_Source)
         {
-            m_Source->Shutdown();
+            winrt::check_hresult(m_Source->Shutdown());
         }
 
         if (m_MediaSession)
         {
-            m_MediaSession->Shutdown();
+            winrt::check_hresult(m_MediaSession->Shutdown());
         }
 
-        SafeRelease(m_Source);
-        SafeRelease(m_MediaSession);
-
-        hr = MFCreateSourceResolver(&sourceResolver);
-        if (FAILED(hr)) throw hr;
+        winrt::check_hresult(MFCreateSourceResolver(sourceResolver.put()));
 
         MF_OBJECT_TYPE objectType = MF_OBJECT_INVALID;
-        hr = sourceResolver->CreateObjectFromURL(
+        winrt::check_hresult(sourceResolver->CreateObjectFromURL(
             path.ToString().c_str(),
             MF_RESOLUTION_MEDIASOURCE,
             nullptr,
             &objectType,
-            &source
-        );
-        if (FAILED(hr)) throw hr;
+            source.put()
+        ));
 
-        hr = source->QueryInterface(IID_PPV_ARGS(&m_Source));
-        if (FAILED(hr)) throw hr;
+        m_Source = source.as<IMFMediaSource>();
 
         m_State = State::CLOSED;
 
-        hr = MFCreateMediaSession(nullptr, &m_MediaSession);
-        if (FAILED(hr)) throw hr;
+        winrt::check_hresult(MFCreateMediaSession(nullptr, m_MediaSession.put()));
 
         m_State = State::READY;
 
-        hr = MFCreateTopology(&topology);
-        if (FAILED(hr)) throw hr;
+        winrt::check_hresult(MFCreateTopology(topology.put()));
 
-        m_Source->CreatePresentationDescriptor(&presentationDescriptor);
+        winrt::check_hresult(m_Source->CreatePresentationDescriptor(presentationDescriptor.put()));
         BOOL streamSelected = 0;
-        hr = presentationDescriptor->GetStreamDescriptorByIndex(0, &streamSelected, &streamDescriptor);
+        winrt::check_hresult(presentationDescriptor->GetStreamDescriptorByIndex(0, &streamSelected, streamDescriptor.put()));
 
-        hr = MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, &sourceNode);
-        if (FAILED(hr)) throw hr;
+        WINRT_ASSERT(streamSelected && streamDescriptor);
 
-        if (streamSelected)
-        {
-            hr = sourceNode->SetUnknown(MF_TOPONODE_SOURCE, m_Source);
-            hr = sourceNode->SetUnknown(MF_TOPONODE_PRESENTATION_DESCRIPTOR, presentationDescriptor);
-            hr = sourceNode->SetUnknown(MF_TOPONODE_STREAM_DESCRIPTOR, streamDescriptor);
-        }
-        topology->AddNode(sourceNode);
+        winrt::check_hresult(MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, sourceNode.put()));
+        winrt::check_hresult(sourceNode->SetUnknown(MF_TOPONODE_SOURCE, m_Source.get()));
+        winrt::check_hresult(sourceNode->SetUnknown(MF_TOPONODE_PRESENTATION_DESCRIPTOR, presentationDescriptor.get()));
+        winrt::check_hresult(sourceNode->SetUnknown(MF_TOPONODE_STREAM_DESCRIPTOR, streamDescriptor.get()));
+        winrt::check_hresult(topology->AddNode(sourceNode.get()));
 
-        hr = MFCreateAudioRendererActivate(&audioRendererActivate);
-        if (FAILED(hr)) throw hr;
-
-        hr = MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, &outputNode);
-        if (FAILED(hr)) throw hr;
-
-        hr = outputNode->SetObject(audioRendererActivate);
-        if (FAILED(hr)) throw hr;
-
-        topology->AddNode(outputNode);
-
-        sourceNode->ConnectOutput(0, outputNode, 0);        
-
-        hr = m_MediaSession->SetTopology(0, topology);
-        if (FAILED(hr)) throw hr;
+        winrt::check_hresult(MFCreateAudioRendererActivate(audioRendererActivate.put()));
+        winrt::check_hresult(MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, outputNode.put()));
+        winrt::check_hresult(outputNode->SetObject(audioRendererActivate.get()));
+        winrt::check_hresult(topology->AddNode(outputNode.get()));
+        winrt::check_hresult(sourceNode->ConnectOutput(0, outputNode.get(), 0));
+        winrt::check_hresult(m_MediaSession->SetTopology(0, topology.get()));
 
         m_State = State::STOPPED;
 
         m_Metadata = GetMetadataInternal();
     }
-    catch (HRESULT e)
+    catch (const winrt::hresult_error& e)
     {
-        std::cerr << ("PlayerService::SetSource: Failed to set media source;\nHRESULT: " + std::to_string(e)).c_str();
+        std::wcerr << L"PlayerService::SetSource: Failed to set media source;\n" << e.message() << '\n';
     }
-
-    SafeRelease(sourceResolver);
-    SafeRelease(source);
-    SafeRelease(topology);
-    SafeRelease(audioRendererActivate);
-    SafeRelease(sourceNode);
-    SafeRelease(outputNode);
-    SafeRelease(presentationDescriptor);
-    SafeRelease(streamDescriptor);
 }
 
 bool PlayerService::HasSource()
 {
-    return m_Source;
+    return !!m_Source;
 }
 
 PlayerService::State PlayerService::GetState()
@@ -155,14 +129,21 @@ void PlayerService::Start()
 {
     if (!m_MediaSession) return;
 
-    PROPVARIANT start;
-    PropVariantInit(&start);
-    start.vt = VT_I8;
-    start.hVal.QuadPart = GetPosition() * 10000;
+    try
+    {
+        PROPVARIANT start;
+        PropVariantInit(&start);
+        start.vt = VT_I8;
+        start.hVal.QuadPart = GetPosition() * 10000;
 
-    m_MediaSession->Start(&GUID_NULL, &start);
+        winrt::check_hresult(m_MediaSession->Start(&GUID_NULL, &start));
 
-    PropVariantClear(&start);
+        PropVariantClear(&start);
+    }
+    catch (const winrt::hresult_error& e)
+    {
+        std::wcerr << L"PlayerService::Start: Failed to start media;\n" << e.message() << '\n';
+    }
 
     m_State = State::PLAYING;
 }
@@ -170,13 +151,29 @@ void PlayerService::Start()
 void PlayerService::Stop()
 {
     m_State = State::STOPPED;
-    m_MediaSession->Stop();
+
+    try
+    {
+        winrt::check_hresult(m_MediaSession->Stop());
+    }
+    catch (const winrt::hresult_error& e)
+    {
+        std::wcerr << L"PlayerService::Stop: Failed to stop media;\n" << e.message() << '\n';
+    }
 }
 
 void PlayerService::Pause()
 {
     m_State = State::PAUSED;
-    m_MediaSession->Pause();
+
+    try
+    {
+        m_MediaSession->Pause();
+    }
+    catch (const winrt::hresult_error& e)
+    {
+        std::wcerr << L"PlayerService::Pause: Failed to stop media;\n" << e.message() << '\n';
+    }
 }
 
 void PlayerService::Play()
@@ -191,32 +188,23 @@ void PlayerService::Seek(long long time)
 
 long long PlayerService::GetPosition()
 {
-    IMFClock* clock = nullptr;
-    IMFPresentationClock* presentationClock = nullptr;
+    winrt::com_ptr<IMFClock> clock;
+    winrt::com_ptr<IMFPresentationClock> presentationClock;
 
     try
     {
-        HRESULT hr;
-
-        hr = m_MediaSession->GetClock(&clock);
-        if (FAILED(hr)) throw hr;
-
-        hr = clock->QueryInterface(IID_PPV_ARGS(&presentationClock));
-        if (FAILED(hr)) throw hr;
+        winrt::check_hresult(m_MediaSession->GetClock(clock.put()));
+        presentationClock = clock.as<IMFPresentationClock>();
 
         LONGLONG llTime = 0;
-        hr = presentationClock->GetTime(&llTime);
-        if (FAILED(hr)) throw hr;
-
+        presentationClock->GetTime(&llTime);
         m_Position = llTime / 10000;
     }
-    catch (HRESULT e)
+    catch (winrt::hresult_error const& e)
     {
-        std::cerr << ("PlayerService::GetPosition: Failed to get media playing position;\nHRESULT: " + std::to_string(e)).c_str();
+        std::wcerr << L"PlayerService::GetPosition: Failed to get media playing position;\n" << e.message() << '\n';
+        return 0;
     }
-
-    SafeRelease(clock);
-    SafeRelease(presentationClock);
 
     return m_Position;
 }
@@ -226,7 +214,7 @@ long long PlayerService::GetRemaining()
     return m_Metadata ? m_Metadata->duration - m_Position : 0;
 }
 
-std::wstring PlayerService::DurationToWString(long long duration)
+winrt::hstring PlayerService::DurationToWString(long long duration)
 {
     if (duration == 0)
     {
@@ -237,7 +225,7 @@ std::wstring PlayerService::DurationToWString(long long duration)
     unsigned int minutes = (duration / (1000 * 60)) % 60;
     unsigned int seconds = (duration / 1000) % 60;
 
-    return (hours < 10 ? L"0" : L"") + std::to_wstring(hours) + L":" + (minutes < 10 ? L"0" : L"") + std::to_wstring(minutes) + L":" + (seconds < 10 ? L"0" : L"") + std::to_wstring(seconds);
+    return (hours < 10 ? L"0" : L"") + winrt::to_hstring(hours) + L":" + (minutes < 10 ? L"0" : L"") + winrt::to_hstring(minutes) + L":" + (seconds < 10 ? L"0" : L"") + winrt::to_hstring(seconds);
 }
 
 std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadata()
@@ -254,132 +242,125 @@ std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadata()
 
 std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadataInternal()
 {
-    IPropertyStore* props = nullptr;
+    winrt::com_ptr<IPropertyStore> props;
     MediaMetadata metadata;
 
     try
     {
-        HRESULT hr;
         DWORD cProps;
 
-        hr = MFGetService(m_Source, MF_PROPERTY_HANDLER_SERVICE, IID_PPV_ARGS(&props));
-        if (FAILED(hr)) throw hr;
+        winrt::check_hresult(MFGetService(m_Source.get(), MF_PROPERTY_HANDLER_SERVICE, IID_PPV_ARGS(props.put())));
 
-        hr = props->GetCount(&cProps);
-        if (FAILED(hr)) throw hr;
+        winrt::check_hresult(props->GetCount(&cProps));
 
         for (DWORD i = 0; i < cProps; i++)
         {
             PROPERTYKEY key;
             PROPVARIANT pv;
 
-            hr = props->GetAt(i, &key);
-            if (FAILED(hr)) throw hr;
-
-            hr = props->GetValue(key, &pv);
-            if (FAILED(hr)) throw hr;
+            winrt::check_hresult(props->GetAt(i, &key));
+            winrt::check_hresult(props->GetValue(key, &pv));
 
             if (key == PKEY_Media_Duration)
             {
                 ULONGLONG duration;
-                PropVariantToUInt64(pv, &duration);
+                winrt::check_hresult(PropVariantToUInt64(pv, &duration));
                 metadata.duration = duration / 10000;
             }
             else if (key == PKEY_Audio_ChannelCount)
             {
                 metadata.audioChannelCount = 0;
-                PropVariantToUInt32(pv, &*metadata.audioChannelCount);
+                winrt::check_hresult(PropVariantToUInt32(pv, &*metadata.audioChannelCount));
             }
             else if (key == PKEY_Audio_EncodingBitrate)
             {
                 metadata.audioBitrate = 0;
-                PropVariantToUInt32(pv, &*metadata.audioBitrate);
+                winrt::check_hresult(PropVariantToUInt32(pv, &*metadata.audioBitrate));
             }
             else if (key == PKEY_Audio_SampleRate)
             {
                 metadata.audioSampleRate = 0;
-                PropVariantToUInt32(pv, &*metadata.audioSampleRate);
+                winrt::check_hresult(PropVariantToUInt32(pv, &*metadata.audioSampleRate));
             }
             else if (key == PKEY_Audio_SampleSize)
             {
                 metadata.audioSampleSize = 0;
-                PropVariantToUInt32(pv, &*metadata.audioSampleSize);
+                winrt::check_hresult(PropVariantToUInt32(pv, &*metadata.audioSampleSize));
             }
             else if (key == PKEY_Audio_StreamNumber)
             {
                 metadata.audioStreamId = 0;
-                PropVariantToUInt32(pv, &*metadata.audioStreamId);
+                winrt::check_hresult(PropVariantToUInt32(pv, &*metadata.audioStreamId));
             }
             else if (key == PKEY_Video_EncodingBitrate)
             {
                 metadata.videoBitrate = 0;
-                PropVariantToUInt32(pv, &*metadata.videoBitrate);
+                winrt::check_hresult(PropVariantToUInt32(pv, &*metadata.videoBitrate));
             }
             else if (key == PKEY_Video_FrameWidth)
             {
                 metadata.videoWidth = 0;
-                PropVariantToUInt32(pv, &*metadata.videoWidth);
+                winrt::check_hresult(PropVariantToUInt32(pv, &*metadata.videoWidth));
             }
             else if (key == PKEY_Video_FrameHeight)
             {
                 metadata.videoHeight = 0;
-                PropVariantToUInt32(pv, &*metadata.videoHeight);
+                winrt::check_hresult(PropVariantToUInt32(pv, &*metadata.videoHeight));
             }
             else if (key == PKEY_Video_FrameRate)
             {
                 metadata.videoFrameRate = 0;
-                PropVariantToUInt32(pv, &*metadata.videoFrameRate);
+                winrt::check_hresult(PropVariantToUInt32(pv, &*metadata.videoFrameRate));
                 *metadata.videoFrameRate /= 1000;
             }
             else if (key == PKEY_Video_StreamNumber)
             {
                 metadata.videoStreamId = 0;
-                PropVariantToUInt32(pv, &*metadata.videoStreamId);
+                winrt::check_hresult(PropVariantToUInt32(pv, &*metadata.videoStreamId));
             }
             else if (key == PKEY_Author)
             {
-                size_t bufferSize = wcslen(pv.pwszVal) + 1;
-                metadata.author = std::wstring(bufferSize, L'=');
-                PropVariantToString(pv, metadata.author->data(), bufferSize);
+                wchar_t* buffer;
+                winrt::check_hresult(PropVariantToStringAlloc(pv, &buffer));
+                metadata.author = winrt::hstring(buffer);
+                CoTaskMemFree(buffer);
             }
             else if (key == PKEY_Title)
             {
-                size_t bufferSize = wcslen(pv.pwszVal) + 1;
-                metadata.title = std::wstring(bufferSize, L'=');
-                PropVariantToString(pv, metadata.title->data(), bufferSize);
+                wchar_t* buffer;
+                winrt::check_hresult(PropVariantToStringAlloc(pv, &buffer));
+                metadata.title = winrt::hstring(buffer);
+                CoTaskMemFree(buffer);
             }
             else if (key == PKEY_Music_AlbumTitle)
             {
-                size_t bufferSize = wcslen(pv.pwszVal) + 1;
-                metadata.albumTitle = std::wstring(bufferSize, L'=');
-                PropVariantToString(pv, metadata.albumTitle->data(), bufferSize);
+                wchar_t* buffer;
+                winrt::check_hresult(PropVariantToStringAlloc(pv, &buffer));
+                metadata.albumTitle = winrt::hstring(buffer);
+                CoTaskMemFree(buffer);
             }
             else if (key == PKEY_Audio_IsVariableBitRate)
             {
                 BOOL val;
-                PropVariantToBoolean(pv, &val);
+                winrt::check_hresult(PropVariantToBoolean(pv, &val));
                 metadata.audioIsVariableBitrate = val;
             }
             else if (key == PKEY_Video_IsStereo)
             {
                 BOOL val;
-                PropVariantToBoolean(pv, &val);
+                winrt::check_hresult(PropVariantToBoolean(pv, &val));
                 metadata.videoIsStereo = val;
             }
 
-            PropVariantClear(&pv);
+            winrt::check_hresult(PropVariantClear(&pv));
         }
     }
-    catch (HRESULT e)
+    catch (const winrt::hresult_error& e)
     {
-        std::cerr << ("PlayerService::GetMetadata: Failed to get media metadata;\nHRESULT: " + std::to_string(e)).c_str();
-
-        SafeRelease(props);
+        std::wcerr << L"PlayerService::GetMetadata: Failed to get media metadata;\n" << e.message() << '\n';
 
         return {};
     }
-
-    SafeRelease(props);
 
     return metadata;
 }
