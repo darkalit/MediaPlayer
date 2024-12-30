@@ -5,6 +5,11 @@
 struct winrt::Windows::Foundation::Uri;
 struct IMFMediaSource;
 struct IMFMediaSession;
+struct IMFTopology;
+struct IMFTopologyNode;
+struct IMFPresentationDescriptor;
+struct IMFStreamDescriptor;
+struct IMFActivate;
 
 class PlayerService
 {
@@ -47,7 +52,7 @@ public:
     PlayerService();
     ~PlayerService();
 
-    void SetSource(const winrt::Windows::Foundation::Uri& path);
+    void SetSource(const winrt::Windows::Foundation::Uri& path, HWND hwnd = nullptr);
     bool HasSource();
 
     State GetState();
@@ -80,6 +85,16 @@ private:
         PlayerService* m_PlayerServiceRef;
     };
 
+    static void AddSourceNode(
+        winrt::com_ptr<IMFTopology>& topology,
+        winrt::com_ptr<IMFMediaSource>& source,
+        winrt::com_ptr<IMFPresentationDescriptor>& presentationDescriptor,
+        winrt::com_ptr<IMFStreamDescriptor>& streamDescriptor,
+        winrt::com_ptr<IMFTopologyNode>& node);
+    static void AddOutputNode(
+        winrt::com_ptr<IMFTopology>& topology,
+        winrt::com_ptr<IMFActivate>& activate,
+        winrt::com_ptr<IMFTopologyNode>& node);
     std::optional<MediaMetadata> GetMetadataInternal();
 
     long long m_Position = 0;

@@ -39,16 +39,21 @@ PlayerService::~PlayerService()
     }
 }
 
-void PlayerService::SetSource(const winrt::Windows::Foundation::Uri& path)
+void PlayerService::SetSource(const winrt::Windows::Foundation::Uri& path, HWND hwnd)
 {
     winrt::com_ptr<IMFSourceResolver> sourceResolver;
     winrt::com_ptr<IUnknown> source;
     winrt::com_ptr<IMFTopology> topology;
     winrt::com_ptr<IMFActivate> audioRendererActivate;
-    winrt::com_ptr<IMFTopologyNode> sourceNode;
-    winrt::com_ptr<IMFTopologyNode> outputNode;
+    winrt::com_ptr<IMFActivate> videoRendererActivate;
+    winrt::com_ptr<IMFTopologyNode> audioSourceNode;
+    winrt::com_ptr<IMFTopologyNode> audioOutputNode;
+    winrt::com_ptr<IMFTopologyNode> videoSourceNode;
+    winrt::com_ptr<IMFTopologyNode> videoOutputNode;
     winrt::com_ptr<IMFPresentationDescriptor> presentationDescriptor;
     winrt::com_ptr<IMFStreamDescriptor> streamDescriptor;
+    winrt::com_ptr<IMFMediaTypeHandler> mediaTypeHandler;
+    unsigned long sourceStreamCount;
 
     try
     {
@@ -89,22 +94,39 @@ void PlayerService::SetSource(const winrt::Windows::Foundation::Uri& path)
         winrt::check_hresult(MFCreateTopology(topology.put()));
 
         winrt::check_hresult(m_Source->CreatePresentationDescriptor(presentationDescriptor.put()));
-        BOOL streamSelected = 0;
-        winrt::check_hresult(presentationDescriptor->GetStreamDescriptorByIndex(0, &streamSelected, streamDescriptor.put()));
 
-        WINRT_ASSERT(streamSelected && streamDescriptor);
+        winrt::check_hresult(presentationDescriptor->GetStreamDescriptorCount(&sourceStreamCount));
 
-        winrt::check_hresult(MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, sourceNode.put()));
-        winrt::check_hresult(sourceNode->SetUnknown(MF_TOPONODE_SOURCE, m_Source.get()));
-        winrt::check_hresult(sourceNode->SetUnknown(MF_TOPONODE_PRESENTATION_DESCRIPTOR, presentationDescriptor.get()));
-        winrt::check_hresult(sourceNode->SetUnknown(MF_TOPONODE_STREAM_DESCRIPTOR, streamDescriptor.get()));
-        winrt::check_hresult(topology->AddNode(sourceNode.get()));
+        for (unsigned long i = 0; i < sourceStreamCount; ++i)
+        {
+            BOOL streamSelected = 0;
+            GUID guidMajorType;
+            winrt::check_hresult(presentationDescriptor->GetStreamDescriptorByIndex(i, &streamSelected, streamDescriptor.put()));
+            winrt::check_hresult(streamDescriptor->GetMediaTypeHandler(mediaTypeHandler.put()));
+            winrt::check_hresult(mediaTypeHandler->GetMajorType(&guidMajorType));
+            
+            if (guidMajorType == MFMediaType_Audio && streamSelected)
+            {
+                winrt::check_hresult(MFCreateAudioRendererActivate(audioRendererActivate.put()));
+                AddSourceNode(topology, m_Source, presentationDescriptor, streamDescriptor, audioSourceNode);
+                AddOutputNode(topology, audioRendererActivate, audioOutputNode);
+                winrt::check_hresult(audioSourceNode->ConnectOutput(0, audioOutputNode.get(), 0));
 
-        winrt::check_hresult(MFCreateAudioRendererActivate(audioRendererActivate.put()));
-        winrt::check_hresult(MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, outputNode.put()));
-        winrt::check_hresult(outputNode->SetObject(audioRendererActivate.get()));
-        winrt::check_hresult(topology->AddNode(outputNode.get()));
-        winrt::check_hresult(sourceNode->ConnectOutput(0, outputNode.get(), 0));
+            }
+            else if (guidMajorType == MFMediaType_Video && streamSelected)
+            {
+                if (!hwnd) continue;
+                winrt::check_hresult(MFCreateVideoRendererActivate(hwnd, videoRendererActivate.put()));
+                AddSourceNode(topology, m_Source, presentationDescriptor, streamDescriptor, videoSourceNode);
+                AddOutputNode(topology, audioRendererActivate, videoOutputNode);
+                winrt::check_hresult(videoSourceNode->ConnectOutput(0, videoOutputNode.get(), 0));
+            }
+            else
+            {
+                winrt::check_hresult(presentationDescriptor->DeselectStream(i));
+            }
+        }        
+
         winrt::check_hresult(m_MediaSession->SetTopology(0, topology.get()));
 
         m_MediaSession->BeginGetEvent(&m_StateHandler, nullptr);
@@ -244,6 +266,30 @@ std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadata()
     {
         return {};
     }
+}
+
+void PlayerService::AddSourceNode(
+    winrt::com_ptr<IMFTopology>& topology,
+    winrt::com_ptr<IMFMediaSource>& source,
+    winrt::com_ptr<IMFPresentationDescriptor>& presentationDescriptor,
+    winrt::com_ptr<IMFStreamDescriptor>& streamDescriptor,
+    winrt::com_ptr<IMFTopologyNode>& node)
+{
+    winrt::check_hresult(MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, node.put()));
+    winrt::check_hresult(node->SetUnknown(MF_TOPONODE_SOURCE, source.get()));
+    winrt::check_hresult(node->SetUnknown(MF_TOPONODE_PRESENTATION_DESCRIPTOR, presentationDescriptor.get()));
+    winrt::check_hresult(node->SetUnknown(MF_TOPONODE_STREAM_DESCRIPTOR, streamDescriptor.get()));
+    winrt::check_hresult(topology->AddNode(node.get()));
+}
+
+void PlayerService::AddOutputNode(
+    winrt::com_ptr<IMFTopology>& topology,
+    winrt::com_ptr<IMFActivate>& activate,
+    winrt::com_ptr<IMFTopologyNode>& node)
+{
+    winrt::check_hresult(MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, node.put()));
+    winrt::check_hresult(node->SetObject(activate.get()));
+    winrt::check_hresult(topology->AddNode(node.get()));
 }
 
 std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadataInternal()
