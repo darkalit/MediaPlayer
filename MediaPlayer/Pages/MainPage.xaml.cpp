@@ -7,6 +7,7 @@
 #include "App.xaml.h"
 #include "winrt/Windows.Storage.Pickers.h"
 #include "winrt/Windows.Foundation.h"
+#include "windows.ui.xaml.media.dxinterop.h"
 #include "ShObjIdl.h"
 
 using namespace winrt;
@@ -29,6 +30,22 @@ namespace winrt::MediaPlayer::implementation
             this->UpdateTimeline();
         });
         m_TimelineDispatcherTimer.Start();
+    }
+
+    void MainPage::OnLoad(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    {
+        Slider_Timeline().AddHandler(
+            UIElement::PointerPressedEvent(),
+            box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerPressed }),
+            true);
+        Slider_Timeline().AddHandler(
+            UIElement::PointerReleasedEvent(),
+            box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerReleased }),
+            true);
+        Slider_Timeline().AddHandler(
+            UIElement::PointerMovedEvent(),
+            box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerMoved }),
+            true);
     }
 
     winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> MainPage::OpenFilePickerAsync()
@@ -93,20 +110,7 @@ namespace winrt::MediaPlayer::implementation
         if (metadata)
         {
             Slider_Timeline().Maximum(metadata->duration / 1000.0);
-        }
-
-        Slider_Timeline().AddHandler(
-            UIElement::PointerPressedEvent(),
-            box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerPressed }),
-            true);
-        Slider_Timeline().AddHandler(
-            UIElement::PointerReleasedEvent(),
-            box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerReleased }),
-            true);
-        Slider_Timeline().AddHandler(
-            UIElement::PointerMovedEvent(),
-            box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerMoved }),
-            true);
+        }       
 
         UpdateUI();
     }

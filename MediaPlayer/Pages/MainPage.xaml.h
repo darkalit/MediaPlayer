@@ -8,6 +8,7 @@ namespace winrt::MediaPlayer::implementation
     struct MainPage : MainPageT<MainPage>
     {
         MainPage();
+        void OnLoad(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e);
 
         winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> OpenFilePickerAsync();
 
