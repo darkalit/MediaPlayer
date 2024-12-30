@@ -125,16 +125,21 @@ PlayerService::State PlayerService::GetState()
     return m_State;
 }
 
-void PlayerService::Start()
+void PlayerService::Start(const std::optional<long long>& time)
 {
     if (!m_MediaSession) return;
 
     try
     {
+        if (time)
+        {
+            m_Position = *time;
+        }
+
         PROPVARIANT start;
         PropVariantInit(&start);
         start.vt = VT_I8;
-        start.hVal.QuadPart = GetPosition() * 10000;
+        start.hVal.QuadPart = (time.has_value() ? *time : GetPosition()) * 10000;
 
         winrt::check_hresult(m_MediaSession->Start(&GUID_NULL, &start));
 
@@ -179,11 +184,6 @@ void PlayerService::Pause()
 void PlayerService::Play()
 {
     Start();
-}
-
-void PlayerService::Seek(long long time)
-{
-    m_Position = time;
 }
 
 long long PlayerService::GetPosition()

@@ -12,6 +12,7 @@
 using namespace winrt;
 using namespace Microsoft::UI;
 using namespace Xaml;
+using namespace Xaml::Input;
 using namespace Windows::Media;
 using namespace Windows::Storage;
 using namespace Windows::Storage::Pickers;
@@ -82,6 +83,26 @@ namespace winrt::MediaPlayer::implementation
 
         TextBlock_Title().Text(title);
 
+        if (metadata)
+        {
+            Slider_Timeline().Maximum(metadata->duration / 1000.0);
+        }
+
+        //Slider_Timeline().PointerPressed({ this, &MainPage::Slider_Timeline_PointerPressed });
+
+        Slider_Timeline().AddHandler(
+            UIElement::PointerPressedEvent(),
+            box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerPressed }),
+            true);
+        Slider_Timeline().AddHandler(
+            UIElement::PointerReleasedEvent(),
+            box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerReleased }),
+            true);
+        Slider_Timeline().AddHandler(
+            UIElement::PointerMovedEvent(),
+            box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerMoved }),
+            true);
+
         UpdateUI();
     }
 
@@ -92,10 +113,24 @@ namespace winrt::MediaPlayer::implementation
 
     void MainPage::Slider_Timeline_PointerMoved(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
     {
-        unsigned int time = m_PlayerService.GetMetadata()->duration * Slider_Timeline().Value() / Slider_Timeline().Maximum();
-        m_PlayerService.Seek(time);
         UpdateUI();
     }
+
+    void MainPage::Slider_Timeline_PointerReleased(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
+    {
+        long long time = m_PlayerService.GetMetadata()->duration * (Slider_Timeline().Value() / Slider_Timeline().Maximum());
+        m_PlayerService.Start(time);
+        UpdateUI();
+    }
+
+
+    void MainPage::Slider_Timeline_PointerPressed(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
+    {
+
+        m_PlayerService.Pause();
+        UpdateUI();
+    }
+
 
     void MainPage::Button_PlayPause_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
     {
@@ -130,9 +165,12 @@ namespace winrt::MediaPlayer::implementation
 
         if (!m_PlayerService.HasSource()) return;
 
-        double progress = static_cast<double>(m_PlayerService.GetPosition()) / static_cast<double>(m_PlayerService.GetRemaining()) * 100.0;
-        Slider_Timeline().Value(progress);
-        TextBlock_Position().Text(m_PlayerService.DurationToWString(m_PlayerService.GetPosition()));
-        TextBlock_RemainingTime().Text(m_PlayerService.DurationToWString(m_PlayerService.GetRemaining()));
+        if (m_PlayerService.GetState() == PlayerService::State::PLAYING)
+        {
+            double progress = static_cast<double>(m_PlayerService.GetPosition()) / 1000.0;
+            Slider_Timeline().Value(progress);
+        }
+        TextBlock_Position().Text(m_PlayerService.DurationToWString(Slider_Timeline().Value() * 1000.0));
+        TextBlock_RemainingTime().Text(m_PlayerService.DurationToWString((Slider_Timeline().Maximum() - Slider_Timeline().Value()) * 1000.0));
     }
 }

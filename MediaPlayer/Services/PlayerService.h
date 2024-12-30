@@ -50,11 +50,10 @@ public:
 
     State GetState();
 
-    void Start();
+    void Start(const std::optional<long long>& time = {});
     void Stop();
     void Pause();
     void Play();
-    void Seek(long long time);
 
     long long GetPosition();
     long long GetRemaining();
