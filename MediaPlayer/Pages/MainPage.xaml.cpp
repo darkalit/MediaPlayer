@@ -66,22 +66,29 @@ namespace winrt::MediaPlayer::implementation
         auto metadata = m_PlayerService.GetMetadata();
 
         std::wstring title = L"";
+        std::wstring authorAlbum = L"";
 
         if (metadata && metadata->title)
         {
-            title += *metadata->title;
+            title = *metadata->title;
         }
         else
         {
-            title += file.Name();
+            title = file.Name();
         }
 
         if (metadata && metadata->author)
         {
-            title += L" - " + *metadata->author;
+            authorAlbum += *metadata->author;
+        }
+
+        if (metadata && metadata->albumTitle)
+        {
+            authorAlbum += metadata->author ? L" - " : L"" + *metadata->albumTitle;
         }
 
         TextBlock_Title().Text(title);
+        TextBlock_AuthorAlbum().Text(authorAlbum);
 
         if (metadata)
         {

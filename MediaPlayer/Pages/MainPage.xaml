@@ -21,9 +21,7 @@
                 <MenuFlyoutItem x:Name="MenuItem_Exit" Icon="Cancel" Click="MenuItem_Exit_Click" Text="Exit"/>
             </MenuBarItem>
         </MenuBar>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Grid.Row="1">
-            <TextBlock x:Name="TextBlock_Title" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-        </StackPanel>
+        <SwapChainPanel x:Name="SwapChainPanel_Video"/>
         <Grid HorizontalAlignment="Stretch" Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -36,11 +34,17 @@
         </Grid>
         <Grid HorizontalAlignment="Stretch" Margin="10,10,10,30" Grid.Row="3">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Button x:Name="Button_PlayPause" Click="Button_PlayPause_Click" Content="Play" HorizontalAlignment="Center" Grid.Column="1"/>
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Left" Grid.Column="0">
+                <TextBlock x:Name="TextBlock_Title" HorizontalAlignment="Left"/>
+                <TextBlock x:Name="TextBlock_AuthorAlbum" HorizontalAlignment="Left"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Column="1">
+                <Button x:Name="Button_PlayPause" Click="Button_PlayPause_Click" Content="Play" HorizontalAlignment="Center"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </Page>
