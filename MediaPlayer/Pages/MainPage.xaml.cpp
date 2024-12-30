@@ -88,8 +88,6 @@ namespace winrt::MediaPlayer::implementation
             Slider_Timeline().Maximum(metadata->duration / 1000.0);
         }
 
-        //Slider_Timeline().PointerPressed({ this, &MainPage::Slider_Timeline_PointerPressed });
-
         Slider_Timeline().AddHandler(
             UIElement::PointerPressedEvent(),
             box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerPressed }),

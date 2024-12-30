@@ -31,7 +31,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock x:Name="TextBlock_Position" Text="00:00:00" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="0"/>
-            <Slider x:Name="Slider_Timeline" Minimum="0.0" Maximum="100.0" Value="0.0" IsEnabled="False" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10,0,10,0" Grid.Column="1"/>
+            <Slider x:Name="Slider_Timeline" Minimum="0.0" Maximum="100.0" Value="0.0" IsEnabled="False" PointerMoved="Slider_Timeline_PointerMoved" PointerPressed="Slider_Timeline_PointerPressed" PointerReleased="Slider_Timeline_PointerReleased" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10,0,10,0" Grid.Column="1"/>
             <TextBlock x:Name="TextBlock_RemainingTime" Text="00:00:00" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Grid.Column="2"/>
         </Grid>
         <Grid HorizontalAlignment="Stretch" Margin="10,10,10,30" Grid.Row="3">
