@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mfobjects.h"
+
 struct winrt::Windows::Foundation::Uri;
 struct IMFMediaSource;
 struct IMFMediaSession;
@@ -62,12 +64,29 @@ public:
     std::optional<MediaMetadata> GetMetadata();
 
 private:
+    class StateHandler : public IMFAsyncCallback
+    {
+    public:
+        StateHandler(PlayerService* playerServiceRef);
+
+        STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject) override;
+        STDMETHODIMP_(ULONG) AddRef() override;
+        STDMETHODIMP_(ULONG) Release() override;
+        STDMETHODIMP GetParameters(DWORD* pdwFlags, DWORD* pdwQueue) override;
+        STDMETHODIMP Invoke(IMFAsyncResult* pAsyncResult) override;
+
+    private:
+        long m_RefCount;
+        PlayerService* m_PlayerServiceRef;
+    };
+
     std::optional<MediaMetadata> GetMetadataInternal();
 
     long long m_Position = 0;
     State m_State = State::CLOSED;
 
     std::optional<MediaMetadata> m_Metadata;
+    StateHandler m_StateHandler;
     winrt::com_ptr<IMFMediaSource> m_Source;
     winrt::com_ptr<IMFMediaSession> m_MediaSession;
 };

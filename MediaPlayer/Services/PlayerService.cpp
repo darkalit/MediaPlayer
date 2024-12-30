@@ -8,12 +8,14 @@
 #include "propvarutil.h"
 #include "propkeydef.h"
 #include "propkey.h"
-#include "shlwapi.h"
+#include "Shlwapi.h"
 
 #include "string"
 #include "iostream"
 
 PlayerService::PlayerService()
+    :
+    m_StateHandler(this)
 {
     try
     {
@@ -104,6 +106,8 @@ void PlayerService::SetSource(const winrt::Windows::Foundation::Uri& path)
         winrt::check_hresult(topology->AddNode(outputNode.get()));
         winrt::check_hresult(sourceNode->ConnectOutput(0, outputNode.get(), 0));
         winrt::check_hresult(m_MediaSession->SetTopology(0, topology.get()));
+
+        m_MediaSession->BeginGetEvent(&m_StateHandler, nullptr);
 
         m_State = State::STOPPED;
 
@@ -365,4 +369,62 @@ std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadataInternal()
     }
 
     return metadata;
+}
+
+PlayerService::StateHandler::StateHandler(PlayerService* playerServiceRef)
+    : m_RefCount(0)
+    , m_PlayerServiceRef(playerServiceRef)
+{
+}
+
+STDMETHODIMP PlayerService::StateHandler::QueryInterface(REFIID riid, void** ppvObject)
+{
+    static const QITAB qit[] = {
+        QITABENT(StateHandler, IMFAsyncCallback),
+        { 0 },
+    };
+    return QISearch(this, qit, riid, ppvObject);
+}
+
+STDMETHODIMP_(ULONG) PlayerService::StateHandler::AddRef()
+{
+    return InterlockedIncrement(&m_RefCount);
+}
+
+STDMETHODIMP_(ULONG) PlayerService::StateHandler::Release()
+{
+    ULONG count = InterlockedDecrement(&m_RefCount);
+    if (count == 0)
+    {
+        delete this;
+    }
+
+    return count;
+}
+
+STDMETHODIMP PlayerService::StateHandler::GetParameters(DWORD* pdwFlags, DWORD* pdwQueue)
+{
+    return E_NOTIMPL;
+}
+
+STDMETHODIMP PlayerService::StateHandler::Invoke(IMFAsyncResult* pAsyncResult)
+{
+    winrt::com_ptr<IMFMediaEvent> event = nullptr;
+    MediaEventType eventType = MEUnknown;
+
+    winrt::check_hresult(m_PlayerServiceRef->m_MediaSession->EndGetEvent(pAsyncResult, event.put()));
+    winrt::check_hresult(event->GetType(&eventType));
+
+    switch (eventType)
+    {
+    case MESessionEnded:
+        m_PlayerServiceRef->m_State = State::STOPPED;
+        break;
+    default:
+        break;
+    }
+
+    m_PlayerServiceRef->m_MediaSession->BeginGetEvent(this, nullptr);
+
+    return S_OK;
 }
