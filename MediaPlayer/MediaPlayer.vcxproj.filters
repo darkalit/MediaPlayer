@@ -18,11 +18,17 @@
     <ClCompile Include="Services\PlayerService.cpp">
       <Filter>Services</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\DeviceResources.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Services\PlayerService.h">
       <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\DeviceResources.h">
+      <Filter>Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -57,6 +63,9 @@
     </Filter>
     <Filter Include="Services">
       <UniqueIdentifier>{5eb1d097-c39b-4b4c-8b04-3924927a145d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{0a97401c-3509-4e53-afe0-06c8fc2ef079}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

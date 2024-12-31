@@ -46,6 +46,8 @@ namespace winrt::MediaPlayer::implementation
             UIElement::PointerMovedEvent(),
             box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerMoved }),
             true);
+
+        m_DeviceResources.SetSwapChainPanel(SwapChainPanel_Video(), App::GetMainWindow());
     }
 
     winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> MainPage::OpenFilePickerAsync()
@@ -78,6 +80,8 @@ namespace winrt::MediaPlayer::implementation
         if (!file) {
             co_return;
         }
+
+        m_DeviceResources.Present();
 
         m_PlayerService.SetSource(Uri(file.Path()));
         auto metadata = m_PlayerService.GetMetadata();

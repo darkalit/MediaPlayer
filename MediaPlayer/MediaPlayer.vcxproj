@@ -131,6 +131,7 @@
     <Manifest Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Graphics\DeviceResources.h" />
     <ClInclude Include="Pages\MainPage.xaml.h">
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -152,6 +153,7 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Graphics\DeviceResources.cpp" />
     <ClCompile Include="Pages\MainPage.xaml.cpp">
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>

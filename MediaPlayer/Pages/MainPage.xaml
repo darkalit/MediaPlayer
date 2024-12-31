@@ -22,7 +22,7 @@
                 <MenuFlyoutItem x:Name="MenuItem_Exit" Icon="Cancel" Click="MenuItem_Exit_Click" Text="Exit"/>
             </MenuBarItem>
         </MenuBar>
-        <SwapChainPanel x:Name="SwapChainPanel_Video"/>
+        <SwapChainPanel x:Name="SwapChainPanel_Video" Grid.Row="1"/>
         <Grid HorizontalAlignment="Stretch" Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
