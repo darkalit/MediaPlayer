@@ -131,7 +131,12 @@
     <Manifest Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Graphics\DeviceResources.h" />
+    <ClInclude Include="Media\MediaEngineExtension.h" />
+    <ClInclude Include="Media\MediaEngineNotifyImpl.h" />
+    <ClInclude Include="Media\MediaEngineWrapper.h" />
+    <ClInclude Include="Media\MediaFoundationHelper.h" />
+    <ClInclude Include="Media\MediaFoundationSourceWrapper.h" />
+    <ClInclude Include="Media\MediaFoundationStreamWrapper.h" />
     <ClInclude Include="Pages\MainPage.xaml.h">
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -153,7 +158,12 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Graphics\DeviceResources.cpp" />
+    <ClCompile Include="Media\MediaEngineExtension.cpp" />
+    <ClCompile Include="Media\MediaEngineNotifyImpl.cpp" />
+    <ClCompile Include="Media\MediaEngineWrapper.cpp" />
+    <ClCompile Include="Media\MediaFoundationHelper.cpp" />
+    <ClCompile Include="Media\MediaFoundationSourceWrapper.cpp" />
+    <ClCompile Include="Media\MediaFoundationStreamWrapper.cpp" />
     <ClCompile Include="Pages\MainPage.xaml.cpp">
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>

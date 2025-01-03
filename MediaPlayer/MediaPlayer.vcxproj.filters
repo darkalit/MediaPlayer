@@ -18,8 +18,23 @@
     <ClCompile Include="Services\PlayerService.cpp">
       <Filter>Services</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics\DeviceResources.cpp">
-      <Filter>Graphics</Filter>
+    <ClCompile Include="Media\MediaEngineWrapper.cpp">
+      <Filter>Media</Filter>
+    </ClCompile>
+    <ClCompile Include="Media\MediaEngineExtension.cpp">
+      <Filter>Media</Filter>
+    </ClCompile>
+    <ClCompile Include="Media\MediaFoundationSourceWrapper.cpp">
+      <Filter>Media</Filter>
+    </ClCompile>
+    <ClCompile Include="Media\MediaFoundationStreamWrapper.cpp">
+      <Filter>Media</Filter>
+    </ClCompile>
+    <ClCompile Include="Media\MediaEngineNotifyImpl.cpp">
+      <Filter>Media</Filter>
+    </ClCompile>
+    <ClCompile Include="Media\MediaFoundationHelper.cpp">
+      <Filter>Media</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -27,8 +42,23 @@
     <ClInclude Include="Services\PlayerService.h">
       <Filter>Services</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics\DeviceResources.h">
-      <Filter>Graphics</Filter>
+    <ClInclude Include="Media\MediaEngineWrapper.h">
+      <Filter>Media</Filter>
+    </ClInclude>
+    <ClInclude Include="Media\MediaEngineExtension.h">
+      <Filter>Media</Filter>
+    </ClInclude>
+    <ClInclude Include="Media\MediaFoundationSourceWrapper.h">
+      <Filter>Media</Filter>
+    </ClInclude>
+    <ClInclude Include="Media\MediaFoundationStreamWrapper.h">
+      <Filter>Media</Filter>
+    </ClInclude>
+    <ClInclude Include="Media\MediaEngineNotifyImpl.h">
+      <Filter>Media</Filter>
+    </ClInclude>
+    <ClInclude Include="Media\MediaFoundationHelper.h">
+      <Filter>Media</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -64,8 +94,8 @@
     <Filter Include="Services">
       <UniqueIdentifier>{5eb1d097-c39b-4b4c-8b04-3924927a145d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Graphics">
-      <UniqueIdentifier>{0a97401c-3509-4e53-afe0-06c8fc2ef079}</UniqueIdentifier>
+    <Filter Include="Media">
+      <UniqueIdentifier>{471ae2cf-0051-4778-946b-200d4e83be82}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -2,7 +2,6 @@
 
 #include "MainPage.g.h"
 #include "Services/PlayerService.h"
-#include "Graphics/DeviceResources.h"
 
 namespace winrt::MediaPlayer::implementation
 {
@@ -26,7 +25,6 @@ namespace winrt::MediaPlayer::implementation
 
         winrt::Microsoft::UI::Dispatching::DispatcherQueueTimer m_TimelineDispatcherTimer;
         PlayerService m_PlayerService;
-        DX::DeviceResources m_DeviceResources;
     };
 }
 

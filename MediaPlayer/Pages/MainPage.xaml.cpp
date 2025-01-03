@@ -7,7 +7,6 @@
 #include "App.xaml.h"
 #include "winrt/Windows.Storage.Pickers.h"
 #include "winrt/Windows.Foundation.h"
-#include "windows.ui.xaml.media.dxinterop.h"
 #include "ShObjIdl.h"
 
 using namespace winrt;
@@ -47,7 +46,9 @@ namespace winrt::MediaPlayer::implementation
             box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerMoved }),
             true);
 
-        m_DeviceResources.SetSwapChainPanel(SwapChainPanel_Video(), App::GetMainWindow());
+        //m_PlayerService.Init(SwapChainPanel_Video(), App::GetMainWindow());
+
+        //m_DeviceResources.SetSwapChainPanel(SwapChainPanel_Video(), App::GetMainWindow());
     }
 
     winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> MainPage::OpenFilePickerAsync()
@@ -71,52 +72,51 @@ namespace winrt::MediaPlayer::implementation
 
     fire_and_forget MainPage::MenuItem_OpenFile_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
     {
-        if (m_PlayerService.HasSource())
-        {
-            m_PlayerService.Stop();
-        }
+        //if (m_PlayerService.HasSource())
+        //{
+        //    m_PlayerService.Stop();
+        //}
 
         auto file = co_await OpenFilePickerAsync();
         if (!file) {
             co_return;
         }
 
-        m_DeviceResources.Present();
-
-        m_PlayerService.SetSource(Uri(file.Path()));
-        auto metadata = m_PlayerService.GetMetadata();
+        //m_PlayerService.SetSource(Uri(file.Path()));
+        m_PlayerService.Init(SwapChainPanel_Video(), Uri(file.Path()));
+        //auto metadata = m_PlayerService.GetMetadata();
 
         std::wstring title = L"";
         std::wstring authorAlbum = L"";
 
-        if (metadata && metadata->title)
-        {
-            title = *metadata->title;
-        }
-        else
-        {
+        //if (metadata && metadata->title)
+        //{
+        //    title = *metadata->title;
+        //}
+        //else
+        //{
             title = file.Name();
-        }
+        //}
 
-        if (metadata && metadata->author)
-        {
-            authorAlbum += *metadata->author;
-        }
+        //if (metadata && metadata->author)
+        //{
+        //    authorAlbum += *metadata->author;
+        //}
 
-        if (metadata && metadata->albumTitle)
-        {
-            authorAlbum += metadata->author ? L" - " : L"" + *metadata->albumTitle;
-        }
+        //if (metadata && metadata->albumTitle)
+        //{
+        //    authorAlbum += metadata->author ? L" - " : L"" + *metadata->albumTitle;
+        //}
 
         TextBlock_Title().Text(title);
         TextBlock_AuthorAlbum().Text(authorAlbum);
 
-        if (metadata)
-        {
-            Slider_Timeline().Maximum(metadata->duration / 1000.0);
-        }       
+        //if (metadata)
+        //{
+        //    Slider_Timeline().Maximum(metadata->duration / 1000.0);
+        //}   
 
-        UpdateUI();
+        //UpdateUI();
     }
 
     void MainPage::MenuItem_Exit_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
@@ -126,14 +126,14 @@ namespace winrt::MediaPlayer::implementation
 
     void MainPage::Slider_Timeline_PointerMoved(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
     {
-        UpdateUI();
+        //UpdateUI();s
     }
 
     void MainPage::Slider_Timeline_PointerReleased(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
     {
         long long time = m_PlayerService.GetMetadata()->duration * (Slider_Timeline().Value() / Slider_Timeline().Maximum());
         m_PlayerService.Start(time);
-        UpdateUI();
+        //UpdateUI();
     }
 
 
@@ -141,7 +141,7 @@ namespace winrt::MediaPlayer::implementation
     {
 
         m_PlayerService.Pause();
-        UpdateUI();
+        //UpdateUI();
     }
 
 
@@ -156,7 +156,7 @@ namespace winrt::MediaPlayer::implementation
             m_PlayerService.Pause();
         }
 
-        UpdateUI();
+        //UpdateUI();
     }
 
     void MainPage::UpdateUI()
@@ -174,16 +174,16 @@ namespace winrt::MediaPlayer::implementation
     }
     void MainPage::UpdateTimeline()
     {
-        Slider_Timeline().IsEnabled(m_PlayerService.HasSource());
+        //Slider_Timeline().IsEnabled(m_PlayerService.HasSource());
 
-        if (!m_PlayerService.HasSource()) return;
+        //if (!m_PlayerService.HasSource()) return;
 
-        if (m_PlayerService.GetState() == PlayerService::State::PLAYING)
-        {
-            double progress = static_cast<double>(m_PlayerService.GetPosition()) / 1000.0;
-            Slider_Timeline().Value(progress);
-        }
-        TextBlock_Position().Text(m_PlayerService.DurationToWString(Slider_Timeline().Value() * 1000.0));
-        TextBlock_RemainingTime().Text(m_PlayerService.DurationToWString((Slider_Timeline().Maximum() - Slider_Timeline().Value()) * 1000.0));
+        //if (m_PlayerService.GetState() == PlayerService::State::PLAYING)
+        //{
+        //    double progress = static_cast<double>(m_PlayerService.GetPosition()) / 1000.0;
+        //    Slider_Timeline().Value(progress);
+        //}
+        //TextBlock_Position().Text(m_PlayerService.DurationToWString(Slider_Timeline().Value() * 1000.0));
+        //TextBlock_RemainingTime().Text(m_PlayerService.DurationToWString((Slider_Timeline().Maximum() - Slider_Timeline().Value()) * 1000.0));
     }
 }

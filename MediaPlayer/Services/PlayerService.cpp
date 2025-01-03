@@ -13,9 +13,11 @@
 #include "string"
 #include "iostream"
 
+#include "Audioclient.h"
+#include <microsoft.ui.xaml.media.dxinterop.h>
+#include <d3d11.h>
+
 PlayerService::PlayerService()
-    :
-    m_StateHandler(this)
 {
     try
     {
@@ -39,111 +41,76 @@ PlayerService::~PlayerService()
     }
 }
 
+void PlayerService::Init(winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel, const winrt::Windows::Foundation::Uri& path)
+{
+    m_DeviceManager = nullptr;
+    UINT resetToken = 0;
+    winrt::check_hresult(MFLockDXGIDeviceManager(&resetToken, m_DeviceManager.put()));
+
+    winrt::com_ptr<ID3D11Device> d3d11Device;
+    UINT creationgFlags = D3D11_CREATE_DEVICE_VIDEO_SUPPORT
+        | D3D11_CREATE_DEVICE_BGRA_SUPPORT
+        | D3D11_CREATE_DEVICE_PREVENT_INTERNAL_THREADING_OPTIMIZATIONS;
+    constexpr D3D_FEATURE_LEVEL featureLevels[] = {
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+        D3D_FEATURE_LEVEL_9_3,
+        D3D_FEATURE_LEVEL_9_2,
+        D3D_FEATURE_LEVEL_9_1
+    };
+
+    winrt::check_hresult(D3D11CreateDevice(
+        nullptr,
+        D3D_DRIVER_TYPE_HARDWARE,
+        0,
+        creationgFlags,
+        featureLevels,
+        ARRAYSIZE(featureLevels),
+        D3D11_SDK_VERSION,
+        d3d11Device.put(),
+        nullptr,
+        nullptr
+    ));
+
+    winrt::com_ptr<ID3D10Multithread> multithreadedDevice;
+    d3d11Device.as(multithreadedDevice);
+    multithreadedDevice->SetMultithreadProtected(true);
+
+    winrt::check_hresult(m_DeviceManager->ResetDevice(d3d11Device.get(), resetToken));
+
+    m_SwapChainPanel = panel;
+    UINT32 height = 0;
+    UINT32 width = 0;
+    
+    winrt::com_ptr<IMFMediaType> nativeMediaType;
+
+    winrt::check_hresult(MFCreateSourceReaderFromURL(path.ToString().c_str(), nullptr, m_SourceReader.put()));
+    winrt::check_hresult(m_SourceReader->GetNativeMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, nativeMediaType.put()));
+    winrt::check_hresult(MFGetAttributeSize(nativeMediaType.get(), MF_MT_FRAME_SIZE, &width, &height));
+
+    auto onLoadedCB = std::bind(&PlayerService::OnLoaded, this);
+    auto onPlaybackEndedCB = std::bind(&PlayerService::OnPlaybackEnded, this);
+    auto onErrorCB = std::bind(&PlayerService::OnError, this, std::placeholders::_1, std::placeholders::_2);
+
+    m_MediaEngineWrapper = winrt::make_self<MediaEngineWrapper>(
+        m_SourceReader.get(),
+        m_DeviceManager.get(),
+        onLoadedCB,
+        onPlaybackEndedCB,
+        onErrorCB,
+        width,
+        height);
+}
+
 void PlayerService::SetSource(const winrt::Windows::Foundation::Uri& path, HWND hwnd)
 {
-    winrt::com_ptr<IMFSourceResolver> sourceResolver;
-    winrt::com_ptr<IUnknown> source;
-    winrt::com_ptr<IMFTopology> topology;
-    winrt::com_ptr<IMFActivate> audioRendererActivate;
-    winrt::com_ptr<IMFActivate> videoRendererActivate;
-    winrt::com_ptr<IMFTopologyNode> audioSourceNode;
-    winrt::com_ptr<IMFTopologyNode> audioOutputNode;
-    winrt::com_ptr<IMFTopologyNode> videoSourceNode;
-    winrt::com_ptr<IMFTopologyNode> videoOutputNode;
-    winrt::com_ptr<IMFPresentationDescriptor> presentationDescriptor;
-    winrt::com_ptr<IMFStreamDescriptor> streamDescriptor;
-    winrt::com_ptr<IMFMediaTypeHandler> mediaTypeHandler;
-    unsigned long sourceStreamCount;
-
-    try
-    {
-        if (m_MediaSession)
-        {
-            winrt::check_hresult(m_MediaSession->Close());
-        }
-
-        if (m_Source)
-        {
-            winrt::check_hresult(m_Source->Shutdown());
-        }
-
-        if (m_MediaSession)
-        {
-            winrt::check_hresult(m_MediaSession->Shutdown());
-        }
-
-        winrt::check_hresult(MFCreateSourceResolver(sourceResolver.put()));
-
-        MF_OBJECT_TYPE objectType = MF_OBJECT_INVALID;
-        winrt::check_hresult(sourceResolver->CreateObjectFromURL(
-            path.ToString().c_str(),
-            MF_RESOLUTION_MEDIASOURCE,
-            nullptr,
-            &objectType,
-            source.put()
-        ));
-
-        m_Source = source.as<IMFMediaSource>();
-
-        m_State = State::CLOSED;
-
-        winrt::check_hresult(MFCreateMediaSession(nullptr, m_MediaSession.put()));
-
-        m_State = State::READY;
-
-        winrt::check_hresult(MFCreateTopology(topology.put()));
-
-        winrt::check_hresult(m_Source->CreatePresentationDescriptor(presentationDescriptor.put()));
-
-        winrt::check_hresult(presentationDescriptor->GetStreamDescriptorCount(&sourceStreamCount));
-
-        for (unsigned long i = 0; i < sourceStreamCount; ++i)
-        {
-            BOOL streamSelected = 0;
-            GUID guidMajorType;
-            winrt::check_hresult(presentationDescriptor->GetStreamDescriptorByIndex(i, &streamSelected, streamDescriptor.put()));
-            winrt::check_hresult(streamDescriptor->GetMediaTypeHandler(mediaTypeHandler.put()));
-            winrt::check_hresult(mediaTypeHandler->GetMajorType(&guidMajorType));
-            
-            if (guidMajorType == MFMediaType_Audio && streamSelected)
-            {
-                winrt::check_hresult(MFCreateAudioRendererActivate(audioRendererActivate.put()));
-                AddSourceNode(topology, m_Source, presentationDescriptor, streamDescriptor, audioSourceNode);
-                AddOutputNode(topology, audioRendererActivate, audioOutputNode);
-                winrt::check_hresult(audioSourceNode->ConnectOutput(0, audioOutputNode.get(), 0));
-
-            }
-            else if (guidMajorType == MFMediaType_Video && streamSelected)
-            {
-                if (!hwnd) continue;
-                winrt::check_hresult(MFCreateVideoRendererActivate(hwnd, videoRendererActivate.put()));
-                AddSourceNode(topology, m_Source, presentationDescriptor, streamDescriptor, videoSourceNode);
-                AddOutputNode(topology, audioRendererActivate, videoOutputNode);
-                winrt::check_hresult(videoSourceNode->ConnectOutput(0, videoOutputNode.get(), 0));
-            }
-            else
-            {
-                winrt::check_hresult(presentationDescriptor->DeselectStream(i));
-            }
-        }        
-
-        winrt::check_hresult(m_MediaSession->SetTopology(0, topology.get()));
-
-        m_MediaSession->BeginGetEvent(&m_StateHandler, nullptr);
-
-        m_State = State::STOPPED;
-
-        m_Metadata = GetMetadataInternal();
-    }
-    catch (const winrt::hresult_error& e)
-    {
-        std::wcerr << L"PlayerService::SetSource: Failed to set media source;\n" << e.message() << '\n';
-    }
 }
 
 bool PlayerService::HasSource()
 {
-    return !!m_Source;
+    return true;
 }
 
 PlayerService::State PlayerService::GetState()
@@ -153,23 +120,8 @@ PlayerService::State PlayerService::GetState()
 
 void PlayerService::Start(const std::optional<long long>& time)
 {
-    if (!m_MediaSession) return;
-
     try
     {
-        if (time)
-        {
-            m_Position = *time;
-        }
-
-        PROPVARIANT start;
-        PropVariantInit(&start);
-        start.vt = VT_I8;
-        start.hVal.QuadPart = (time.has_value() ? *time : GetPosition()) * 10000;
-
-        winrt::check_hresult(m_MediaSession->Start(&GUID_NULL, &start));
-
-        PropVariantClear(&start);
     }
     catch (const winrt::hresult_error& e)
     {
@@ -185,7 +137,6 @@ void PlayerService::Stop()
 
     try
     {
-        winrt::check_hresult(m_MediaSession->Stop());
     }
     catch (const winrt::hresult_error& e)
     {
@@ -199,7 +150,6 @@ void PlayerService::Pause()
 
     try
     {
-        m_MediaSession->Pause();
     }
     catch (const winrt::hresult_error& e)
     {
@@ -214,32 +164,35 @@ void PlayerService::Play()
 
 long long PlayerService::GetPosition()
 {
-    winrt::com_ptr<IMFClock> clock;
-    winrt::com_ptr<IMFPresentationClock> presentationClock;
+    //m_Position = m_MediaEngine->GetCurrentTime() * 1000;
 
-    try
-    {
-        if (!m_MediaSession) return 0;
+    //winrt::com_ptr<IMFClock> clock;
+    //winrt::com_ptr<IMFPresentationClock> presentationClock;
 
-        winrt::check_hresult(m_MediaSession->GetClock(clock.put()));
-        presentationClock = clock.as<IMFPresentationClock>();
+    //try
+    //{
+    //    if (!m_MediaSession) return 0;
 
-        LONGLONG llTime = 0;
-        presentationClock->GetTime(&llTime);
-        m_Position = llTime / 10000;
-    }
-    catch (winrt::hresult_error const& e)
-    {
-        std::wcerr << L"PlayerService::GetPosition: Failed to get media playing position;\n" << e.message() << '\n';
-        return 0;
-    }
+    //    winrt::check_hresult(m_MediaSession->GetClock(clock.put()));
+    //    presentationClock = clock.as<IMFPresentationClock>();
+
+    //    LONGLONG llTime = 0;
+    //    presentationClock->GetTime(&llTime);
+    //    m_Position = llTime / 10000;
+    //}
+    //catch (winrt::hresult_error const& e)
+    //{
+    //    std::wcerr << L"PlayerService::GetPosition: Failed to get media playing position;\n" << e.message() << '\n';
+    //    return 0;
+    //}
 
     return m_Position;
 }
 
 long long PlayerService::GetRemaining()
 {
-    return m_Metadata ? m_Metadata->duration - m_Position : 0;
+    //return m_Metadata ? m_Metadata->duration - m_Position : 0;
+    return 0;
 }
 
 winrt::hstring PlayerService::DurationToWString(long long duration)
@@ -258,38 +211,39 @@ winrt::hstring PlayerService::DurationToWString(long long duration)
 
 std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadata()
 {
-    if (HasSource() && m_Metadata)
-    {
-        return m_Metadata;
-    }
-    else
-    {
+    //if (HasSource() && m_Metadata)
+    //{
+    //    return m_Metadata;
+    //}
+    //else
+    //{
         return {};
+    //}
+}
+
+void PlayerService::OnLoaded()
+{
+    m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
+
+    if (m_VideoSurfaceHandle)
+    {
+        m_SwapChainPanel.DispatcherQueue().TryEnqueue([=]() {
+            winrt::com_ptr<ISwapChainPanelNative2> panelNative;
+            m_SwapChainPanel.as(panelNative);
+            winrt::check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
+        });
     }
+
+    m_MediaEngineWrapper->Start(0);
 }
 
-void PlayerService::AddSourceNode(
-    winrt::com_ptr<IMFTopology>& topology,
-    winrt::com_ptr<IMFMediaSource>& source,
-    winrt::com_ptr<IMFPresentationDescriptor>& presentationDescriptor,
-    winrt::com_ptr<IMFStreamDescriptor>& streamDescriptor,
-    winrt::com_ptr<IMFTopologyNode>& node)
+void PlayerService::OnPlaybackEnded()
 {
-    winrt::check_hresult(MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, node.put()));
-    winrt::check_hresult(node->SetUnknown(MF_TOPONODE_SOURCE, source.get()));
-    winrt::check_hresult(node->SetUnknown(MF_TOPONODE_PRESENTATION_DESCRIPTOR, presentationDescriptor.get()));
-    winrt::check_hresult(node->SetUnknown(MF_TOPONODE_STREAM_DESCRIPTOR, streamDescriptor.get()));
-    winrt::check_hresult(topology->AddNode(node.get()));
+    MFShutdown();
 }
 
-void PlayerService::AddOutputNode(
-    winrt::com_ptr<IMFTopology>& topology,
-    winrt::com_ptr<IMFActivate>& activate,
-    winrt::com_ptr<IMFTopologyNode>& node)
+void PlayerService::OnError(MF_MEDIA_ENGINE_ERR error, HRESULT hr)
 {
-    winrt::check_hresult(MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, node.put()));
-    winrt::check_hresult(node->SetObject(activate.get()));
-    winrt::check_hresult(topology->AddNode(node.get()));
 }
 
 std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadataInternal()
@@ -301,7 +255,7 @@ std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadataInternal()
     {
         DWORD cProps;
 
-        winrt::check_hresult(MFGetService(m_Source.get(), MF_PROPERTY_HANDLER_SERVICE, IID_PPV_ARGS(props.put())));
+        //winrt::check_hresult(MFGetService(m_Source.get(), MF_PROPERTY_HANDLER_SERVICE, IID_PPV_ARGS(props.put())));
 
         winrt::check_hresult(props->GetCount(&cProps));
 
@@ -415,62 +369,4 @@ std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadataInternal()
     }
 
     return metadata;
-}
-
-PlayerService::StateHandler::StateHandler(PlayerService* playerServiceRef)
-    : m_RefCount(0)
-    , m_PlayerServiceRef(playerServiceRef)
-{
-}
-
-STDMETHODIMP PlayerService::StateHandler::QueryInterface(REFIID riid, void** ppvObject)
-{
-    static const QITAB qit[] = {
-        QITABENT(StateHandler, IMFAsyncCallback),
-        { 0 },
-    };
-    return QISearch(this, qit, riid, ppvObject);
-}
-
-STDMETHODIMP_(ULONG) PlayerService::StateHandler::AddRef()
-{
-    return InterlockedIncrement(&m_RefCount);
-}
-
-STDMETHODIMP_(ULONG) PlayerService::StateHandler::Release()
-{
-    ULONG count = InterlockedDecrement(&m_RefCount);
-    if (count == 0)
-    {
-        delete this;
-    }
-
-    return count;
-}
-
-STDMETHODIMP PlayerService::StateHandler::GetParameters(DWORD* pdwFlags, DWORD* pdwQueue)
-{
-    return E_NOTIMPL;
-}
-
-STDMETHODIMP PlayerService::StateHandler::Invoke(IMFAsyncResult* pAsyncResult)
-{
-    winrt::com_ptr<IMFMediaEvent> event = nullptr;
-    MediaEventType eventType = MEUnknown;
-
-    winrt::check_hresult(m_PlayerServiceRef->m_MediaSession->EndGetEvent(pAsyncResult, event.put()));
-    winrt::check_hresult(event->GetType(&eventType));
-
-    switch (eventType)
-    {
-    case MESessionEnded:
-        m_PlayerServiceRef->m_State = State::STOPPED;
-        break;
-    default:
-        break;
-    }
-
-    m_PlayerServiceRef->m_MediaSession->BeginGetEvent(this, nullptr);
-
-    return S_OK;
 }
