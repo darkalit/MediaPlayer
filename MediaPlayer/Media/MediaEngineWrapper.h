@@ -8,21 +8,30 @@ class MediaEngineWrapper : public winrt::implements<MediaEngineWrapper, IUnknown
 {
 public:
     MediaEngineWrapper(
-        IMFSourceReader* sourceReader,
         IMFDXGIDeviceManager* dxgiDeviceManager,
         std::function<void()> onLoadedCB,
         std::function<void()> onPlaybackEndedCB,
         std::function<void(MF_MEDIA_ENGINE_ERR, HRESULT)> onErrorCB,
         unsigned int width,
         unsigned int height);
-    ~MediaEngineWrapper() = default;
+    ~MediaEngineWrapper();
 
-    void Start(unsigned long long timeStamp);
+    void SetSource(IMFSourceReader* sourceReader);
+
+    // Start from time stamp in seconds
+    void Start(double timeStamp);
+    void Stop();
+    void Pause();
+
+    // Set time in seconds
+    void SetCurrentTime(double timeStamp);
+    double GetCurrentTime();
+
     void WindowUpdate(unsigned int width, unsigned int height);
     HANDLE GetSurfaceHandle();
 
 private:
-    HRESULT CreateMediaEngine(IMFSourceReader* sourceReader);
+    HRESULT CreateMediaEngine();
     void OnLoaded();
     void OnPlaybackEnded();
     void OnError(MF_MEDIA_ENGINE_ERR error, HRESULT hr);

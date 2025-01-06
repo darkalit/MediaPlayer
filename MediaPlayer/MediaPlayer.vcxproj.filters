@@ -33,9 +33,6 @@
     <ClCompile Include="Media\MediaEngineNotifyImpl.cpp">
       <Filter>Media</Filter>
     </ClCompile>
-    <ClCompile Include="Media\MediaFoundationHelper.cpp">
-      <Filter>Media</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -55,9 +52,6 @@
       <Filter>Media</Filter>
     </ClInclude>
     <ClInclude Include="Media\MediaEngineNotifyImpl.h">
-      <Filter>Media</Filter>
-    </ClInclude>
-    <ClInclude Include="Media\MediaFoundationHelper.h">
       <Filter>Media</Filter>
     </ClInclude>
   </ItemGroup>

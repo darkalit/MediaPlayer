@@ -36,7 +36,7 @@ public:
 
         std::optional<bool> audioIsVariableBitrate;
         std::optional<bool> videoIsStereo;
-        
+
         // { PKEY_Audio_Format, L"Audio format" },
     };
 
@@ -51,35 +51,36 @@ public:
 
     PlayerService();
     ~PlayerService();
-    void Init(winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel, const winrt::Windows::Foundation::Uri& path);
+    void Init(winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel);
 
-    void SetSource(const winrt::Windows::Foundation::Uri& path, HWND hwnd = nullptr);
+    void SetSource(const winrt::Windows::Foundation::Uri& path);
     bool HasSource();
 
     State GetState();
 
+    // Start playing from the time in milliseconds or continue playing if time is not specified
     void Start(const std::optional<long long>& time = {});
     void Stop();
     void Pause();
-    void Play();
 
-    long long GetPosition();
-    long long GetRemaining();
+    void ResizeVideo(unsigned int width, unsigned int height);
+
+    long long GetPosition(); // in milliseconds
+    long long GetRemaining(); // in milliseconds
     static winrt::hstring DurationToWString(long long duration);
-
     std::optional<MediaMetadata> GetMetadata();
 
 private:
+    std::optional<MediaMetadata> GetMetadataInternal(const winrt::Windows::Foundation::Uri& path);
+
     void OnLoaded();
     void OnPlaybackEnded();
     void OnError(MF_MEDIA_ENGINE_ERR error, HRESULT hr);
-    std::optional<MediaMetadata> GetMetadataInternal();
+    
 
     long long m_Position = 0;
     State m_State = State::CLOSED;
-
-    //std::optional<MediaMetadata> m_Metadata;
-    //StateHandler m_StateHandler;
+    std::optional<MediaMetadata> m_Metadata;
 
     winrt::com_ptr<IMFDXGIDeviceManager> m_DeviceManager;
     winrt::com_ptr<IMFSourceReader> m_SourceReader;

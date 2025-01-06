@@ -24,7 +24,7 @@ STDMETHODIMP MediaEngineNotifyImpl::EventNotify(DWORD event, DWORD_PTR param1, D
         break;
 
     case MF_MEDIA_ENGINE_EVENT_ENDED:
-        m_OnPlaybackEndedCB;
+        m_OnPlaybackEndedCB();
         break;
 
     case MF_MEDIA_ENGINE_EVENT_ERROR:

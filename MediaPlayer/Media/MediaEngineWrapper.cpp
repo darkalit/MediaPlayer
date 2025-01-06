@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "MediaEngineWrapper.h"
 
+#include <iostream>
 #include "mfapi.h"
 #include "Audioclient.h"
 
 MediaEngineWrapper::MediaEngineWrapper(
-    IMFSourceReader* sourceReader,
     IMFDXGIDeviceManager* dxgiDeviceManager,
     std::function<void()> onLoadedCB,
     std::function<void()> onPlaybackEndedCB,
@@ -19,19 +19,67 @@ MediaEngineWrapper::MediaEngineWrapper(
     , m_Height(height)
 {
     m_DeviceManager.copy_from(dxgiDeviceManager);
-    winrt::check_hresult(CreateMediaEngine(sourceReader));
+    winrt::check_hresult(CreateMediaEngine());
 }
 
-void MediaEngineWrapper::Start(unsigned long long timeStamp)
+MediaEngineWrapper::~MediaEngineWrapper()
+{
+    m_MediaEngineNotifier->Shutdown();
+    m_MediaEngineExtension->Shutdown();
+    m_MediaEngine->Shutdown();
+}
+
+void MediaEngineWrapper::SetSource(IMFSourceReader* sourceReader)
+{
+    m_Source = winrt::make_self<MediaFoundationSourceWrapper>(sourceReader);
+    m_SourceReader.copy_from(sourceReader);
+
+    winrt::com_ptr<IUnknown> sourceUnknown;
+    m_Source.as(sourceUnknown);
+    m_MediaEngineExtension->SetMediaSource(sourceUnknown.get());
+
+    if (!m_HasSetSource)
+    {
+        BSTR source = SysAllocString(L"MFRendererSrc");
+        m_MediaEngine->SetSource(source);
+        SysFreeString(source);
+        m_HasSetSource = true;
+    }
+    else
+    {
+        winrt::check_hresult(m_MediaEngine->Load());
+    }
+}
+
+void MediaEngineWrapper::Start(double timeStamp)
+{
+    SetCurrentTime(timeStamp);
+    winrt::check_hresult(m_MediaEngine->Play());
+}
+
+void MediaEngineWrapper::Stop()
+{
+    SetCurrentTime(0.0);
+    Pause();
+}
+
+void MediaEngineWrapper::Pause()
+{
+    winrt::check_hresult(m_MediaEngine->Pause());
+}
+
+void MediaEngineWrapper::SetCurrentTime(double timeStamp)
 {
     PROPVARIANT startTime = {};
     startTime.vt = VT_I8;
-    startTime.hVal.QuadPart = timeStamp;
-    m_SourceReader->SetCurrentPosition(GUID_NULL, startTime);
+    startTime.hVal.QuadPart = static_cast<LONGLONG>(timeStamp) * 10000000;
+    winrt::check_hresult(m_SourceReader->SetCurrentPosition(GUID_NULL, startTime));
+    winrt::check_hresult(m_MediaEngine->SetCurrentTime(timeStamp));
+}
 
-    const double timestampInSeconds = static_cast<double>(timeStamp) / 10000000.0;
-    m_MediaEngine->SetCurrentTime(timestampInSeconds);
-    m_MediaEngine->Play();
+double MediaEngineWrapper::GetCurrentTime()
+{
+    return m_MediaEngine->GetCurrentTime();
 }
 
 void MediaEngineWrapper::WindowUpdate(unsigned int width, unsigned int height)
@@ -58,7 +106,7 @@ HANDLE MediaEngineWrapper::GetSurfaceHandle()
     return surfaceHandle;
 }
 
-HRESULT MediaEngineWrapper::CreateMediaEngine(IMFSourceReader* sourceReader)
+HRESULT MediaEngineWrapper::CreateMediaEngine()
 {
     winrt::com_ptr<IMFMediaEngineClassFactory> classFactory;
     winrt::com_ptr<IMFAttributes> attributes;
@@ -90,25 +138,6 @@ HRESULT MediaEngineWrapper::CreateMediaEngine(IMFSourceReader* sourceReader)
         IID_PPV_ARGS(classFactory.put())));
     winrt::check_hresult(classFactory->CreateInstance(0, attributes.get(), m_MediaEngine.put()));
 
-    m_Source = winrt::make_self<MediaFoundationSourceWrapper>(sourceReader);
-    m_SourceReader.copy_from(sourceReader);
-
-    winrt::com_ptr<IUnknown> sourceUnknown;
-    m_Source.as(sourceUnknown);
-    m_MediaEngineExtension->SetMediaSource(sourceUnknown.get());
-
-    if (!m_HasSetSource)
-    {
-        BSTR source = SysAllocString(L"MFRendererSrc");
-        m_MediaEngine->SetSource(source);
-        SysFreeString(source);
-        m_HasSetSource = true;
-    }
-    else
-    {
-        winrt::check_hresult(m_MediaEngine->Load());
-    }
-
     return S_OK;
 }
 
@@ -131,9 +160,6 @@ void MediaEngineWrapper::OnLoaded()
 
 void MediaEngineWrapper::OnPlaybackEnded()
 {
-    m_MediaEngineNotifier->Shutdown();
-    m_MediaEngineExtension->Shutdown();
-    m_MediaEngine->Shutdown();
     if (m_OnPlaybackEndedCB)
     {
         m_OnPlaybackEndedCB();

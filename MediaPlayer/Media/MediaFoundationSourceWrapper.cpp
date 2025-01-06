@@ -178,7 +178,7 @@ STDMETHODIMP MediaFoundationSourceWrapper::Stop(void)
     {
         if (stream->IsSelected())
         {
-            stream->QueueStoppedEvent();
+            winrt::check_hresult(stream->QueueStoppedEvent());
         }
     }
 
@@ -196,7 +196,7 @@ STDMETHODIMP MediaFoundationSourceWrapper::Pause(void)
     {
         if (stream->IsSelected())
         {
-            stream->QueuePausedEvent();
+            winrt::check_hresult(stream->QueuePausedEvent());
         }
     }
 
@@ -248,8 +248,8 @@ STDMETHODIMP MediaFoundationSourceWrapper::IsRateSupported(BOOL fThin, float flR
     MFRATE_DIRECTION direction = (flRate >= 0) ? MFRATE_FORWARD : MFRATE_REVERSE;
     float fastestRate = 0.0f;
     float slowestRate = 0.0f;
-    GetFastestRate(direction, fThin, &fastestRate);
-    GetSlowestRate(direction, fThin, &slowestRate);
+    winrt::check_hresult(GetFastestRate(direction, fThin, &fastestRate));
+    winrt::check_hresult(GetSlowestRate(direction, fThin, &slowestRate));
 
     if (fThin) return MF_E_THINNING_UNSUPPORTED;
     if (flRate < slowestRate) return MF_E_REVERSE_UNSUPPORTED;
@@ -303,7 +303,7 @@ void MediaFoundationSourceWrapper::CheckForEndOfPresentation()
     m_PresentationEnded = presentationEnded;
     if (m_PresentationEnded)
     {
-        QueueEvent(MEEndOfPresentation, GUID_NULL, S_OK, nullptr);
+        winrt::check_hresult(QueueEvent(MEEndOfPresentation, GUID_NULL, S_OK, nullptr));
     }
 }
 

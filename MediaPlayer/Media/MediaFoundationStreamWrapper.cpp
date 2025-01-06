@@ -161,6 +161,6 @@ HRESULT MediaFoundationStreamWrapper::GenerateStreamDescriptor()
 
 HRESULT MediaFoundationStreamWrapper::GetMediaType(IMFMediaType** mediaTypeOut)
 {
-    m_SourceReader->GetCurrentMediaType(m_SourceStreamId, mediaTypeOut);
+    winrt::check_hresult(m_SourceReader->GetCurrentMediaType(m_SourceStreamId, mediaTypeOut));
     return S_OK;
 }
