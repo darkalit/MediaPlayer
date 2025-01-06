@@ -171,11 +171,11 @@ namespace winrt::MediaPlayer::implementation
 
         if (m_PlayerService.GetState() == PlayerService::State::STOPPED || m_PlayerService.GetState() == PlayerService::State::PAUSED)
         {
-            Button_PlayPause().Content(box_value(L"Play"));
+            BitmapImage_PlayPause().UriSource(Uri{ L"ms-appx:///Assets/PlayIcon.png" });
         }
         else if (m_PlayerService.GetState() == PlayerService::State::PLAYING)
         {
-            Button_PlayPause().Content(box_value(L"Pause"));
+            BitmapImage_PlayPause().UriSource(Uri{ L"ms-appx:///Assets/PauseIcon.png" });
         }
     }
     void MainPage::UpdateTimeline()

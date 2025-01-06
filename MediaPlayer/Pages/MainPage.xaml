@@ -44,7 +44,15 @@
                 <TextBlock x:Name="TextBlock_AuthorAlbum" HorizontalAlignment="Left"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Column="1">
-                <Button x:Name="Button_PlayPause" Click="Button_PlayPause_Click" Content="Play" HorizontalAlignment="Center"/>
+                <Button x:Name="Button_PlayPause" Click="Button_PlayPause_Click" HorizontalAlignment="Center">
+                    <Button.Content>
+                        <Image>
+                            <Image.Source>
+                                <BitmapImage x:Name="BitmapImage_PlayPause" UriSource="ms-appx:///Assets/PlayIcon.png" DecodePixelWidth="32"/>
+                            </Image.Source>
+                        </Image>                            
+                    </Button.Content>
+                </Button>
             </StackPanel>
         </Grid>
     </Grid>
