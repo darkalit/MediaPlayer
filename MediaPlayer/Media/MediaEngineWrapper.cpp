@@ -73,6 +73,17 @@ void MediaEngineWrapper::SetPlaybackSpeed(double speed)
     winrt::check_hresult(m_MediaEngine->SetPlaybackRate(speed));
 }
 
+void MediaEngineWrapper::SetVolume(double volume)
+{
+    volume = max(0.0, min(1.0, volume));
+    winrt::check_hresult(m_MediaEngine->SetVolume(volume));
+}
+
+double MediaEngineWrapper::GetVolume()
+{
+    return m_MediaEngine->GetVolume();
+}
+
 void MediaEngineWrapper::SetCurrentTime(double timeStamp)
 {
     PROPVARIANT startTime = {};

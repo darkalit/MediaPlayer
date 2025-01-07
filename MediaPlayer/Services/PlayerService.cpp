@@ -184,6 +184,16 @@ void PlayerService::SetPlaybackSpeed(double speed)
     m_MediaEngineWrapper->SetPlaybackSpeed(speed);
 }
 
+void PlayerService::SetVolume(double volume)
+{
+    m_MediaEngineWrapper->SetVolume(volume);
+}
+
+double PlayerService::GetVolume()
+{
+    return m_MediaEngineWrapper->GetVolume();
+}
+
 void PlayerService::ResizeVideo(unsigned int width, unsigned int height)
 {
     if (!m_MediaEngineWrapper) return;

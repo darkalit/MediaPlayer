@@ -48,7 +48,7 @@
         <Grid HorizontalAlignment="Stretch" Margin="10,10,10,30" Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Vertical" HorizontalAlignment="Left" Grid.Column="0">
@@ -62,10 +62,18 @@
                             <Image.Source>
                                 <BitmapImage x:Name="BitmapImage_PlayPause" UriSource="ms-appx:///Assets/PlayIcon.png" DecodePixelWidth="32"/>
                             </Image.Source>
-                        </Image>                            
+                        </Image>
                     </Button.Content>
                 </Button>
             </StackPanel>
+            <Grid HorizontalAlignment="Right" Grid.Column="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="180"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="TextBlock_Volume" Text="50%" HorizontalAlignment="Right" VerticalAlignment="Center" Grid.Column="0"/>
+                <Slider x:Name="Slider_Volume" Minimum="0.0" Maximum="100.0" Value="50.0" PointerMoved="Slider_Volume_PointerMoved" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10,0,10,0" Grid.Column="1"/>
+            </Grid>
         </Grid>
     </Grid>
 </Page>

@@ -45,6 +45,10 @@ namespace winrt::MediaPlayer::implementation
             UIElement::PointerMovedEvent(),
             box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerMoved }),
             true);
+        //Slider_Volume().AddHandler(
+        //    UIElement::PointerMovedEvent(),
+        //    box_value(PointerEventHandler{ this, &MainPage::Slider_Volume_PointerMoved }),
+        //    true);
 
         m_PlayerService.Init(SwapChainPanel_Video());
 
@@ -145,7 +149,6 @@ namespace winrt::MediaPlayer::implementation
 
     void MainPage::Slider_Timeline_PointerPressed(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
     {
-
         m_PlayerService.Pause();
         UpdateUI();
     }
@@ -202,6 +205,13 @@ namespace winrt::MediaPlayer::implementation
         {
             m_PlayerService.SetPlaybackSpeed(2.0);
         }
+    }
+
+    void MainPage::Slider_Volume_PointerMoved(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
+    {
+        double volume = Slider_Volume().Value();
+        m_PlayerService.SetVolume(volume / 100.0);
+        TextBlock_Volume().Text(winrt::to_hstring(volume) + L"%");
     }
 
     void MainPage::UpdateUI()

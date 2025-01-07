@@ -63,6 +63,8 @@ public:
     void Stop();
     void Pause();
     void SetPlaybackSpeed(double speed);
+    void SetVolume(double volume);
+    double GetVolume();
 
     void ResizeVideo(unsigned int width, unsigned int height);
 

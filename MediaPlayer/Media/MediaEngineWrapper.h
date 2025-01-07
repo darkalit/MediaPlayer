@@ -23,6 +23,8 @@ public:
     void Stop();
     void Pause();
     void SetPlaybackSpeed(double speed);
+    void SetVolume(double volume);
+    double GetVolume();
 
     // Set time in seconds
     void SetCurrentTime(double timeStamp);
