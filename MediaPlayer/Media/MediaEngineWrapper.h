@@ -22,6 +22,7 @@ public:
     void Start(double timeStamp);
     void Stop();
     void Pause();
+    void SetPlaybackSpeed(double speed);
 
     // Set time in seconds
     void SetCurrentTime(double timeStamp);

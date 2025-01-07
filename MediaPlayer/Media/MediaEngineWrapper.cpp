@@ -68,6 +68,11 @@ void MediaEngineWrapper::Pause()
     winrt::check_hresult(m_MediaEngine->Pause());
 }
 
+void MediaEngineWrapper::SetPlaybackSpeed(double speed)
+{
+    winrt::check_hresult(m_MediaEngine->SetPlaybackRate(speed));
+}
+
 void MediaEngineWrapper::SetCurrentTime(double timeStamp)
 {
     PROPVARIANT startTime = {};

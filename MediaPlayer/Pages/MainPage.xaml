@@ -21,6 +21,18 @@
                 <MenuFlyoutItem x:Name="MenuItem_OpenFile" Icon="OpenFile" Click="MenuItem_OpenFile_Click" Text="Open file"/>
                 <MenuFlyoutItem x:Name="MenuItem_Exit" Icon="Cancel" Click="MenuItem_Exit_Click" Text="Exit"/>
             </MenuBarItem>
+            <MenuBarItem Title="Playback">
+                <MenuFlyoutSubItem Text="Speed">
+                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed025"  Text="x0.25" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
+                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed05" Text="x0.5" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
+                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed075" Text="x0.75" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
+                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed1" Text="Normal" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup" IsChecked="True"/>
+                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed125" Text="x1.25" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
+                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed15" Text="x1.5" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
+                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed175" Text="x1.75" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
+                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed2" Text="x2" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
+                </MenuFlyoutSubItem>
+            </MenuBarItem>
         </MenuBar>
         <SwapChainPanel x:Name="SwapChainPanel_Video" SizeChanged="SwapChainPanel_Video_SizeChanged" Grid.Row="1"/>
         <Grid HorizontalAlignment="Stretch" Grid.Row="2">

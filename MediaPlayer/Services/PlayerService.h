@@ -62,6 +62,7 @@ public:
     void Start(const std::optional<long long>& time = {});
     void Stop();
     void Pause();
+    void SetPlaybackSpeed(double speed);
 
     void ResizeVideo(unsigned int width, unsigned int height);
 
@@ -79,6 +80,7 @@ private:
     
 
     long long m_Position = 0;
+    double m_PlaybackSpeed = 1.0;
     State m_State = State::CLOSED;
     std::optional<MediaMetadata> m_Metadata;
 

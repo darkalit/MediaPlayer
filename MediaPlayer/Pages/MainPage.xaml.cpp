@@ -165,6 +165,45 @@ namespace winrt::MediaPlayer::implementation
         UpdateUI();
     }
 
+    void MainPage::MenuItem_PlaybackSpeed_Click(winrt::Windows::Foundation::IInspectable const& sender,
+                                                winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    {
+        Controls::MenuFlyoutItem menuItem;
+        sender.as(menuItem);
+        if (menuItem.Name() == MenuItem_Speed025().Name())
+        {
+            m_PlayerService.SetPlaybackSpeed(0.25);
+        }
+        else if (menuItem.Name() == MenuItem_Speed05().Name())
+        {
+            m_PlayerService.SetPlaybackSpeed(0.5);
+        }
+        else if (menuItem.Name() == MenuItem_Speed075().Name())
+        {
+            m_PlayerService.SetPlaybackSpeed(0.75);
+        }
+        else if (menuItem.Name() == MenuItem_Speed1().Name())
+        {
+            m_PlayerService.SetPlaybackSpeed(1.0);
+        }
+        else if (menuItem.Name() == MenuItem_Speed125().Name())
+        {
+            m_PlayerService.SetPlaybackSpeed(1.25);
+        }
+        else if (menuItem.Name() == MenuItem_Speed15().Name())
+        {
+            m_PlayerService.SetPlaybackSpeed(1.5);
+        }
+        else if (menuItem.Name() == MenuItem_Speed175().Name())
+        {
+            m_PlayerService.SetPlaybackSpeed(1.75);
+        }
+        else if (menuItem.Name() == MenuItem_Speed2().Name())
+        {
+            m_PlayerService.SetPlaybackSpeed(2.0);
+        }
+    }
+
     void MainPage::UpdateUI()
     {
         UpdateTimeline();

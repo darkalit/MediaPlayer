@@ -139,6 +139,7 @@ void PlayerService::Start(const std::optional<long long>& time)
 
         double position = static_cast<double>(m_Position) / 1000.0;
         m_MediaEngineWrapper->Start(position);
+        SetPlaybackSpeed(m_PlaybackSpeed);
     }
     catch (const winrt::hresult_error& e)
     {
@@ -175,6 +176,12 @@ void PlayerService::Pause()
     {
         std::wcerr << L"PlayerService::Pause: Failed to stop media;\n" << e.message() << '\n';
     }
+}
+
+void PlayerService::SetPlaybackSpeed(double speed)
+{
+    m_PlaybackSpeed = speed;
+    m_MediaEngineWrapper->SetPlaybackSpeed(speed);
 }
 
 void PlayerService::ResizeVideo(unsigned int width, unsigned int height)
