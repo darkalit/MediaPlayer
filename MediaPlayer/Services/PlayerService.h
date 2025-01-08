@@ -49,7 +49,10 @@ public:
 
     PlayerService();
     ~PlayerService();
-    void Init(winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel);
+    void Init();
+
+    void SetSwapChainPanel(winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel);
+    void UnsetSwapChainPanel();
 
     void AddSource(const winrt::Windows::Foundation::Uri& path, const winrt::hstring& displayName);
     void SetSource(const winrt::Windows::Foundation::Uri& path);

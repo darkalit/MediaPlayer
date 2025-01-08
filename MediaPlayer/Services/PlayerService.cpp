@@ -41,7 +41,7 @@ PlayerService::~PlayerService()
     }
 }
 
-void PlayerService::Init(winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel)
+void PlayerService::Init()
 {
     m_DeviceManager = nullptr;
     UINT resetToken = 0;
@@ -80,10 +80,6 @@ void PlayerService::Init(winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel co
 
     winrt::check_hresult(m_DeviceManager->ResetDevice(d3d11Device.get(), resetToken));
 
-    m_SwapChainPanel = panel;
-    UINT32 height = panel.ActualSize().x;
-    UINT32 width = panel.ActualSize().y;
-
     auto onLoadedCB = std::bind(&PlayerService::OnLoaded, this);
     auto onPlaybackEndedCB = std::bind(&PlayerService::OnPlaybackEnded, this);
     auto onErrorCB = std::bind(&PlayerService::OnError, this, std::placeholders::_1, std::placeholders::_2);
@@ -93,10 +89,21 @@ void PlayerService::Init(winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel co
         onLoadedCB,
         onPlaybackEndedCB,
         onErrorCB,
-        width,
-        height);
+        0,
+        0);
 
     m_State = State::READY;
+}
+
+void PlayerService::SetSwapChainPanel(winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel)
+{
+    m_SwapChainPanel = panel;
+    m_MediaEngineWrapper->WindowUpdate(panel.ActualWidth(), panel.ActualHeight());
+}
+
+void PlayerService::UnsetSwapChainPanel()
+{
+    m_SwapChainPanel = nullptr;
 }
 
 void PlayerService::AddSource(const winrt::Windows::Foundation::Uri& path, const winrt::hstring& displayName)
@@ -435,7 +442,7 @@ void PlayerService::OnLoaded()
 {
     m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
 
-    if (m_VideoSurfaceHandle)
+    if (m_VideoSurfaceHandle && m_SwapChainPanel)
     {
         m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]() {
             winrt::com_ptr<ISwapChainPanelNative2> panelNative;

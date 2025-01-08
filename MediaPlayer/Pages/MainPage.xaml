@@ -7,35 +7,17 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Loaded="OnLoad">
+    Loaded="OnLoad"
+    Unloaded="OnUnload">
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <MenuBar x:Name="MenuBar" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0">
-            <MenuBarItem Title="File">
-                <MenuFlyoutItem x:Name="MenuItem_OpenFile" Icon="OpenFile" Click="MenuItem_OpenFile_Click" Text="Open file"/>
-                <MenuFlyoutItem x:Name="MenuItem_Exit" Icon="Cancel" Click="MenuItem_Exit_Click" Text="Exit"/>
-            </MenuBarItem>
-            <MenuBarItem Title="Playback">
-                <MenuFlyoutSubItem Text="Speed">
-                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed025"  Text="x0.25" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
-                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed05" Text="x0.5" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
-                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed075" Text="x0.75" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
-                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed1" Text="Normal" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup" IsChecked="True"/>
-                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed125" Text="x1.25" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
-                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed15" Text="x1.5" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
-                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed175" Text="x1.75" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
-                    <RadioMenuFlyoutItem x:Name="MenuItem_Speed2" Text="x2" Click="MenuItem_PlaybackSpeed_Click" GroupName="PlaybackSpeedGroup"/>
-                </MenuFlyoutSubItem>
-            </MenuBarItem>
-        </MenuBar>
-        <SwapChainPanel x:Name="SwapChainPanel_Video" SizeChanged="SwapChainPanel_Video_SizeChanged" Grid.Row="1"/>
-        <Grid HorizontalAlignment="Stretch" Grid.Row="2">
+        <SwapChainPanel x:Name="SwapChainPanel_Video" SizeChanged="SwapChainPanel_Video_SizeChanged" Grid.Row="0"/>
+        <Grid HorizontalAlignment="Stretch" Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -45,7 +27,7 @@
             <Slider x:Name="Slider_Timeline" Minimum="0.0" Maximum="100.0" Value="0.0" IsEnabled="False" PointerMoved="Slider_Timeline_PointerMoved" PointerPressed="Slider_Timeline_PointerPressed" PointerReleased="Slider_Timeline_PointerReleased" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10,0,10,0" Grid.Column="1"/>
             <TextBlock x:Name="TextBlock_RemainingTime" Text="00:00:00" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Grid.Column="2"/>
         </Grid>
-        <Grid HorizontalAlignment="Stretch" Margin="10,10,10,30" Grid.Row="3">
+        <Grid HorizontalAlignment="Stretch" Margin="10,10,10,30" Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "App.xaml.g.h"
+#include "Services/PlayerService.h"
 
 namespace winrt::MediaPlayer::implementation
 {
@@ -9,12 +10,12 @@ namespace winrt::MediaPlayer::implementation
         App();
 
         void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
-        void OnNavigationFailed(const IInspectable, const Microsoft::UI::Xaml::Navigation::INavigationFailedEventArgs e);
 
+        static std::shared_ptr<PlayerService> GetPlayerService();
         static HWND GetMainWindow();
 
     private:
-        Microsoft::UI::Xaml::Controls::Frame CreateRootFrame();
+        static std::shared_ptr<PlayerService> m_PlayerService;
 
         static winrt::Microsoft::UI::Xaml::Window s_Window;
     };
