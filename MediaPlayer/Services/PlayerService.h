@@ -36,8 +36,6 @@ public:
 
         std::optional<bool> audioIsVariableBitrate;
         std::optional<bool> videoIsStereo;
-
-        // { PKEY_Audio_Format, L"Audio format" },
     };
 
     enum class State
@@ -53,10 +51,14 @@ public:
     ~PlayerService();
     void Init(winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel);
 
+    void AddSource(const winrt::Windows::Foundation::Uri& path, const winrt::hstring& displayName);
     void SetSource(const winrt::Windows::Foundation::Uri& path);
     bool HasSource();
 
     State GetState();
+
+    void Next();
+    void Prev();
 
     // Start playing from the time in milliseconds or continue playing if time is not specified
     void Start(const std::optional<long long>& time = {});
@@ -83,8 +85,9 @@ private:
 
     long long m_Position = 0;
     double m_PlaybackSpeed = 1.0;
-    State m_State = State::CLOSED;
-    std::optional<MediaMetadata> m_Metadata;
+    State m_State = State::CLOSED;    
+    std::map<winrt::Windows::Foundation::Uri, std::optional<MediaMetadata>> m_MediaPlaylist = {};
+    std::map<winrt::Windows::Foundation::Uri, std::optional<MediaMetadata>>::iterator m_PlayerIterator = m_MediaPlaylist.end();
 
     winrt::com_ptr<IMFDXGIDeviceManager> m_DeviceManager;
     winrt::com_ptr<IMFSourceReader> m_SourceReader;

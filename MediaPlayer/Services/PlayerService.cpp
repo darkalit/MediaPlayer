@@ -99,14 +99,42 @@ void PlayerService::Init(winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel co
     m_State = State::READY;
 }
 
+void PlayerService::AddSource(const winrt::Windows::Foundation::Uri& path, const winrt::hstring& displayName)
+{
+    auto res = m_MediaPlaylist.emplace(path, GetMetadataInternal(path));
+    if (!res.second)
+    {
+        return;
+    }
+
+    auto& source = res.first;
+
+    if (source->second && !source->second->title)
+    {
+        source->second->title = displayName;
+    }
+
+    if (m_PlayerIterator == m_MediaPlaylist.end())
+    {
+        m_PlayerIterator = source;
+    }
+
+    if (!HasSource())
+    {
+        SetSource(path);
+    }
+}
+
 void PlayerService::SetSource(const winrt::Windows::Foundation::Uri& path)
 {
     winrt::check_hresult(MFCreateSourceReaderFromURL(path.ToString().c_str(), nullptr, m_SourceReader.put()));
     m_MediaEngineWrapper->SetSource(m_SourceReader.get());
-    auto size = m_SwapChainPanel.ActualSize();
-    m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
+    m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]()
+    {
+        auto size = m_SwapChainPanel.ActualSize();
+        m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
+    });
     m_Position = 0;
-    m_Metadata = GetMetadataInternal(path);
     m_State = State::STOPPED;
 }
 
@@ -120,6 +148,34 @@ PlayerService::State PlayerService::GetState()
     return m_State;
 }
 
+void PlayerService::Next()
+{
+    if (!HasSource()) return;
+
+    Stop();
+    ++m_PlayerIterator;
+    if (m_PlayerIterator == m_MediaPlaylist.end())
+    {
+        m_PlayerIterator = m_MediaPlaylist.begin();
+    }
+    SetSource(m_PlayerIterator->first);
+    Start();
+}
+
+void PlayerService::Prev()
+{
+    if (!HasSource()) return;
+
+    Stop();
+    if (m_PlayerIterator == m_MediaPlaylist.begin())
+    {
+        m_PlayerIterator = m_MediaPlaylist.end();
+    }
+    --m_PlayerIterator;
+    SetSource(m_PlayerIterator->first);
+    Start();
+}
+
 void PlayerService::Start(const std::optional<long long>& time)
 {
     if (!m_MediaEngineWrapper) return;
@@ -131,7 +187,7 @@ void PlayerService::Start(const std::optional<long long>& time)
             m_Position = *time;
         }
 
-        if (m_Metadata && m_Position >= m_Metadata->duration)
+        if (m_PlayerIterator->second && m_Position >= m_PlayerIterator->second->duration)
         {
             Stop();
             return;
@@ -229,9 +285,9 @@ winrt::hstring PlayerService::DurationToWString(long long duration)
 
 std::optional<PlayerService::MediaMetadata> PlayerService::GetMetadata()
 {
-    if (HasSource() && m_Metadata)
+    if (HasSource() && m_PlayerIterator->second)
     {
-        return m_Metadata;
+        return m_PlayerIterator->second;
     }
 
     return {};
@@ -381,7 +437,7 @@ void PlayerService::OnLoaded()
 
     if (m_VideoSurfaceHandle)
     {
-        m_SwapChainPanel.DispatcherQueue().TryEnqueue([=]() {
+        m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]() {
             winrt::com_ptr<ISwapChainPanelNative2> panelNative;
             m_SwapChainPanel.as(panelNative);
             winrt::check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
@@ -391,7 +447,7 @@ void PlayerService::OnLoaded()
 
 void PlayerService::OnPlaybackEnded()
 {
-    Stop();
+    Next();
 }
 
 void PlayerService::OnError(MF_MEDIA_ENGINE_ERR error, HRESULT hr)

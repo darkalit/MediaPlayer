@@ -55,12 +55,30 @@
                 <TextBlock x:Name="TextBlock_Title" HorizontalAlignment="Left"/>
                 <TextBlock x:Name="TextBlock_AuthorAlbum" HorizontalAlignment="Left"/>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Column="1">
-                <Button x:Name="Button_PlayPause" Click="Button_PlayPause_Click" HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="10"  HorizontalAlignment="Center" Grid.Column="1">
+                <Button x:Name="Button_Prev" Click="Button_Prev_Click">
+                    <Button.Content>
+                        <Image>
+                            <Image.Source>
+                                <BitmapImage x:Name="BitmapImage_Prev" UriSource="ms-appx:///Assets/LeftSkipIcon.png" DecodePixelWidth="32"/>
+                            </Image.Source>
+                        </Image>
+                    </Button.Content>
+                </Button>
+                <Button x:Name="Button_PlayPause" Click="Button_PlayPause_Click">
                     <Button.Content>
                         <Image>
                             <Image.Source>
                                 <BitmapImage x:Name="BitmapImage_PlayPause" UriSource="ms-appx:///Assets/PlayIcon.png" DecodePixelWidth="32"/>
+                            </Image.Source>
+                        </Image>
+                    </Button.Content>
+                </Button>
+                <Button x:Name="Button_Next" Click="Button_Next_Click">
+                    <Button.Content>
+                        <Image>
+                            <Image.Source>
+                                <BitmapImage x:Name="BitmapImage_Next" UriSource="ms-appx:///Assets/RightSkipIcon.png" DecodePixelWidth="32"/>
                             </Image.Source>
                         </Image>
                     </Button.Content>

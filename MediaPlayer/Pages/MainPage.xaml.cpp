@@ -76,17 +76,12 @@ namespace winrt::MediaPlayer::implementation
 
     fire_and_forget MainPage::MenuItem_OpenFile_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
     {
-        if (m_PlayerService.HasSource())
-        {
-            m_PlayerService.Stop();
-        }
-
         auto file = co_await OpenFilePickerAsync();
         if (!file) {
             co_return;
         }
 
-        m_PlayerService.SetSource(Uri(file.Path()));
+        m_PlayerService.AddSource(Uri(file.Path()), file.DisplayName());
         auto metadata = m_PlayerService.GetMetadata();
 
         std::wstring title = L"";
@@ -95,10 +90,6 @@ namespace winrt::MediaPlayer::implementation
         if (metadata && metadata->title)
         {
             title = *metadata->title;
-        }
-        else
-        {
-            title = file.Name();
         }
 
         if (metadata && metadata->author)
@@ -214,6 +205,18 @@ namespace winrt::MediaPlayer::implementation
         TextBlock_Volume().Text(winrt::to_hstring(volume) + L"%");
     }
 
+    void MainPage::Button_Prev_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    {
+        m_PlayerService.Prev();
+    }
+
+
+    void MainPage::Button_Next_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    {
+        m_PlayerService.Next();
+    }
+
+
     void MainPage::UpdateUI()
     {
         UpdateTimeline();
@@ -237,11 +240,6 @@ namespace winrt::MediaPlayer::implementation
         {
             double progress = static_cast<double>(m_PlayerService.GetPosition()) / 1000.0;
             Slider_Timeline().Value(progress);
-
-            if (m_PlayerService.GetRemaining() <= 0)
-            {
-                m_PlayerService.Stop();
-            }
         }
         TextBlock_Position().Text(m_PlayerService.DurationToWString(Slider_Timeline().Value() * 1000.0));
         TextBlock_RemainingTime().Text(m_PlayerService.DurationToWString((Slider_Timeline().Maximum() - Slider_Timeline().Value()) * 1000.0));

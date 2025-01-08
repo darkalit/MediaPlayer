@@ -79,6 +79,8 @@
     </Image>
     <Image Include="Assets\PlayIcon.png" />
     <Image Include="Assets\PauseIcon.png" />
+    <Image Include="Assets\RightSkipIcon.png" />
+    <Image Include="Assets\LeftSkipIcon.png" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Assets">
