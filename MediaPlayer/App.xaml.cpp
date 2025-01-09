@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "App.xaml.h"
-#include "MainWindow.xaml.h"
 
 #include "microsoft.ui.xaml.window.h"
 
@@ -10,7 +9,7 @@ using namespace Microsoft::UI::Xaml::Controls;
 
 namespace winrt::MediaPlayer::implementation
 {
-    winrt::Microsoft::UI::Xaml::Window App::s_Window = nullptr;
+    Window App::s_Window = nullptr;
     std::shared_ptr<PlayerService> App::m_PlayerService = nullptr;
 
     App::App()
@@ -45,7 +44,7 @@ namespace winrt::MediaPlayer::implementation
 
     HWND App::GetMainWindow()
     {
-        auto windowNative = App::s_Window.try_as<::IWindowNative>();
+        auto windowNative = s_Window.try_as<IWindowNative>();
         HWND hwnd = 0;
         windowNative->get_WindowHandle(&hwnd);
         return hwnd;

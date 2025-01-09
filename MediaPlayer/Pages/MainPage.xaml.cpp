@@ -26,7 +26,7 @@ namespace winrt::MediaPlayer::implementation
         m_TimelineDispatcherTimer.Start();
     }
 
-    void MainPage::OnLoad(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    void MainPage::OnLoad(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
         Slider_Timeline().AddHandler(
             UIElement::PointerPressedEvent(),
@@ -44,38 +44,38 @@ namespace winrt::MediaPlayer::implementation
         m_PlayerService->SetSwapChainPanel(SwapChainPanel_Video());
     }
 
-    void MainPage::OnUnload(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    void MainPage::OnUnload(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
         m_PlayerService->UnsetSwapChainPanel();
     }
 
-    void MainPage::Slider_Timeline_PointerMoved(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
+    void MainPage::Slider_Timeline_PointerMoved(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
     {
         UpdateUI();
     }
 
-    void MainPage::SwapChainPanel_Video_SizeChanged(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::SizeChangedEventArgs const& e)
+    void MainPage::SwapChainPanel_Video_SizeChanged(Windows::Foundation::IInspectable const&, SizeChangedEventArgs const&)
     {
         auto size = SwapChainPanel_Video().ActualSize();
         m_PlayerService->ResizeVideo(size.x, size.y);
     }
 
-    void MainPage::Slider_Timeline_PointerReleased(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
+    void MainPage::Slider_Timeline_PointerReleased(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
     {
-        long long time = m_PlayerService->GetMetadata()->duration * (Slider_Timeline().Value() / Slider_Timeline().Maximum());
+        long long time = m_PlayerService->GetMetadata().Duration * (Slider_Timeline().Value() / Slider_Timeline().Maximum());
         m_PlayerService->Start(time);
         UpdateUI();
     }
 
 
-    void MainPage::Slider_Timeline_PointerPressed(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
+    void MainPage::Slider_Timeline_PointerPressed(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
     {
         m_PlayerService->Pause();
         UpdateUI();
     }
 
 
-    void MainPage::Button_PlayPause_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    void MainPage::Button_PlayPause_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
         if (m_PlayerService->GetState() == PlayerService::State::STOPPED || m_PlayerService->GetState() == PlayerService::State::PAUSED)
         {
@@ -89,22 +89,27 @@ namespace winrt::MediaPlayer::implementation
         UpdateUI();
     }
 
-    void MainPage::Slider_Volume_PointerMoved(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e)
+    void MainPage::Slider_Volume_PointerMoved(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
     {
         double volume = Slider_Volume().Value();
         m_PlayerService->SetVolume(volume / 100.0);
-        TextBlock_Volume().Text(winrt::to_hstring(volume) + L"%");
+        TextBlock_Volume().Text(to_hstring(volume) + L"%");
     }
 
-    void MainPage::Button_Prev_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    void MainPage::Button_Prev_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
         m_PlayerService->Prev();
     }
 
 
-    void MainPage::Button_Next_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    void MainPage::Button_Next_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
         m_PlayerService->Next();
+    }
+
+    void MainPage::Button_Playlist_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
+    {
+        App::Navigate<PlaylistPage>();
     }
 
 
@@ -115,27 +120,21 @@ namespace winrt::MediaPlayer::implementation
         std::wstring title = L"";
         std::wstring authorAlbum = L"";
 
-        if (metadata && metadata->title)
-        {
-            title = *metadata->title;
-        }
+        title = metadata.Title;
+        authorAlbum += metadata.Author;
+        authorAlbum += (!metadata.Author.empty() ? L" - " : L"") + metadata.AlbumTitle;
 
-        if (metadata && metadata->author)
+        if (title.empty())
         {
-            authorAlbum += *metadata->author;
-        }
-
-        if (metadata && metadata->albumTitle)
-        {
-            authorAlbum += (metadata->author ? L" - " : L"") + *metadata->albumTitle;
+            title = L"Playlist";
         }
 
         TextBlock_Title().Text(title);
         TextBlock_AuthorAlbum().Text(authorAlbum);
 
-        if (metadata)
+        if (metadata.Duration)
         {
-            Slider_Timeline().Maximum(metadata->duration / 1000.0);
+            Slider_Timeline().Maximum(metadata.Duration / 1000.0);
         }
 
         UpdateTimeline();

@@ -1,0 +1,7 @@
+namespace MediaPlayer
+{
+    runtimeclass DurationToStringConverter : [default] Microsoft.UI.Xaml.Data.IValueConverter
+    {
+        DurationToStringConverter();
+    }
+}

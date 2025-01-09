@@ -1,8 +1,7 @@
 #pragma once
 
 #include "MainWindow.g.h"
-
-class PlayerService;
+#include "Services/PlayerService.h"
 
 namespace winrt::MediaPlayer::implementation
 {
@@ -10,11 +9,11 @@ namespace winrt::MediaPlayer::implementation
     {
         MainWindow();
 
-        winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> OpenFilePickerAsync();
+        Windows::Foundation::IAsyncOperation<Windows::Storage::StorageFile> OpenFilePickerAsync();
 
-        fire_and_forget MenuItem_OpenFile_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e);
-        void MenuItem_Exit_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e);
-        void MenuItem_PlaybackSpeed_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e);
+        fire_and_forget MenuItem_OpenFile_Click(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
+        void MenuItem_Exit_Click(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
+        void MenuItem_PlaybackSpeed_Click(Windows::Foundation::IInspectable const& sender, Microsoft::UI::Xaml::RoutedEventArgs const&);
 
         template <typename T>
         void Navigate();

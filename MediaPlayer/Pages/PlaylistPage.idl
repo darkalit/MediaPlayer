@@ -1,0 +1,12 @@
+import "Services/MediaMetadata.idl";
+
+namespace MediaPlayer
+{
+    [default_interface]
+    runtimeclass PlaylistPage : Microsoft.UI.Xaml.Controls.Page
+    {
+        PlaylistPage();
+
+        IVector<MediaMetadata> Playlist{ get; };
+    }
+}

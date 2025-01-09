@@ -44,24 +44,23 @@ namespace winrt::MediaPlayer::implementation
         co_return co_await filePicker.PickSingleFileAsync();
     }
 
-    fire_and_forget MainWindow::MenuItem_OpenFile_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    fire_and_forget MainWindow::MenuItem_OpenFile_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
         auto file = co_await OpenFilePickerAsync();
         if (!file) {
             co_return;
         }
 
-        m_PlayerService->AddSource(Uri(file.Path()), file.DisplayName());
+        m_PlayerService->AddSource(file.Path(), file.DisplayName());
     }
 
-    void MainWindow::MenuItem_Exit_Click(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    void MainWindow::MenuItem_Exit_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
         m_PlayerService->Stop();
         Application::Current().Exit();
     }
 
-    void MainWindow::MenuItem_PlaybackSpeed_Click(winrt::Windows::Foundation::IInspectable const& sender,
-        winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    void MainWindow::MenuItem_PlaybackSpeed_Click(Windows::Foundation::IInspectable const& sender, RoutedEventArgs const&)
     {
         Controls::MenuFlyoutItem menuItem;
         sender.as(menuItem);

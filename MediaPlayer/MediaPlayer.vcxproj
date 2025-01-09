@@ -140,6 +140,10 @@
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClInclude>
+    <ClInclude Include="Pages\PlaylistPage.xaml.h">
+      <DependentUpon>Pages\PlaylistPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="pch.h" />
     <ClInclude Include="App.xaml.h">
       <DependentUpon>App.xaml</DependentUpon>
@@ -147,12 +151,16 @@
     <ClInclude Include="MainWindow.xaml.h">
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </ClInclude>
+    <ClInclude Include="Services\DurationToStringConverter.h" />
     <ClInclude Include="Services\PlayerService.h" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml" />
     <Page Include="MainWindow.xaml" />
     <Page Include="Pages\MainPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Pages\PlaylistPage.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
@@ -166,6 +174,10 @@
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClCompile>
+    <ClCompile Include="Pages\PlaylistPage.xaml.cpp">
+      <DependentUpon>Pages\PlaylistPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -176,6 +188,7 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </ClCompile>
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
+    <ClCompile Include="Services\DurationToStringConverter.cpp" />
     <ClCompile Include="Services\PlayerService.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -187,6 +200,12 @@
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Midl>
+    <Midl Include="Pages\PlaylistPage.idl">
+      <DependentUpon>Pages\PlaylistPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="Services\DurationToStringConverter.idl" />
+    <Midl Include="Services\MediaMetadata.idl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LeftSkipIcon.png" />

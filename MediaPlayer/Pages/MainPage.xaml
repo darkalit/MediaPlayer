@@ -33,10 +33,12 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Vertical" HorizontalAlignment="Left" Grid.Column="0">
-                <TextBlock x:Name="TextBlock_Title" HorizontalAlignment="Left"/>
-                <TextBlock x:Name="TextBlock_AuthorAlbum" HorizontalAlignment="Left"/>
-            </StackPanel>
+            <Button Background="Transparent" BorderBrush="Transparent" Click="Button_Playlist_Click" Grid.Column="0" HorizontalAlignment="Left" MinWidth="200">
+                <StackPanel Orientation="Vertical">
+                    <TextBlock x:Name="TextBlock_Title" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="TextBlock_AuthorAlbum" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Button>            
             <StackPanel Orientation="Horizontal" Spacing="10"  HorizontalAlignment="Center" Grid.Column="1">
                 <Button x:Name="Button_Prev" Click="Button_Prev_Click">
                     <Button.Content>

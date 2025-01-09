@@ -8,9 +8,18 @@
     <Page Include="Pages\MainPage.xaml">
       <Filter>Pages</Filter>
     </Page>
+    <Page Include="Pages\PlaylistPage.xaml">
+      <Filter>Pages</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />
+    <Midl Include="Services\MediaMetadata.idl">
+      <Filter>Services</Filter>
+    </Midl>
+    <Midl Include="Services\DurationToStringConverter.idl">
+      <Filter>Services</Filter>
+    </Midl>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -33,6 +42,7 @@
     <ClCompile Include="Media\MediaEngineNotifyImpl.cpp">
       <Filter>Media</Filter>
     </ClCompile>
+    <ClCompile Include="Services\DurationToStringConverter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -54,6 +64,7 @@
     <ClInclude Include="Media\MediaEngineNotifyImpl.h">
       <Filter>Media</Filter>
     </ClInclude>
+    <ClInclude Include="Services\DurationToStringConverter.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -77,10 +88,18 @@
     <Image Include="Assets\LockScreenLogo.scale-200.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\PlayIcon.png" />
-    <Image Include="Assets\PauseIcon.png" />
-    <Image Include="Assets\RightSkipIcon.png" />
-    <Image Include="Assets\LeftSkipIcon.png" />
+    <Image Include="Assets\RightSkipIcon.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\PlayIcon.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\PauseIcon.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\LeftSkipIcon.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Assets">

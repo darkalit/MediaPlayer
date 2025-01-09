@@ -1,6 +1,8 @@
 #pragma once
 
 #include "App.xaml.g.h"
+#include "Services/DurationToStringConverter.h"
+#include "MainWindow.xaml.h"
 #include "Services/PlayerService.h"
 
 namespace winrt::MediaPlayer::implementation
@@ -14,9 +16,29 @@ namespace winrt::MediaPlayer::implementation
         static std::shared_ptr<PlayerService> GetPlayerService();
         static HWND GetMainWindow();
 
+        template <typename T>
+        static void Navigate();
+
+        template <typename T>
+        static void Navigate(IInspectable const& parameter);
+
     private:
         static std::shared_ptr<PlayerService> m_PlayerService;
 
-        static winrt::Microsoft::UI::Xaml::Window s_Window;
+        static Microsoft::UI::Xaml::Window s_Window;
     };
+
+    template <typename T>
+    void App::Navigate()
+    {
+        auto mainWindow = s_Window.try_as<MainWindow>();
+        mainWindow->Navigate<T>();
+    }
+
+    template <typename T>
+    void App::Navigate(IInspectable const& parameter)
+    {
+        auto mainWindow = s_Window.try_as<MainWindow>();
+        mainWindow->Navigate<T>(parameter);
+    }
 }
