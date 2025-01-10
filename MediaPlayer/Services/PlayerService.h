@@ -40,6 +40,9 @@ namespace winrt::MediaPlayer
 
         void Next();
         void Prev();
+        void StartByIndex(int index);
+        void Clear();
+        int GetCurrentMediaIndex();
 
         // Start playing from the time in milliseconds or continue playing if time is not specified
         void Start(const std::optional<long long>& time = {});

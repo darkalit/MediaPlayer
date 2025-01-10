@@ -76,7 +76,6 @@ namespace winrt::MediaPlayer::implementation
         }
 
         m_PlayerService->AddSource(file.Path(), file.DisplayName());
-        UpdateMediaName();
     }
 
     void MainWindow::MenuItem_Exit_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
@@ -218,6 +217,8 @@ namespace winrt::MediaPlayer::implementation
 
     void MainWindow::UpdateUI()
     {
+        UpdateMediaName();
+
         UpdateTimeline();
 
         if (m_PlayerService->GetState() == PlayerService::State::STOPPED || m_PlayerService->GetState() == PlayerService::State::PAUSED)

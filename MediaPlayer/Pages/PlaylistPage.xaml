@@ -6,18 +6,76 @@
     xmlns:local="using:MediaPlayer"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    Loaded="OnLoad">
 
-    <ListView x:Name="ListView_Playlist"
-              ItemsSource="{x:Bind Playlist}">
-        <ListView.ItemTemplate>
-            <DataTemplate x:DataType="local:MediaMetadata">
-                <StackPanel Orientation="Horizontal" Spacing="20">
-                    <TextBlock Text="{x:Bind Title}"/>
-                    <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationToStringConverter}}"/>
-                    <TextBlock Text="{x:Bind AlbumTitle}"/>
-                </StackPanel>
-            </DataTemplate>
-        </ListView.ItemTemplate>
-    </ListView>
+    <SplitView DisplayMode="Inline" IsPaneOpen="True" OpenPaneLength="{Binding Value, ElementName=Slider_PaneLength, Mode=OneWay}">
+        <SplitView.Pane>
+            <Grid Background="{ThemeResource TextOnAccentFillColorSecondaryBrush}">
+                <Slider
+                    x:Name="Slider_PaneLength"
+                    VerticalAlignment="Stretch"
+                    Value="250" 
+                    Minimum="6"
+                    Maximum="800"
+                    Opacity="0"
+                    IsThumbToolTipEnabled="False"
+                    MinWidth="800"/>
+                <Grid
+                    Margin="0,0,6,0"
+                    Padding="10"
+                    Background="{ThemeResource TextOnAccentFillColorPrimaryBrush}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Button
+                        BorderBrush="Transparent"
+                        Background="Transparent"
+                        Content="My Playlist"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        VerticalAlignment="Top"
+                        Grid.Row="0"/>
+                    <SwapChainPanel x:Name="SwapChainPanel_Video" SizeChanged="SwapChainPanel_Video_SizeChanged" Grid.Row="1"/>
+                </Grid>
+            </Grid>
+        </SplitView.Pane>
+        <StackPanel Orientation="Vertical" Padding="10">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <Button x:Name="Button_ClearPlaylist" Click="Button_ClearPlaylist_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <FontIcon Glyph="&#xE74D;"/>
+                        <TextBlock Text="Clear" HorizontalTextAlignment="Left"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+            <ItemsView
+                x:Name="ItemsView_Playlist"
+                SelectionMode="Single"
+                IsItemInvokedEnabled="True"
+                ItemInvoked="ItemsView_Playlist_ItemInvoked"
+                ItemsSource="{x:Bind Playlist}">
+                <ItemsView.Layout>
+                    <StackLayout Spacing="5"/>
+                </ItemsView.Layout>
+                <ItemsView.ItemTemplate>
+                    <DataTemplate x:DataType="local:MediaMetadata">
+                        <ItemContainer AutomationProperties.Name="{x:Bind Title}">
+                            <Grid Padding="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Bind Title}" Grid.Column="0"/>
+                                <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationToStringConverter}}" Grid.Column="1"/>
+                                <TextBlock Text="{x:Bind AlbumTitle}" Grid.Column="2"/>
+                            </Grid>
+                        </ItemContainer>
+                    </DataTemplate>
+                </ItemsView.ItemTemplate>
+            </ItemsView>
+        </StackPanel>
+    </SplitView>
 </Page>

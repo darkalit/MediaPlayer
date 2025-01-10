@@ -156,7 +156,7 @@ namespace winrt::MediaPlayer
 
     bool PlayerService::HasSource()
     {
-        return !!m_SourceReader;
+        return !!m_SourceReader && m_MediaEngineWrapper && m_MediaPlaylist.Size() > 0 && m_CurrentMedia > -1;
     }
 
     PlayerService::State PlayerService::GetState()
@@ -189,9 +189,32 @@ namespace winrt::MediaPlayer
         Start();
     }
 
+    void PlayerService::StartByIndex(int index)
+    {
+        if (!HasSource()) return;
+
+        m_CurrentMedia = max(0, min(m_MediaPlaylist.Size() - 1, index));
+        SetSource(m_MediaPlaylist.GetAt(m_CurrentMedia).Path);
+        Start();
+    }
+
+    void PlayerService::Clear()
+    {
+        if (!HasSource()) return;
+
+        Stop();
+        m_MediaPlaylist.Clear();
+        m_CurrentMedia = -1;
+    }
+
+    int PlayerService::GetCurrentMediaIndex()
+    {
+        return m_CurrentMedia;
+    }
+
     void PlayerService::Start(const std::optional<long long>& time)
     {
-        if (!m_MediaEngineWrapper) return;
+        if (!HasSource()) return;
 
         try
         {

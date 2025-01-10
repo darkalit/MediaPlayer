@@ -52,7 +52,7 @@
             </Grid.ColumnDefinitions>
             <Button Background="Transparent" BorderBrush="Transparent" Click="Button_Playlist_Click" Grid.Column="0" HorizontalAlignment="Left" MinWidth="200">
                 <StackPanel Orientation="Vertical">
-                    <TextBlock x:Name="TextBlock_Title" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="TextBlock_Title" Text="Open Playlists" HorizontalAlignment="Left"/>
                     <TextBlock x:Name="TextBlock_AuthorAlbum" HorizontalAlignment="Left"/>
                 </StackPanel>
             </Button>

@@ -15,12 +15,34 @@ namespace winrt::MediaPlayer::implementation
 {
     PlaylistPage::PlaylistPage()
         :
-        m_Playlist(App::GetPlayerService()->GetPlaylist())
-    {        
+        m_PlayerService(App::GetPlayerService())
+    {
+    }
+
+    void PlaylistPage::OnLoad(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
+    {
+        m_PlayerService->SetSwapChainPanel(SwapChainPanel_Video());
+    }
+
+    void PlaylistPage::SwapChainPanel_Video_SizeChanged(Windows::Foundation::IInspectable const&, SizeChangedEventArgs const&)
+    {
+        auto size = SwapChainPanel_Video().ActualSize();
+        m_PlayerService->ResizeVideo(size.x, size.y);
+    }
+
+    void PlaylistPage::ItemsView_Playlist_ItemInvoked(Controls::ItemsView const& sender, Controls::ItemsViewItemInvokedEventArgs const&)
+    {
+        auto index = sender.CurrentItemIndex();
+        m_PlayerService->StartByIndex(index);
+    }
+
+    void PlaylistPage::Button_ClearPlaylist_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
+    {
+        m_PlayerService->Clear();
     }
 
     IVector<MediaMetadata> PlaylistPage::Playlist()
     {
-        return m_Playlist;
+        return m_PlayerService->GetPlaylist();
     }
 }
