@@ -102,16 +102,19 @@ namespace winrt::MediaPlayer
     void PlayerService::SetSwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel)
     {
         m_SwapChainPanel = panel;
-        m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]()
-        {
-            auto size = m_SwapChainPanel.ActualSize();
-            m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
-        });
-    }
+        m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
 
-    void PlayerService::UnsetSwapChainPanel()
-    {
-        m_SwapChainPanel = nullptr;
+        if (m_VideoSurfaceHandle && m_SwapChainPanel)
+        {
+            m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]()
+            {
+                com_ptr<ISwapChainPanelNative2> panelNative;
+                m_SwapChainPanel.as(panelNative);
+                check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
+                auto size = m_SwapChainPanel.ActualSize();
+                m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
+            });
+        }
     }
 
     void PlayerService::AddSource(const hstring& path, const hstring& displayName)

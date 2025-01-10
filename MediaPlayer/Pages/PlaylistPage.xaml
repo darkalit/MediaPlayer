@@ -14,7 +14,8 @@
             <DataTemplate x:DataType="local:MediaMetadata">
                 <StackPanel Orientation="Horizontal" Spacing="20">
                     <TextBlock Text="{x:Bind Title}"/>
-                    <TextBlock Text="{x:Bind Duration, Mode=OneWay, Converter={StaticResource DurationToStringConverter}}"/>
+                    <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationToStringConverter}}"/>
+                    <TextBlock Text="{x:Bind AlbumTitle}"/>
                 </StackPanel>
             </DataTemplate>
         </ListView.ItemTemplate>

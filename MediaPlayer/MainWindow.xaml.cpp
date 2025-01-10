@@ -14,16 +14,40 @@ using namespace winrt;
 using namespace Windows::Storage;
 using namespace Windows::Storage::Pickers;
 using namespace Windows::Foundation;
-using namespace Microsoft::UI::Xaml;
+using namespace Microsoft::UI;
+using namespace Xaml;
+using namespace Xaml::Input;
 
 namespace winrt::MediaPlayer::implementation
 {
     MainWindow::MainWindow()
-        :
-        m_PlayerService(App::GetPlayerService())
+        : m_TimelineDispatcherTimer(Dispatching::DispatcherQueue::GetForCurrentThread().CreateTimer())
+        , m_PlayerService(App::GetPlayerService())
     {
         this->Title(L"MediaPlayer");
+
+        m_TimelineDispatcherTimer.Interval(std::chrono::milliseconds(100));
+        m_TimelineDispatcherTimer.Tick([this](auto const&, auto const&) {
+            this->UpdateUI();
+            });
+        m_TimelineDispatcherTimer.Start();
     }
+
+    void MainWindow::OnLoad(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
+    {
+        Slider_Timeline().AddHandler(
+            UIElement::PointerPressedEvent(),
+            box_value(PointerEventHandler{ this, &MainWindow::Slider_Timeline_PointerPressed }),
+            true);
+        Slider_Timeline().AddHandler(
+            UIElement::PointerReleasedEvent(),
+            box_value(PointerEventHandler{ this, &MainWindow::Slider_Timeline_PointerReleased }),
+            true);
+        Slider_Timeline().AddHandler(
+            UIElement::PointerMovedEvent(),
+            box_value(PointerEventHandler{ this, &MainWindow::Slider_Timeline_PointerMoved }),
+            true);
+    }    
 
     IAsyncOperation<StorageFile> MainWindow::OpenFilePickerAsync()
     {
@@ -52,6 +76,7 @@ namespace winrt::MediaPlayer::implementation
         }
 
         m_PlayerService->AddSource(file.Path(), file.DisplayName());
+        UpdateMediaName();
     }
 
     void MainWindow::MenuItem_Exit_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
@@ -96,5 +121,127 @@ namespace winrt::MediaPlayer::implementation
         {
             m_PlayerService->SetPlaybackSpeed(2.0);
         }
+    }
+
+    void MainWindow::Slider_Timeline_PointerReleased(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
+    {
+        long long time = m_PlayerService->GetMetadata().Duration * (Slider_Timeline().Value() / Slider_Timeline().Maximum());
+        m_PlayerService->Start(time);
+        UpdateUI();
+    }
+
+
+    void MainWindow::Slider_Timeline_PointerPressed(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
+    {
+        m_PlayerService->Pause();
+        UpdateUI();
+    }
+
+
+    void MainWindow::Button_PlayPause_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
+    {
+        if (m_PlayerService->GetState() == PlayerService::State::STOPPED || m_PlayerService->GetState() == PlayerService::State::PAUSED)
+        {
+            m_PlayerService->Start();
+        }
+        else if (m_PlayerService->GetState() == PlayerService::State::PLAYING)
+        {
+            m_PlayerService->Pause();
+        }
+
+        UpdateUI();
+    }
+
+    void MainWindow::Slider_Volume_PointerMoved(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
+    {
+        double volume = Slider_Volume().Value();
+        m_PlayerService->SetVolume(volume / 100.0);
+        TextBlock_Volume().Text(to_hstring(volume) + L"%");
+    }
+
+    void MainWindow::Button_Prev_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
+    {
+        m_PlayerService->Prev();
+        UpdateMediaName();
+    }
+
+
+    void MainWindow::Button_Next_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
+    {
+        m_PlayerService->Next();
+        UpdateMediaName();
+    }
+
+    void MainWindow::Button_Playlist_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
+    {
+        auto pageType = PageFrame().CurrentSourcePageType().Name;
+        if (pageType == xaml_typename<PlaylistPage>().Name)
+        {
+            App::Navigate<MainPage>();
+        }
+
+        if (pageType == xaml_typename<MainPage>().Name)
+        {
+            App::Navigate<PlaylistPage>();
+        }
+    }
+
+    void MainWindow::Slider_Timeline_PointerMoved(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
+    {
+        UpdateUI();
+    }
+
+    void MainWindow::UpdateMediaName()
+    {
+        auto metadata = m_PlayerService->GetMetadata();
+
+        std::wstring title = L"";
+        std::wstring authorAlbum = L"";
+
+        title = metadata.Title;
+        authorAlbum += metadata.Author;
+        authorAlbum += (!metadata.Author.empty() ? L" - " : L"") + metadata.AlbumTitle;
+
+        if (title.empty())
+        {
+            title = L"Playlist";
+        }
+
+        TextBlock_Title().Text(title);
+        TextBlock_AuthorAlbum().Text(authorAlbum);
+
+        if (metadata.Duration)
+        {
+            Slider_Timeline().Maximum(metadata.Duration / 1000.0);
+        }
+    }
+
+    void MainWindow::UpdateUI()
+    {
+        UpdateTimeline();
+
+        if (m_PlayerService->GetState() == PlayerService::State::STOPPED || m_PlayerService->GetState() == PlayerService::State::PAUSED)
+        {
+            BitmapImage_PlayPause().UriSource(Uri{ L"ms-appx:///Assets/PlayIcon.png" });
+        }
+        else if (m_PlayerService->GetState() == PlayerService::State::PLAYING)
+        {
+            BitmapImage_PlayPause().UriSource(Uri{ L"ms-appx:///Assets/PauseIcon.png" });
+        }
+    }
+
+    void MainWindow::UpdateTimeline()
+    {
+        Slider_Timeline().IsEnabled(m_PlayerService->HasSource());
+
+        if (!m_PlayerService->HasSource()) return;
+
+        if (m_PlayerService->GetState() == PlayerService::State::PLAYING)
+        {
+            double progress = static_cast<double>(m_PlayerService->GetPosition()) / 1000.0;
+            Slider_Timeline().Value(progress);
+        }
+        TextBlock_Position().Text(m_PlayerService->DurationToWString(Slider_Timeline().Value() * 1000.0));
+        TextBlock_RemainingTime().Text(m_PlayerService->DurationToWString((Slider_Timeline().Maximum() - Slider_Timeline().Value()) * 1000.0));
     }
 }

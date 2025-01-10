@@ -31,7 +31,6 @@ namespace winrt::MediaPlayer
         void Init();
 
         void SetSwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel);
-        void UnsetSwapChainPanel();
 
         void AddSource(const hstring& path, const hstring& displayName);
         void SetSource(const hstring& path);

@@ -8,10 +8,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid>
+    <Grid Loaded="OnLoad">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <MenuBar x:Name="MenuBar" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="0">
             <MenuBarItem Title="File">
@@ -32,5 +34,65 @@
             </MenuBarItem>
         </MenuBar>
         <Frame x:Name="PageFrame" Grid.Row="1"/>
+        <Grid HorizontalAlignment="Stretch" Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="TextBlock_Position" Text="00:00:00" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" Grid.Column="0"/>
+            <Slider x:Name="Slider_Timeline" Minimum="0.0" Maximum="100.0" Value="0.0" IsEnabled="False" PointerMoved="Slider_Timeline_PointerMoved" PointerPressed="Slider_Timeline_PointerPressed" PointerReleased="Slider_Timeline_PointerReleased" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10,0,10,0" Grid.Column="1"/>
+            <TextBlock x:Name="TextBlock_RemainingTime" Text="00:00:00" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" Grid.Column="2"/>
+        </Grid>
+        <Grid HorizontalAlignment="Stretch" Margin="10,10,10,30" Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Background="Transparent" BorderBrush="Transparent" Click="Button_Playlist_Click" Grid.Column="0" HorizontalAlignment="Left" MinWidth="200">
+                <StackPanel Orientation="Vertical">
+                    <TextBlock x:Name="TextBlock_Title" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="TextBlock_AuthorAlbum" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Button>
+            <StackPanel Orientation="Horizontal" Spacing="10"  HorizontalAlignment="Center" Grid.Column="1">
+                <Button x:Name="Button_Prev" Click="Button_Prev_Click">
+                    <Button.Content>
+                        <Image>
+                            <Image.Source>
+                                <BitmapImage x:Name="BitmapImage_Prev" UriSource="ms-appx:///Assets/LeftSkipIcon.png" DecodePixelWidth="32"/>
+                            </Image.Source>
+                        </Image>
+                    </Button.Content>
+                </Button>
+                <Button x:Name="Button_PlayPause" Click="Button_PlayPause_Click">
+                    <Button.Content>
+                        <Image>
+                            <Image.Source>
+                                <BitmapImage x:Name="BitmapImage_PlayPause" UriSource="ms-appx:///Assets/PlayIcon.png" DecodePixelWidth="32"/>
+                            </Image.Source>
+                        </Image>
+                    </Button.Content>
+                </Button>
+                <Button x:Name="Button_Next" Click="Button_Next_Click">
+                    <Button.Content>
+                        <Image>
+                            <Image.Source>
+                                <BitmapImage x:Name="BitmapImage_Next" UriSource="ms-appx:///Assets/RightSkipIcon.png" DecodePixelWidth="32"/>
+                            </Image.Source>
+                        </Image>
+                    </Button.Content>
+                </Button>
+            </StackPanel>
+            <Grid HorizontalAlignment="Right" Grid.Column="3">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="180"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="TextBlock_Volume" Text="50%" HorizontalAlignment="Right" VerticalAlignment="Center" Grid.Column="0"/>
+                <Slider x:Name="Slider_Volume" Minimum="0.0" Maximum="100.0" Value="50.0" PointerMoved="Slider_Volume_PointerMoved" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10,0,10,0" Grid.Column="1"/>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>
