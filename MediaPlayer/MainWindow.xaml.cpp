@@ -49,7 +49,7 @@ namespace winrt::MediaPlayer::implementation
             true);
     }    
 
-    IAsyncOperation<StorageFile> MainWindow::OpenFilePickerAsync()
+    IAsyncOperation<Collections::IVectorView<StorageFile>> MainWindow::OpenFilePickerAsync()
     {
         FileOpenPicker filePicker{};
         filePicker.as<IInitializeWithWindow>()->Initialize(App::GetMainWindow());
@@ -65,17 +65,17 @@ namespace winrt::MediaPlayer::implementation
             L".wav"
             });
 
-        co_return co_await filePicker.PickSingleFileAsync();
+        co_return co_await filePicker.PickMultipleFilesAsync();
     }
 
     fire_and_forget MainWindow::MenuItem_OpenFile_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
-        auto file = co_await OpenFilePickerAsync();
-        if (!file) {
-            co_return;
-        }
+        auto files = co_await OpenFilePickerAsync();
 
-        m_PlayerService->AddSource(file.Path(), file.DisplayName());
+        for (const auto& file : files)
+        {
+            m_PlayerService->AddSource(file.Path(), file.DisplayName());
+        }
     }
 
     void MainWindow::MenuItem_Exit_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)

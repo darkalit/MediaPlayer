@@ -10,7 +10,7 @@ namespace winrt::MediaPlayer::implementation
         MainWindow();
         void OnLoad(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
 
-        Windows::Foundation::IAsyncOperation<Windows::Storage::StorageFile> OpenFilePickerAsync();
+        Windows::Foundation::IAsyncOperation<Windows::Foundation::Collections::IVectorView<Windows::Storage::StorageFile>> OpenFilePickerAsync();
 
         fire_and_forget MenuItem_OpenFile_Click(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
         void MenuItem_Exit_Click(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
