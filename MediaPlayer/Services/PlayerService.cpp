@@ -198,6 +198,37 @@ namespace winrt::MediaPlayer
         Start();
     }
 
+    void PlayerService::DeleteByIndex(int index)
+    {
+        if (!HasSource()) return;
+        if (index >= m_MediaPlaylist.Size() || index < 0) return;
+
+        m_MediaPlaylist.RemoveAt(index);
+
+        if (m_MediaPlaylist.Size() == 0)
+        {
+            Stop();
+            return;
+        }
+
+        if (index < m_CurrentMedia)
+        {
+            --m_CurrentMedia;
+            return;
+        }
+
+        index %= m_MediaPlaylist.Size();
+        int newCurrentMedia = m_CurrentMedia % m_MediaPlaylist.Size();
+
+        if (newCurrentMedia == index || newCurrentMedia != m_CurrentMedia)
+        {
+            m_CurrentMedia = newCurrentMedia;
+            Stop();
+            SetSource(m_MediaPlaylist.GetAt(m_CurrentMedia).Path);
+            Start();
+        }
+    }
+
     void PlayerService::Clear()
     {
         if (!HasSource()) return;
@@ -342,6 +373,7 @@ namespace winrt::MediaPlayer
         com_ptr<::IUnknown> source;
         MediaMetadata metadata;
 
+        metadata.Id = GuidHelper::CreateNewGuid();
         metadata.Path = path;
 
         try

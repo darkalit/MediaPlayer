@@ -41,6 +41,19 @@ namespace winrt::MediaPlayer::implementation
         m_PlayerService->Clear();
     }
 
+    void PlaylistPage::Button_DeleteItem_Click(Windows::Foundation::IInspectable const& sender, RoutedEventArgs const&)
+    {
+        auto button = sender.as<Controls::Button>();
+        auto metadata = button.DataContext().try_as<MediaMetadata>();
+
+        if (metadata)
+        {
+            unsigned int index;
+            m_PlayerService->GetPlaylist().IndexOf(*metadata, index);
+            m_PlayerService->DeleteByIndex(index);
+        }
+    }
+
     IVector<MediaMetadata> PlaylistPage::Playlist()
     {
         return m_PlayerService->GetPlaylist();

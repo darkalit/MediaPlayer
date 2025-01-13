@@ -2,6 +2,7 @@ namespace MediaPlayer
 {
     struct MediaMetadata
     {
+        GUID Id;
         String Path;
         UInt64 Duration; // duration in milliseconds
 

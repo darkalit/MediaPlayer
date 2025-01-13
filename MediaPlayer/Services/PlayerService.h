@@ -41,6 +41,7 @@ namespace winrt::MediaPlayer
         void Next();
         void Prev();
         void StartByIndex(int index);
+        void DeleteByIndex(int index);
         void Clear();
         int GetCurrentMediaIndex();
 
