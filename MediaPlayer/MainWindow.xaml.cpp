@@ -90,41 +90,41 @@ namespace winrt::MediaPlayer::implementation
         sender.as(menuItem);
         if (menuItem.Name() == MenuItem_Speed025().Name())
         {
-            m_PlayerService->SetPlaybackSpeed(0.25);
+            m_PlayerService->PlaybackSpeed(0.25);
         }
         else if (menuItem.Name() == MenuItem_Speed05().Name())
         {
-            m_PlayerService->SetPlaybackSpeed(0.5);
+            m_PlayerService->PlaybackSpeed(0.5);
         }
         else if (menuItem.Name() == MenuItem_Speed075().Name())
         {
-            m_PlayerService->SetPlaybackSpeed(0.75);
+            m_PlayerService->PlaybackSpeed(0.75);
         }
         else if (menuItem.Name() == MenuItem_Speed1().Name())
         {
-            m_PlayerService->SetPlaybackSpeed(1.0);
+            m_PlayerService->PlaybackSpeed(1.0);
         }
         else if (menuItem.Name() == MenuItem_Speed125().Name())
         {
-            m_PlayerService->SetPlaybackSpeed(1.25);
+            m_PlayerService->PlaybackSpeed(1.25);
         }
         else if (menuItem.Name() == MenuItem_Speed15().Name())
         {
-            m_PlayerService->SetPlaybackSpeed(1.5);
+            m_PlayerService->PlaybackSpeed(1.5);
         }
         else if (menuItem.Name() == MenuItem_Speed175().Name())
         {
-            m_PlayerService->SetPlaybackSpeed(1.75);
+            m_PlayerService->PlaybackSpeed(1.75);
         }
         else if (menuItem.Name() == MenuItem_Speed2().Name())
         {
-            m_PlayerService->SetPlaybackSpeed(2.0);
+            m_PlayerService->PlaybackSpeed(2.0);
         }
     }
 
     void MainWindow::Slider_Timeline_PointerReleased(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
     {
-        long long time = m_PlayerService->GetMetadata().Duration * (Slider_Timeline().Value() / Slider_Timeline().Maximum());
+        auto time = m_PlayerService->Metadata().Duration * (Slider_Timeline().Value() / Slider_Timeline().Maximum());
         m_PlayerService->Start(time);
         UpdateUI();
     }
@@ -139,11 +139,11 @@ namespace winrt::MediaPlayer::implementation
 
     void MainWindow::Button_PlayPause_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
-        if (m_PlayerService->GetState() == PlayerService::State::STOPPED || m_PlayerService->GetState() == PlayerService::State::PAUSED)
+        if (m_PlayerService->State() == PlayerServiceState::STOPPED || m_PlayerService->State() == PlayerServiceState::PAUSED)
         {
             m_PlayerService->Start();
         }
-        else if (m_PlayerService->GetState() == PlayerService::State::PLAYING)
+        else if (m_PlayerService->State() == PlayerServiceState::PLAYING)
         {
             m_PlayerService->Pause();
         }
@@ -154,7 +154,7 @@ namespace winrt::MediaPlayer::implementation
     void MainWindow::Slider_Volume_PointerMoved(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
     {
         double volume = Slider_Volume().Value();
-        m_PlayerService->SetVolume(volume / 100.0);
+        m_PlayerService->Volume(volume / 100.0);
         TextBlock_Volume().Text(to_hstring(volume) + L"%");
     }
 
@@ -192,7 +192,7 @@ namespace winrt::MediaPlayer::implementation
 
     void MainWindow::UpdateMediaName()
     {
-        auto metadata = m_PlayerService->GetMetadata();
+        auto metadata = m_PlayerService->Metadata();
 
         std::wstring title = L"";
         std::wstring authorAlbum = L"";
@@ -221,11 +221,11 @@ namespace winrt::MediaPlayer::implementation
 
         UpdateTimeline();
 
-        if (m_PlayerService->GetState() == PlayerService::State::STOPPED || m_PlayerService->GetState() == PlayerService::State::PAUSED)
+        if (m_PlayerService->State() == PlayerServiceState::STOPPED || m_PlayerService->State() == PlayerServiceState::PAUSED)
         {
             BitmapImage_PlayPause().UriSource(Uri{ L"ms-appx:///Assets/PlayIcon.png" });
         }
-        else if (m_PlayerService->GetState() == PlayerService::State::PLAYING)
+        else if (m_PlayerService->State() == PlayerServiceState::PLAYING)
         {
             BitmapImage_PlayPause().UriSource(Uri{ L"ms-appx:///Assets/PauseIcon.png" });
         }
@@ -237,12 +237,12 @@ namespace winrt::MediaPlayer::implementation
 
         if (!m_PlayerService->HasSource()) return;
 
-        if (m_PlayerService->GetState() == PlayerService::State::PLAYING)
+        if (m_PlayerService->State() == PlayerServiceState::PLAYING)
         {
-            double progress = static_cast<double>(m_PlayerService->GetPosition()) / 1000.0;
+            double progress = static_cast<double>(m_PlayerService->Position()) / 1000.0;
             Slider_Timeline().Value(progress);
         }
-        TextBlock_Position().Text(m_PlayerService->DurationToWString(Slider_Timeline().Value() * 1000.0));
-        TextBlock_RemainingTime().Text(m_PlayerService->DurationToWString((Slider_Timeline().Maximum() - Slider_Timeline().Value()) * 1000.0));
+        TextBlock_Position().Text(PlayerService::DurationToString(Slider_Timeline().Value() * 1000.0));
+        TextBlock_RemainingTime().Text(PlayerService::DurationToString((Slider_Timeline().Maximum() - Slider_Timeline().Value()) * 1000.0));
     }
 }

@@ -20,13 +20,11 @@
     <Midl Include="Services\DurationToStringConverter.idl">
       <Filter>Services</Filter>
     </Midl>
+    <Midl Include="Services\PlayerService.idl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
-    <ClCompile Include="Services\PlayerService.cpp">
-      <Filter>Services</Filter>
-    </ClCompile>
     <ClCompile Include="Media\MediaEngineWrapper.cpp">
       <Filter>Media</Filter>
     </ClCompile>
@@ -42,13 +40,13 @@
     <ClCompile Include="Media\MediaEngineNotifyImpl.cpp">
       <Filter>Media</Filter>
     </ClCompile>
-    <ClCompile Include="Services\DurationToStringConverter.cpp" />
+    <ClCompile Include="Services\DurationToStringConverter.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="Services\PlayerService.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="Services\PlayerService.h">
-      <Filter>Services</Filter>
-    </ClInclude>
     <ClInclude Include="Media\MediaEngineWrapper.h">
       <Filter>Media</Filter>
     </ClInclude>
@@ -64,7 +62,10 @@
     <ClInclude Include="Media\MediaEngineNotifyImpl.h">
       <Filter>Media</Filter>
     </ClInclude>
-    <ClInclude Include="Services\DurationToStringConverter.h" />
+    <ClInclude Include="Services\DurationToStringConverter.h">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="Services\PlayerService.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">

@@ -13,7 +13,7 @@ namespace winrt::MediaPlayer::implementation
 
         void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
 
-        static std::shared_ptr<PlayerService> GetPlayerService();
+        static com_ptr<PlayerService> GetPlayerService();
         static HWND GetMainWindow();
 
         template <typename T>
@@ -23,7 +23,7 @@ namespace winrt::MediaPlayer::implementation
         static void Navigate(IInspectable const& parameter);
 
     private:
-        static std::shared_ptr<PlayerService> m_PlayerService;
+        static com_ptr<PlayerService> s_PlayerService;
 
         static Microsoft::UI::Xaml::Window s_Window;
     };

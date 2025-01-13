@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "PlayerService.h"
+#include "PlayerService.g.cpp"
 
 #include "mfapi.h"
 #include "mfplay.h"
@@ -14,18 +15,20 @@
 #include "iostream"
 
 #include "Audioclient.h"
-#include <microsoft.ui.xaml.media.dxinterop.h>
-#include <d3d11.h>
+#include "microsoft.ui.xaml.media.dxinterop.h"
+#include "d3d11.h"
 
 using namespace winrt::Windows::Foundation;
 
-namespace winrt::MediaPlayer
+namespace winrt::MediaPlayer::implementation
 {
     PlayerService::PlayerService()
     {
         try
         {
             check_hresult(MFStartup(MF_VERSION));
+
+            //Init();
         }
         catch (const hresult_error& e)
         {
@@ -43,6 +46,20 @@ namespace winrt::MediaPlayer
         {
             std::wcerr << L"PlayerService::~PlayerService: Failed to shutdown Media Foundation;\n" << e.message() << '\n';
         }
+    }
+
+    hstring PlayerService::DurationToString(uint64_t duration)
+    {
+        if (duration == 0)
+        {
+            return L"00:00:00";
+        }
+
+        unsigned int hours = duration / (1000 * 60 * 60);
+        unsigned int minutes = (duration / (1000 * 60)) % 60;
+        unsigned int seconds = (duration / 1000) % 60;
+
+        return (hours < 10 ? L"0" : L"") + to_hstring(hours) + L":" + (minutes < 10 ? L"0" : L"") + to_hstring(minutes) + L":" + (seconds < 10 ? L"0" : L"") + to_hstring(seconds);
     }
 
     void PlayerService::Init()
@@ -96,41 +113,23 @@ namespace winrt::MediaPlayer
             0,
             0);
 
-        m_State = State::READY;
+        State(PlayerServiceState::READY);
     }
 
-    void PlayerService::SetSwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel)
-    {
-        m_SwapChainPanel = panel;
-        m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
-
-        if (m_VideoSurfaceHandle && m_SwapChainPanel)
-        {
-            m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]()
-            {
-                com_ptr<ISwapChainPanelNative2> panelNative;
-                m_SwapChainPanel.as(panelNative);
-                check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
-                auto size = m_SwapChainPanel.ActualSize();
-                m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
-            });
-        }
-    }
-
-    void PlayerService::AddSource(const hstring& path, const hstring& displayName)
+    void PlayerService::AddSource(hstring const& path, hstring const& displayName)
     {
         auto res = GetMetadataInternal(path);
-        
+
         if (res.Title.empty())
         {
             res.Title = displayName;
         }
 
-        m_MediaPlaylist.Append(res);
+        m_Playlist.Append(res);
 
-        if (m_CurrentMedia == -1)
+        if (CurrentMediaIndex() == -1)
         {
-            m_CurrentMedia = 0;
+            CurrentMediaIndex(0);
         }
 
         if (!HasSource())
@@ -139,29 +138,24 @@ namespace winrt::MediaPlayer
         }
     }
 
-    void PlayerService::SetSource(const hstring& path)
+    void PlayerService::SetSource(hstring const& path)
     {
         check_hresult(MFCreateSourceReaderFromURL(path.c_str(), nullptr, m_SourceReader.put()));
         m_MediaEngineWrapper->SetSource(m_SourceReader.get());
-        if (m_SwapChainPanel) {
-            m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]()
-            {
-                auto size = m_SwapChainPanel.ActualSize();
-                m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
-            });
+        if (SwapChainPanel()) {
+            SwapChainPanel().DispatcherQueue().TryEnqueue([&]()
+                {
+                    auto size = SwapChainPanel().ActualSize();
+                    m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
+                });
         }
-        m_Position = 0;
-        m_State = State::STOPPED;
+        Position(0);
+        State(PlayerServiceState::STOPPED);
     }
 
     bool PlayerService::HasSource()
     {
-        return !!m_SourceReader && m_MediaEngineWrapper && m_MediaPlaylist.Size() > 0 && m_CurrentMedia > -1;
-    }
-
-    PlayerService::State PlayerService::GetState()
-    {
-        return m_State;
+        return !!m_SourceReader && m_MediaEngineWrapper && m_Playlist.Size() > 0 && CurrentMediaIndex() > -1;
     }
 
     void PlayerService::Next()
@@ -169,9 +163,9 @@ namespace winrt::MediaPlayer
         if (!HasSource()) return;
 
         Stop();
-        ++m_CurrentMedia;
-        m_CurrentMedia %= m_MediaPlaylist.Size();
-        SetSource(m_MediaPlaylist.GetAt(m_CurrentMedia).Path);
+        CurrentMediaIndex(CurrentMediaIndex() + 1);
+        CurrentMediaIndex(CurrentMediaIndex() % m_Playlist.Size());
+        SetSource(Metadata().Path);
         Start();
     }
 
@@ -180,51 +174,51 @@ namespace winrt::MediaPlayer
         if (!HasSource()) return;
 
         Stop();
-        if (m_CurrentMedia == 0)
+        if (CurrentMediaIndex() == 0)
         {
-            m_CurrentMedia = m_MediaPlaylist.Size();
+            CurrentMediaIndex(m_Playlist.Size());
         }
-        --m_CurrentMedia;
-        SetSource(m_MediaPlaylist.GetAt(m_CurrentMedia).Path);
+        CurrentMediaIndex(CurrentMediaIndex() - 1);
+        SetSource(Metadata().Path);
         Start();
     }
 
-    void PlayerService::StartByIndex(int index)
+    void PlayerService::StartByIndex(int32_t index)
     {
         if (!HasSource()) return;
 
-        m_CurrentMedia = max(0, min(m_MediaPlaylist.Size() - 1, index));
-        SetSource(m_MediaPlaylist.GetAt(m_CurrentMedia).Path);
+        CurrentMediaIndex(max(0, min(m_Playlist.Size() - 1, index)));
+        SetSource(Metadata().Path);
         Start();
     }
 
-    void PlayerService::DeleteByIndex(int index)
+    void PlayerService::DeleteByIndex(int32_t index)
     {
         if (!HasSource()) return;
-        if (index >= m_MediaPlaylist.Size() || index < 0) return;
+        if (index >= m_Playlist.Size() || index < 0) return;
 
-        m_MediaPlaylist.RemoveAt(index);
+        m_Playlist.RemoveAt(index);
 
-        if (m_MediaPlaylist.Size() == 0)
+        if (m_Playlist.Size() == 0)
         {
             Stop();
             return;
         }
 
-        if (index < m_CurrentMedia)
+        if (index < CurrentMediaIndex())
         {
-            --m_CurrentMedia;
+            CurrentMediaIndex(CurrentMediaIndex() - 1);
             return;
         }
 
-        index %= m_MediaPlaylist.Size();
-        int newCurrentMedia = m_CurrentMedia % m_MediaPlaylist.Size();
+        index %= m_Playlist.Size();
+        int newCurrentMedia = CurrentMediaIndex() % m_Playlist.Size();
 
-        if (newCurrentMedia == index || newCurrentMedia != m_CurrentMedia)
+        if (newCurrentMedia == index || newCurrentMedia != CurrentMediaIndex())
         {
-            m_CurrentMedia = newCurrentMedia;
+            CurrentMediaIndex(newCurrentMedia);
             Stop();
-            SetSource(m_MediaPlaylist.GetAt(m_CurrentMedia).Path);
+            SetSource(Metadata().Path);
             Start();
         }
     }
@@ -234,47 +228,63 @@ namespace winrt::MediaPlayer
         if (!HasSource()) return;
 
         Stop();
-        m_MediaPlaylist.Clear();
-        m_CurrentMedia = -1;
+        m_Playlist.Clear();
+        CurrentMediaIndex(-1);
     }
 
-    int PlayerService::GetCurrentMediaIndex()
-    {
-        return m_CurrentMedia;
-    }
-
-    void PlayerService::Start(const std::optional<long long>& time)
+    void PlayerService::Start()
     {
         if (!HasSource()) return;
 
         try
         {
-            if (time)
-            {
-                m_Position = *time;
-            }
-
-            if (m_CurrentMedia > -1 && m_Position >= m_MediaPlaylist.GetAt(m_CurrentMedia).Duration)
+            if (CurrentMediaIndex() > -1 && Position() >= Metadata().Duration)
             {
                 Stop();
                 return;
             }
 
-            double position = static_cast<double>(m_Position) / 1000.0;
+            double position = static_cast<double>(Position()) / 1000.0;
             m_MediaEngineWrapper->Start(position);
-            SetPlaybackSpeed(m_PlaybackSpeed);
+            PlaybackSpeed(m_PlaybackSpeed);
         }
         catch (const hresult_error& e)
         {
             std::wcerr << L"PlayerService::Start: Failed to start media;\n" << e.message() << '\n';
         }
 
-        m_State = State::PLAYING;
+        State(PlayerServiceState::PLAYING);
+    }
+
+    void PlayerService::Start(uint64_t timePos)
+    {
+        if (!HasSource()) return;
+
+        try
+        {
+            Position(timePos);
+
+            if (CurrentMediaIndex() > -1 && Position() >= Metadata().Duration)
+            {
+                Stop();
+                return;
+            }
+
+            double position = static_cast<double>(Position()) / 1000.0;
+            m_MediaEngineWrapper->Start(position);
+            PlaybackSpeed(m_PlaybackSpeed);
+        }
+        catch (const hresult_error& e)
+        {
+            std::wcerr << L"PlayerService::Start: Failed to start media;\n" << e.message() << '\n';
+        }
+
+        State(PlayerServiceState::PLAYING);
     }
 
     void PlayerService::Stop()
     {
-        m_State = State::STOPPED;
+        State(PlayerServiceState::STOPPED);
 
         try
         {
@@ -289,7 +299,7 @@ namespace winrt::MediaPlayer
 
     void PlayerService::Pause()
     {
-        m_State = State::PAUSED;
+       State(PlayerServiceState::PAUSED);
 
         try
         {
@@ -301,68 +311,144 @@ namespace winrt::MediaPlayer
         }
     }
 
-    void PlayerService::SetPlaybackSpeed(double speed)
-    {
-        m_PlaybackSpeed = speed;
-        m_MediaEngineWrapper->SetPlaybackSpeed(speed);
-    }
-
-    void PlayerService::SetVolume(double volume)
-    {
-        m_MediaEngineWrapper->SetVolume(volume);
-    }
-
-    double PlayerService::GetVolume()
-    {
-        return m_MediaEngineWrapper->GetVolume();
-    }
-
-    void PlayerService::ResizeVideo(unsigned int width, unsigned int height)
+    void PlayerService::ResizeVideo(uint32_t width, uint32_t height)
     {
         if (!m_MediaEngineWrapper) return;
         m_MediaEngineWrapper->WindowUpdate(width, height);
     }
 
-    long long PlayerService::GetPosition()
+    uint64_t PlayerService::Position()
     {
         m_Position = m_MediaEngineWrapper->GetCurrentTime() * 1000;
-
         return m_Position;
     }
 
-    long long PlayerService::GetRemaining()
+    void PlayerService::Position(uint64_t value)
     {
-        auto metadata = GetMetadata();
+
+    }
+
+    uint64_t PlayerService::RemainingTime()
+    {
+        auto metadata = Metadata();
         return metadata.Duration ? metadata.Duration - m_Position : 0;
     }
 
-    hstring PlayerService::DurationToWString(long long duration)
+    double PlayerService::PlaybackSpeed()
     {
-        if (duration == 0)
-        {
-            return L"00:00:00";
-        }
-
-        unsigned int hours = duration / (1000 * 60 * 60);
-        unsigned int minutes = (duration / (1000 * 60)) % 60;
-        unsigned int seconds = (duration / 1000) % 60;
-
-        return (hours < 10 ? L"0" : L"") + to_hstring(hours) + L":" + (minutes < 10 ? L"0" : L"") + to_hstring(minutes) + L":" + (seconds < 10 ? L"0" : L"") + to_hstring(seconds);
+        return m_PlaybackSpeed;
     }
 
-    MediaMetadata PlayerService::GetMetadata()
+    void PlayerService::PlaybackSpeed(double value)
     {
-        if (HasSource())
+        if (m_PlaybackSpeed != value)
         {
-            return m_MediaPlaylist.GetAt(m_CurrentMedia);
+            m_PlaybackSpeed = value;
+            m_MediaEngineWrapper->SetPlaybackSpeed(value);
+            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"PlaybackSpeed" });
         }
-
-        return {};
     }
 
-    Collections::IVector<MediaMetadata> PlayerService::GetPlaylist()
+    int32_t PlayerService::CurrentMediaIndex()
     {
-        return m_MediaPlaylist;
+        return m_CurrentMediaIndex;
+    }
+
+    void PlayerService::CurrentMediaIndex(int32_t value)
+    {
+        if (m_CurrentMediaIndex != value)
+        {
+            m_CurrentMediaIndex = value;
+            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"CurrentMediaIndex" });
+        }
+    }
+
+    double PlayerService::Volume()
+    {
+        if (!HasSource()) return 0;
+
+        return m_MediaEngineWrapper->GetVolume();
+    }
+
+    void PlayerService::Volume(double value)
+    {
+        if (m_MediaEngineWrapper->GetVolume() != value)
+        {
+            m_MediaEngineWrapper->SetVolume(value);
+            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Volume" });
+        }        
+    }
+
+    PlayerServiceState PlayerService::State()
+    {
+        return m_State;
+    }
+
+    void PlayerService::State(PlayerServiceState value)
+    {
+        if (m_State != value)
+        {
+            m_State = value;
+            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"State" });
+        }
+    }
+
+    MediaMetadata PlayerService::Metadata()
+    {
+        if (!HasSource()) return {};
+
+        return m_Playlist.GetAt(CurrentMediaIndex());
+    }
+
+    void PlayerService::Metadata(MediaMetadata const& value)
+    {
+        if (m_Playlist.GetAt(CurrentMediaIndex()) != value)
+        {
+            m_Playlist.GetAt(CurrentMediaIndex()) = value;
+            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Metadata" });
+        }
+    }
+
+    Collections::IVector<MediaMetadata> PlayerService::Playlist()
+    {
+        return m_Playlist;
+    }
+
+    Microsoft::UI::Xaml::Controls::SwapChainPanel PlayerService::SwapChainPanel()
+    {
+        return m_SwapChainPanel;
+    }
+
+    void PlayerService::SwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& value)
+    {
+        if (m_SwapChainPanel != value)
+        {
+            m_SwapChainPanel = value;
+            m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
+
+            if (m_VideoSurfaceHandle && m_SwapChainPanel)
+            {
+                m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]()
+                    {
+                        com_ptr<ISwapChainPanelNative2> panelNative;
+                        m_SwapChainPanel.as(panelNative);
+                        check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
+                        auto size = m_SwapChainPanel.ActualSize();
+                        m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
+                    });
+            }
+            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"SwapChainPanel" });
+        }
+    }
+
+    event_token PlayerService::PropertyChanged(Microsoft::UI::Xaml::Data::PropertyChangedEventHandler const& handler)
+    {
+        return m_PropertyChanged.add(handler);
+    }
+
+    void PlayerService::PropertyChanged(event_token const& token) noexcept
+    {
+        m_PropertyChanged.remove(token);
     }
 
     MediaMetadata PlayerService::GetMetadataInternal(
@@ -515,11 +601,11 @@ namespace winrt::MediaPlayer
         if (m_VideoSurfaceHandle && m_SwapChainPanel)
         {
             m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]()
-            {
-                com_ptr<ISwapChainPanelNative2> panelNative;
-                m_SwapChainPanel.as(panelNative);
-                check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
-            });
+                {
+                    com_ptr<ISwapChainPanelNative2> panelNative;
+                    m_SwapChainPanel.as(panelNative);
+                    check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
+                });
         }
     }
 

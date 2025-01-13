@@ -1,0 +1,47 @@
+import "Services/MediaMetadata.idl";
+
+namespace MediaPlayer
+{
+    enum PlayerServiceState
+    {
+        CLOSED,
+        READY,
+        STOPPED,
+        PLAYING,
+        PAUSED,
+    };
+
+    runtimeclass PlayerService : [default] Microsoft.UI.Xaml.Data.INotifyPropertyChanged
+    {
+        PlayerService();
+        void Init();
+
+        void AddSource(String path, String displayName);
+        void SetSource(String path);
+        Boolean HasSource();
+
+        void Next();
+        void Prev();
+        void StartByIndex(Int32 index);
+        void DeleteByIndex(Int32 index);
+        void Clear();
+
+        void Start();
+        void Start(UInt64 timePos);
+        void Stop();
+        void Pause();
+
+        void ResizeVideo(UInt32 width, UInt32 height);
+        static String DurationToString(UInt64 duration);
+
+        UInt64 Position { get; };
+        UInt64 RemainingTime { get; };
+        Double PlaybackSpeed;
+        Int32 CurrentMediaIndex;
+        Double Volume;
+        PlayerServiceState State { get; };
+        MediaMetadata Metadata { get; };
+        Windows.Foundation.Collections.IVector<MediaMetadata> Playlist { get; };
+        Microsoft.UI.Xaml.Controls.SwapChainPanel SwapChainPanel;
+    }
+}

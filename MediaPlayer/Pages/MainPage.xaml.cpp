@@ -23,7 +23,7 @@ namespace winrt::MediaPlayer::implementation
 
     void MainPage::OnLoad(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
-        m_PlayerService->SetSwapChainPanel(SwapChainPanel_Video());
+        m_PlayerService->SwapChainPanel(SwapChainPanel_Video());
     }
 
     void MainPage::SwapChainPanel_Video_SizeChanged(Windows::Foundation::IInspectable const&, SizeChangedEventArgs const&)

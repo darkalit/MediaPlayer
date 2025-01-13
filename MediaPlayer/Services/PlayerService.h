@@ -1,7 +1,7 @@
 #pragma once
+#include "PlayerService.g.h"
 
 #include "winrt/MediaPlayer.h"
-
 #include "Media/MediaEngineWrapper.h"
 
 struct IMFMediaSource;
@@ -12,68 +12,64 @@ struct IMFPresentationDescriptor;
 struct IMFStreamDescriptor;
 struct IMFActivate;
 
-namespace winrt::MediaPlayer
+namespace winrt::MediaPlayer::implementation
 {
-    class PlayerService
+    struct PlayerService : PlayerServiceT<PlayerService>
     {
-    public:
-        enum class State
-        {
-            CLOSED = 0,
-            READY,
-            STOPPED,
-            PLAYING,
-            PAUSED,
-        };
-
         PlayerService();
-        ~PlayerService();
+        ~PlayerService() override;
         void Init();
 
-        void SetSwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& panel);
+        static hstring DurationToString(uint64_t duration);
 
-        void AddSource(const hstring& path, const hstring& displayName);
-        void SetSource(const hstring& path);
+        void AddSource(hstring const& path, hstring const& displayName);
+        void SetSource(hstring const& path);
         bool HasSource();
-
-        State GetState();
 
         void Next();
         void Prev();
-        void StartByIndex(int index);
-        void DeleteByIndex(int index);
+        void StartByIndex(int32_t index);
+        void DeleteByIndex(int32_t index);
         void Clear();
-        int GetCurrentMediaIndex();
-
-        // Start playing from the time in milliseconds or continue playing if time is not specified
-        void Start(const std::optional<long long>& time = {});
+        void Start();
+        void Start(uint64_t timePos);
         void Stop();
         void Pause();
-        void SetPlaybackSpeed(double speed);
-        void SetVolume(double volume);
-        double GetVolume();
 
-        void ResizeVideo(unsigned int width, unsigned int height);
+        void ResizeVideo(uint32_t width, uint32_t height);
 
-        long long GetPosition(); // in milliseconds
-        long long GetRemaining(); // in milliseconds
-        static hstring DurationToWString(long long duration);
-        MediaMetadata GetMetadata();
-        Windows::Foundation::Collections::IVector<MediaMetadata> GetPlaylist();
+        uint64_t Position();
+        void Position(uint64_t value);
+        uint64_t RemainingTime();
+        double PlaybackSpeed();
+        void PlaybackSpeed(double value);
+        int32_t CurrentMediaIndex();
+        void CurrentMediaIndex(int32_t value);
+        double Volume();
+        void Volume(double value);
+        PlayerServiceState State();
+        void State(PlayerServiceState value);
+        MediaMetadata Metadata();
+        void Metadata(MediaMetadata const& value);
+        Windows::Foundation::Collections::IVector<MediaMetadata> Playlist();
+        Microsoft::UI::Xaml::Controls::SwapChainPanel SwapChainPanel();
+        void SwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& value);
+        event_token PropertyChanged(Microsoft::UI::Xaml::Data::PropertyChangedEventHandler const& handler);
+        void PropertyChanged(event_token const& token) noexcept;
 
     private:
-        MediaMetadata GetMetadataInternal(const hstring& path);
+        MediaMetadata GetMetadataInternal(hstring const& path);
 
         void OnLoaded();
         void OnPlaybackEnded();
         void OnError(MF_MEDIA_ENGINE_ERR error, HRESULT hr);
 
 
-        long long m_Position = 0;
+        uint64_t m_Position = 0;
         double m_PlaybackSpeed = 1.0;
-        State m_State = State::CLOSED;
-        Windows::Foundation::Collections::IVector<MediaMetadata> m_MediaPlaylist = single_threaded_observable_vector<MediaMetadata>();
-        int m_CurrentMedia = -1;
+        PlayerServiceState m_State = PlayerServiceState::CLOSED;
+        Windows::Foundation::Collections::IVector<MediaMetadata> m_Playlist = single_threaded_observable_vector<MediaMetadata>();
+        int32_t m_CurrentMediaIndex = -1;
 
         com_ptr<IMFDXGIDeviceManager> m_DeviceManager;
         com_ptr<IMFSourceReader> m_SourceReader;
@@ -81,5 +77,13 @@ namespace winrt::MediaPlayer
         Microsoft::UI::Xaml::Controls::SwapChainPanel m_SwapChainPanel;
 
         HANDLE m_VideoSurfaceHandle;
+
+        event<Microsoft::UI::Xaml::Data::PropertyChangedEventHandler> m_PropertyChanged;
+    };
+}
+namespace winrt::MediaPlayer::factory_implementation
+{
+    struct PlayerService : PlayerServiceT<PlayerService, implementation::PlayerService>
+    {
     };
 }

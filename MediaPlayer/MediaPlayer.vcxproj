@@ -206,6 +206,7 @@
     </Midl>
     <Midl Include="Services\DurationToStringConverter.idl" />
     <Midl Include="Services\MediaMetadata.idl" />
+    <Midl Include="Services\PlayerService.idl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LeftSkipIcon.png" />

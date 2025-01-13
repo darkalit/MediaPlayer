@@ -36,7 +36,7 @@ namespace winrt::MediaPlayer::implementation
         void UpdateTimeline();
 
         Microsoft::UI::Dispatching::DispatcherQueueTimer m_TimelineDispatcherTimer;
-        std::shared_ptr<PlayerService> m_PlayerService;
+        com_ptr<PlayerService> m_PlayerService;
     };
 
     template <typename T>

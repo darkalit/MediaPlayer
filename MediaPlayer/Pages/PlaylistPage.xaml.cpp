@@ -21,7 +21,7 @@ namespace winrt::MediaPlayer::implementation
 
     void PlaylistPage::OnLoad(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
-        m_PlayerService->SetSwapChainPanel(SwapChainPanel_Video());
+        m_PlayerService->SwapChainPanel(SwapChainPanel_Video());
     }
 
     void PlaylistPage::SwapChainPanel_Video_SizeChanged(Windows::Foundation::IInspectable const&, SizeChangedEventArgs const&)
@@ -49,13 +49,13 @@ namespace winrt::MediaPlayer::implementation
         if (metadata)
         {
             unsigned int index;
-            m_PlayerService->GetPlaylist().IndexOf(*metadata, index);
+            m_PlayerService->Playlist().IndexOf(*metadata, index);
             m_PlayerService->DeleteByIndex(index);
         }
     }
 
     IVector<MediaMetadata> PlaylistPage::Playlist()
     {
-        return m_PlayerService->GetPlaylist();
+        return m_PlayerService->Playlist();
     }
 }

@@ -17,7 +17,7 @@ namespace winrt::MediaPlayer::implementation
         Windows::Foundation::Collections::IVector<MediaMetadata> Playlist();
 
     private:
-        std::shared_ptr<PlayerService> m_PlayerService;
+        com_ptr<PlayerService> m_PlayerService;
     };
 }
 
