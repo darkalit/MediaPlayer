@@ -55,7 +55,7 @@
                 SelectionMode="Single"
                 IsItemInvokedEnabled="True"
                 ItemInvoked="ItemsView_Playlist_ItemInvoked"
-                ItemsSource="{x:Bind Playlist}">
+                ItemsSource="{x:Bind PlayerService.Playlist, Mode=OneWay}">
                 <ItemsView.Layout>
                     <StackLayout Spacing="5"/>
                 </ItemsView.Layout>
@@ -69,7 +69,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="{x:Bind Title}" Grid.Column="0"/>
+                                <TextBlock Text="{x:Bind Title}" Foreground="{x:Bind Id, Converter={StaticResource IsSelectedColorConverter}}" Grid.Column="0"/>
                                 <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationToStringConverter}}" Grid.Column="1"/>
                                 <TextBlock Text="{x:Bind AlbumTitle}" Grid.Column="2"/>
                                 <Button Click="Button_DeleteItem_Click" DataContext="{x:Bind}"  Grid.Column="3">

@@ -1,10 +1,18 @@
-import "Services/IPlayerService.idl";
+import "Services/MediaMetadata.idl";
 
 namespace MediaPlayer
 {
-    runtimeclass PlayerService : IPlayerService
+    enum PlayerServiceState
     {
-        PlayerService();
+        CLOSED,
+        READY,
+        STOPPED,
+        PLAYING,
+        PAUSED,
+    };
+
+    interface IPlayerService requires Microsoft.UI.Xaml.Data.INotifyPropertyChanged
+    {
         void Init();
 
         void AddSource(String path, String displayName);

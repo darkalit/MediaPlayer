@@ -1,7 +1,9 @@
 #pragma once
 
 #include "App.xaml.g.h"
-#include "Services/DurationToStringConverter.h"
+#include "Converters/DurationToStringConverter.h"
+#include "Converters/EmptyStringToDefaultConverter.h"
+#include "Converters/IsSelectedColorConverter.h"
 #include "MainWindow.xaml.h"
 #include "Services/PlayerService.h"
 
@@ -13,7 +15,7 @@ namespace winrt::MediaPlayer::implementation
 
         void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
 
-        static com_ptr<PlayerService> GetPlayerService();
+        static IPlayerService GetPlayerService();
         static HWND GetMainWindow();
 
         template <typename T>
@@ -23,8 +25,6 @@ namespace winrt::MediaPlayer::implementation
         static void Navigate(IInspectable const& parameter);
 
     private:
-        static com_ptr<PlayerService> s_PlayerService;
-
         static Microsoft::UI::Xaml::Window s_Window;
     };
 

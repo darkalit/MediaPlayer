@@ -2,7 +2,7 @@
 #include "DurationToStringConverter.h"
 #include "DurationToStringConverter.g.cpp"
 
-#include "Services/PlayerService.h"
+#include "Utils.h"
 
 namespace winrt::MediaPlayer::implementation
 {
@@ -10,7 +10,7 @@ namespace winrt::MediaPlayer::implementation
     {
         auto duration = unbox_value_or<unsigned long long>(value, 0.0);
 
-        return box_value(PlayerService::DurationToString(duration));
+        return box_value(Utils::DurationToString(duration));
     }
 
     Windows::Foundation::IInspectable DurationToStringConverter::ConvertBack(Windows::Foundation::IInspectable const& value, Windows::UI::Xaml::Interop::TypeName const& targetType, Windows::Foundation::IInspectable const& parameter, hstring const& language)

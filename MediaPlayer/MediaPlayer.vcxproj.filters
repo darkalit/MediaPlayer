@@ -17,10 +17,21 @@
     <Midl Include="Services\MediaMetadata.idl">
       <Filter>Services</Filter>
     </Midl>
-    <Midl Include="Services\DurationToStringConverter.idl">
+    <Midl Include="Services\PlayerService.idl">
       <Filter>Services</Filter>
     </Midl>
-    <Midl Include="Services\PlayerService.idl" />
+    <Midl Include="Services\IPlayerService.idl">
+      <Filter>Services</Filter>
+    </Midl>
+    <Midl Include="Converters\DurationToStringConverter.idl">
+      <Filter>Converters</Filter>
+    </Midl>
+    <Midl Include="Converters\EmptyStringToDefaultConverter.idl">
+      <Filter>Converters</Filter>
+    </Midl>
+    <Midl Include="Converters\IsSelectedColorConverter.idl">
+      <Filter>Converters</Filter>
+    </Midl>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -40,10 +51,17 @@
     <ClCompile Include="Media\MediaEngineNotifyImpl.cpp">
       <Filter>Media</Filter>
     </ClCompile>
-    <ClCompile Include="Services\DurationToStringConverter.cpp">
+    <ClCompile Include="Services\PlayerService.cpp">
       <Filter>Services</Filter>
     </ClCompile>
-    <ClCompile Include="Services\PlayerService.cpp" />
+    <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="Converters\DurationToStringConverter.cpp">
+      <Filter>Converters</Filter>
+    </ClCompile>
+    <ClCompile Include="Converters\EmptyStringToDefaultConverter.cpp">
+      <Filter>Converters</Filter>
+    </ClCompile>
+    <ClCompile Include="Converters\IsSelectedColorConverter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -62,10 +80,17 @@
     <ClInclude Include="Media\MediaEngineNotifyImpl.h">
       <Filter>Media</Filter>
     </ClInclude>
-    <ClInclude Include="Services\DurationToStringConverter.h">
+    <ClInclude Include="Services\PlayerService.h">
       <Filter>Services</Filter>
     </ClInclude>
-    <ClInclude Include="Services\PlayerService.h" />
+    <ClInclude Include="Utils.h" />
+    <ClInclude Include="Converters\DurationToStringConverter.h">
+      <Filter>Converters</Filter>
+    </ClInclude>
+    <ClInclude Include="Converters\EmptyStringToDefaultConverter.h">
+      <Filter>Converters</Filter>
+    </ClInclude>
+    <ClInclude Include="Converters\IsSelectedColorConverter.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -114,6 +139,9 @@
     </Filter>
     <Filter Include="Media">
       <UniqueIdentifier>{471ae2cf-0051-4778-946b-200d4e83be82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Converters">
+      <UniqueIdentifier>{1be7b333-b186-493e-92a8-6463361d3829}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

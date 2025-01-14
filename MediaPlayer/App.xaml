@@ -6,11 +6,14 @@
     xmlns:local="using:MediaPlayer">
     <Application.Resources>
         <ResourceDictionary>
+            <local:DurationToStringConverter x:Key="DurationToStringConverter"/>
+            <local:EmptyStringToDefaultConverter x:Key="EmptyStringToDefaultConverter"/>
+            <local:IsSelectedColorConverter x:Key="IsSelectedColorConverter"/>
+            <local:PlayerService x:Key="PlayerService"/>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
-            <local:DurationToStringConverter x:Key="DurationToStringConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

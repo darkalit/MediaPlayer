@@ -48,20 +48,6 @@ namespace winrt::MediaPlayer::implementation
         }
     }
 
-    hstring PlayerService::DurationToString(uint64_t duration)
-    {
-        if (duration == 0)
-        {
-            return L"00:00:00";
-        }
-
-        unsigned int hours = duration / (1000 * 60 * 60);
-        unsigned int minutes = (duration / (1000 * 60)) % 60;
-        unsigned int seconds = (duration / 1000) % 60;
-
-        return (hours < 10 ? L"0" : L"") + to_hstring(hours) + L":" + (minutes < 10 ? L"0" : L"") + to_hstring(minutes) + L":" + (seconds < 10 ? L"0" : L"") + to_hstring(seconds);
-    }
-
     void PlayerService::Init()
     {
         m_DeviceManager = nullptr;
@@ -151,6 +137,8 @@ namespace winrt::MediaPlayer::implementation
         }
         Position(0);
         State(PlayerServiceState::STOPPED);
+
+        m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Metadata" });
     }
 
     bool PlayerService::HasSource()
@@ -264,13 +252,13 @@ namespace winrt::MediaPlayer::implementation
         {
             Position(timePos);
 
-            if (CurrentMediaIndex() > -1 && Position() >= Metadata().Duration)
+            if (CurrentMediaIndex() > -1 && timePos >= Metadata().Duration)
             {
                 Stop();
                 return;
             }
 
-            double position = static_cast<double>(Position()) / 1000.0;
+            double position = static_cast<double>(timePos) / 1000.0;
             m_MediaEngineWrapper->Start(position);
             PlaybackSpeed(m_PlaybackSpeed);
         }
@@ -325,7 +313,11 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::Position(uint64_t value)
     {
-
+        if (m_Position != value)
+        {
+            m_Position = value;
+            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Position" });
+        }
     }
 
     uint64_t PlayerService::RemainingTime()
@@ -360,6 +352,7 @@ namespace winrt::MediaPlayer::implementation
         {
             m_CurrentMediaIndex = value;
             m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"CurrentMediaIndex" });
+            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Metadata" });
         }
     }
 
@@ -406,6 +399,7 @@ namespace winrt::MediaPlayer::implementation
         {
             m_Playlist.GetAt(CurrentMediaIndex()) = value;
             m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Metadata" });
+            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Playlist" });
         }
     }
 

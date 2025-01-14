@@ -52,8 +52,8 @@
             </Grid.ColumnDefinitions>
             <Button Background="Transparent" BorderBrush="Transparent" Click="Button_Playlist_Click" Grid.Column="0" HorizontalAlignment="Left" MinWidth="200">
                 <StackPanel Orientation="Vertical">
-                    <TextBlock x:Name="TextBlock_Title" Text="Open Playlists" HorizontalAlignment="Left"/>
-                    <TextBlock x:Name="TextBlock_AuthorAlbum" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="TextBlock_Title" Text="Open Playlists" HorizontalAlignment="Left" TextAlignment="Left"/>
+                    <TextBlock x:Name="TextBlock_AuthorAlbum" HorizontalAlignment="Left" TextAlignment="Left"/>
                 </StackPanel>
             </Button>
             <StackPanel Orientation="Horizontal" Spacing="10"  HorizontalAlignment="Center" Grid.Column="1">

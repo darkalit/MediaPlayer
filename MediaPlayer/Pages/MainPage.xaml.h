@@ -14,7 +14,7 @@ namespace winrt::MediaPlayer::implementation
         void SwapChainPanel_Video_SizeChanged(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::SizeChangedEventArgs const&);
 
     private:        
-        com_ptr<PlayerService> m_PlayerService;
+        IPlayerService m_PlayerService;
     };
 }
 

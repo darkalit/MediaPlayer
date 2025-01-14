@@ -1,0 +1,7 @@
+namespace MediaPlayer
+{
+    runtimeclass EmptyStringToDefaultConverter : [default] Microsoft.UI.Xaml.Data.IValueConverter
+    {
+        EmptyStringToDefaultConverter();
+    }
+}

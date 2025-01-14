@@ -20,8 +20,6 @@ namespace winrt::MediaPlayer::implementation
         ~PlayerService() override;
         void Init();
 
-        static hstring DurationToString(uint64_t duration);
-
         void AddSource(hstring const& path, hstring const& displayName);
         void SetSource(hstring const& path);
         bool HasSource();

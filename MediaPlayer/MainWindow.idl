@@ -1,8 +1,11 @@
+import "Services/IPlayerService.idl";
+
 namespace MediaPlayer
 {
     [default_interface]
     runtimeclass MainWindow : Microsoft.UI.Xaml.Window
     {
         MainWindow();
+        IPlayerService PlayerService { get; };
     }
 }

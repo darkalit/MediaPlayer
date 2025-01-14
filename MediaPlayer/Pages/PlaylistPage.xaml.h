@@ -14,10 +14,11 @@ namespace winrt::MediaPlayer::implementation
         void Button_ClearPlaylist_Click(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
         void Button_DeleteItem_Click(Windows::Foundation::IInspectable const& sender, Microsoft::UI::Xaml::RoutedEventArgs const&);
 
+        IPlayerService PlayerService();
         Windows::Foundation::Collections::IVector<MediaMetadata> Playlist();
 
     private:
-        com_ptr<PlayerService> m_PlayerService;
+        IPlayerService m_PlayerService;
     };
 }
 

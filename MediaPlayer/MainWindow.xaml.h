@@ -23,6 +23,7 @@ namespace winrt::MediaPlayer::implementation
         void Button_Prev_Click(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
         void Button_Next_Click(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
         void Button_Playlist_Click(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
+        IPlayerService PlayerService();
 
         template <typename T>
         void Navigate();
@@ -36,7 +37,7 @@ namespace winrt::MediaPlayer::implementation
         void UpdateTimeline();
 
         Microsoft::UI::Dispatching::DispatcherQueueTimer m_TimelineDispatcherTimer;
-        com_ptr<PlayerService> m_PlayerService;
+        IPlayerService m_PlayerService;
     };
 
     template <typename T>

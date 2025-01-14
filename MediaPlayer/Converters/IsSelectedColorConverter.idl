@@ -1,0 +1,7 @@
+namespace MediaPlayer
+{
+    runtimeclass IsSelectedColorConverter : [default] Microsoft.UI.Xaml.Data.IValueConverter
+    {
+        IsSelectedColorConverter();
+    }
+}

@@ -21,24 +21,24 @@ namespace winrt::MediaPlayer::implementation
 
     void PlaylistPage::OnLoad(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
-        m_PlayerService->SwapChainPanel(SwapChainPanel_Video());
+        m_PlayerService.SwapChainPanel(SwapChainPanel_Video());
     }
 
     void PlaylistPage::SwapChainPanel_Video_SizeChanged(Windows::Foundation::IInspectable const&, SizeChangedEventArgs const&)
     {
         auto size = SwapChainPanel_Video().ActualSize();
-        m_PlayerService->ResizeVideo(size.x, size.y);
+        m_PlayerService.ResizeVideo(size.x, size.y);
     }
 
     void PlaylistPage::ItemsView_Playlist_ItemInvoked(Controls::ItemsView const& sender, Controls::ItemsViewItemInvokedEventArgs const&)
     {
         auto index = sender.CurrentItemIndex();
-        m_PlayerService->StartByIndex(index);
+        m_PlayerService.StartByIndex(index);
     }
 
     void PlaylistPage::Button_ClearPlaylist_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
-        m_PlayerService->Clear();
+        m_PlayerService.Clear();
     }
 
     void PlaylistPage::Button_DeleteItem_Click(Windows::Foundation::IInspectable const& sender, RoutedEventArgs const&)
@@ -49,13 +49,18 @@ namespace winrt::MediaPlayer::implementation
         if (metadata)
         {
             unsigned int index;
-            m_PlayerService->Playlist().IndexOf(*metadata, index);
-            m_PlayerService->DeleteByIndex(index);
+            m_PlayerService.Playlist().IndexOf(*metadata, index);
+            m_PlayerService.DeleteByIndex(index);
         }
+    }
+
+    IPlayerService PlaylistPage::PlayerService()
+    {
+        return m_PlayerService;
     }
 
     IVector<MediaMetadata> PlaylistPage::Playlist()
     {
-        return m_PlayerService->Playlist();
+        return m_PlayerService.Playlist();
     }
 }
