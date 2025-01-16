@@ -9,10 +9,15 @@
     mc:Ignorable="d"
     Loaded="OnLoad">
 
-    <SplitView DisplayMode="Inline" IsPaneOpen="True" OpenPaneLength="{Binding Value, ElementName=Slider_PaneLength, Mode=OneWay}">
-        <SplitView.Pane>
-            <Grid Background="{ThemeResource TextOnAccentFillColorSecondaryBrush}">
-                <Slider
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <SplitView DisplayMode="Inline" IsPaneOpen="True" OpenPaneLength="{x:Bind Slider_PaneLength.Value, Mode=OneWay}" Grid.Row="0">
+            <SplitView.Pane>
+                <Grid Background="{ThemeResource TextOnAccentFillColorSecondaryBrush}">
+                    <Slider
                     x:Name="Slider_PaneLength"
                     VerticalAlignment="Stretch"
                     Value="250" 
@@ -21,15 +26,15 @@
                     Opacity="0"
                     IsThumbToolTipEnabled="False"
                     MinWidth="800"/>
-                <Grid
+                    <Grid
                     Margin="0,0,6,0"
                     Padding="10"
                     Background="{ThemeResource TextOnAccentFillColorPrimaryBrush}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <Button
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Button
                         BorderBrush="Transparent"
                         Background="Transparent"
                         Content="My Playlist"
@@ -37,49 +42,135 @@
                         HorizontalContentAlignment="Left"
                         VerticalAlignment="Top"
                         Grid.Row="0"/>
-                    <SwapChainPanel x:Name="SwapChainPanel_Video" SizeChanged="SwapChainPanel_Video_SizeChanged" Grid.Row="1"/>
+                        <SwapChainPanel x:Name="SwapChainPanel_Video" SizeChanged="SwapChainPanel_Video_SizeChanged" Grid.Row="1"/>
+                    </Grid>
                 </Grid>
-            </Grid>
-        </SplitView.Pane>
-        <StackPanel Orientation="Vertical" Padding="10">
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                <Button x:Name="Button_ClearPlaylist" Click="Button_ClearPlaylist_Click">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon Glyph="&#xE74D;"/>
-                        <TextBlock Text="Clear" HorizontalTextAlignment="Left"/>
-                    </StackPanel>
-                </Button>
-            </StackPanel>
-            <ItemsView
+            </SplitView.Pane>
+            <StackPanel Orientation="Vertical" Padding="10">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button x:Name="Button_ClearPlaylist" Command="{x:Bind ViewModel.ClearPlaylist}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <FontIcon Glyph="&#xE74D;"/>
+                            <TextBlock Text="Clear" HorizontalTextAlignment="Left"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+                <ItemsView
                 x:Name="ItemsView_Playlist"
                 SelectionMode="Single"
                 IsItemInvokedEnabled="True"
                 ItemInvoked="ItemsView_Playlist_ItemInvoked"
-                ItemsSource="{x:Bind PlayerService.Playlist, Mode=OneWay}">
-                <ItemsView.Layout>
-                    <StackLayout Spacing="5"/>
-                </ItemsView.Layout>
-                <ItemsView.ItemTemplate>
-                    <DataTemplate x:DataType="local:MediaMetadata">
-                        <ItemContainer AutomationProperties.Name="{x:Bind Title}">
-                            <Grid Padding="10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="{x:Bind Title}" Foreground="{x:Bind Id, Converter={StaticResource IsSelectedColorConverter}}" Grid.Column="0"/>
-                                <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationToStringConverter}}" Grid.Column="1"/>
-                                <TextBlock Text="{x:Bind AlbumTitle}" Grid.Column="2"/>
-                                <Button Click="Button_DeleteItem_Click" DataContext="{x:Bind}"  Grid.Column="3">
-                                    <FontIcon Glyph="&#xE711;"/>
-                                </Button>
-                            </Grid>
-                        </ItemContainer>
-                    </DataTemplate>
-                </ItemsView.ItemTemplate>
-            </ItemsView>
+                ItemsSource="{x:Bind ViewModel.Playlist, Mode=OneWay}">
+                    <ItemsView.Layout>
+                        <StackLayout Spacing="5"/>
+                    </ItemsView.Layout>
+                    <ItemsView.ItemTemplate>
+                        <DataTemplate x:DataType="local:MediaMetadata">
+                            <ItemContainer AutomationProperties.Name="{x:Bind Title}">
+                                <Grid Padding="10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Title}" Foreground="{x:Bind IsSelected, Converter={StaticResource IsSelectedColorConverter}, Mode=OneWay}" Grid.Column="0"/>
+                                    <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationToStringConverter}}" Grid.Column="1"/>
+                                    <TextBlock Text="{x:Bind AlbumTitle}" Grid.Column="2"/>
+                                    <Button Click="Button_DeleteItem_Click" DataContext="{x:Bind Id}"  Grid.Column="3">
+                                        <FontIcon Glyph="&#xE711;"/>
+                                    </Button>
+                                </Grid>
+                            </ItemContainer>
+                        </DataTemplate>
+                    </ItemsView.ItemTemplate>
+                </ItemsView>
+            </StackPanel>
+        </SplitView>
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"  Grid.Row="1">
+            <Grid HorizontalAlignment="Stretch" Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{x:Bind ViewModel.CurrentTimeText, Mode=OneWay}"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           Margin="10,0,0,0"
+                           Grid.Column="0"/>
+                <Slider x:Name="Slider_Timeline"
+                        Minimum="0.0"
+                        Maximum="{x:Bind ViewModel.DurationValue, Mode=OneWay}"
+                        Value="{x:Bind ViewModel.CurrentTimeValue, Mode=TwoWay}"
+                        IsEnabled="{x:Bind ViewModel.ControlsEnabled, Mode=OneWay}"
+                        PointerPressed="Slider_Timeline_PointerPressed"
+                        PointerReleased="Slider_Timeline_PointerReleased"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Center"
+                        Margin="10,0,10,0"
+                        Grid.Column="1"/>
+                <TextBlock Text="{x:Bind ViewModel.RemainingTimeText, Mode=OneWay}"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0"
+                           Grid.Column="2"/>
+            </Grid>
+            <Grid HorizontalAlignment="Stretch" Margin="10,10,10,30" Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Background="Transparent"
+                        BorderBrush="Transparent"
+                        Command="{x:Bind ViewModel.OpenPlaylists}"
+                        HorizontalAlignment="Left"
+                        MinWidth="200"
+                        Grid.Column="0">
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="{x:Bind ViewModel.Title, Mode=OneWay}" HorizontalAlignment="Left" TextAlignment="Left"/>
+                        <TextBlock Text="{x:Bind ViewModel.AuthorAlbum, Mode=OneWay}"  HorizontalAlignment="Left" TextAlignment="Left"/>
+                    </StackPanel>
+                </Button>
+                <StackPanel Orientation="Horizontal" Spacing="10"  HorizontalAlignment="Center" Grid.Column="1">
+                    <Button Command="{x:Bind ViewModel.Prev}" IsEnabled="{x:Bind ViewModel.ControlsEnabled, Mode=OneWay}">
+                        <Button.Content>
+                            <Image>
+                                <Image.Source>
+                                    <BitmapImage x:Name="BitmapImage_Prev" UriSource="ms-appx:///Assets/LeftSkipIcon.png" DecodePixelWidth="32"/>
+                                </Image.Source>
+                            </Image>
+                        </Button.Content>
+                    </Button>
+                    <Button Command="{x:Bind ViewModel.PlayPause}" IsEnabled="{x:Bind ViewModel.ControlsEnabled, Mode=OneWay}">
+                        <Button.Content>
+                            <Image>
+                                <Image.Source>
+                                    <BitmapImage UriSource="{x:Bind ViewModel.PlayPauseIconSource, Mode=OneWay}" DecodePixelWidth="32"/>
+                                </Image.Source>
+                            </Image>
+                        </Button.Content>
+                    </Button>
+                    <Button Command="{x:Bind ViewModel.Next}" IsEnabled="{x:Bind ViewModel.ControlsEnabled, Mode=OneWay}">
+                        <Button.Content>
+                            <Image>
+                                <Image.Source>
+                                    <BitmapImage x:Name="BitmapImage_Next" UriSource="ms-appx:///Assets/RightSkipIcon.png" DecodePixelWidth="32"/>
+                                </Image.Source>
+                            </Image>
+                        </Button.Content>
+                    </Button>
+                </StackPanel>
+                <Grid HorizontalAlignment="Right" Grid.Column="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="180"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{x:Bind ViewModel.VolumeText, Mode=OneWay}"  HorizontalAlignment="Right" VerticalAlignment="Center" Grid.Column="0"/>
+                    <Slider Minimum="0.0" Maximum="100.0" Value="{x:Bind ViewModel.VolumeValue, Mode=TwoWay}" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="10,0,10,0" Grid.Column="1"/>
+                </Grid>
+            </Grid>
         </StackPanel>
-    </SplitView>
+    </Grid>
 </Page>

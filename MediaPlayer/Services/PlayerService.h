@@ -1,6 +1,7 @@
 #pragma once
 #include "PlayerService.g.h"
 
+#include "Framework/BindableBase.h"
 #include "winrt/MediaPlayer.h"
 #include "Media/MediaEngineWrapper.h"
 
@@ -14,7 +15,7 @@ struct IMFActivate;
 
 namespace winrt::MediaPlayer::implementation
 {
-    struct PlayerService : PlayerServiceT<PlayerService>
+    struct PlayerService : PlayerServiceT<PlayerService, MediaPlayer::implementation::BindableBase>
     {
         PlayerService();
         ~PlayerService() override;
@@ -23,6 +24,7 @@ namespace winrt::MediaPlayer::implementation
         void AddSource(hstring const& path, hstring const& displayName);
         void SetSource(hstring const& path);
         bool HasSource();
+        int32_t GetMediaIndexById(guid const& id);
 
         void Next();
         void Prev();
@@ -52,8 +54,8 @@ namespace winrt::MediaPlayer::implementation
         Windows::Foundation::Collections::IVector<MediaMetadata> Playlist();
         Microsoft::UI::Xaml::Controls::SwapChainPanel SwapChainPanel();
         void SwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& value);
-        event_token PropertyChanged(Microsoft::UI::Xaml::Data::PropertyChangedEventHandler const& handler);
-        void PropertyChanged(event_token const& token) noexcept;
+        Microsoft::UI::Dispatching::DispatcherQueue UIDispatcher();
+        void UIDispatcher(Microsoft::UI::Dispatching::DispatcherQueue const& value);
 
     private:
         MediaMetadata GetMetadataInternal(hstring const& path);
@@ -73,10 +75,9 @@ namespace winrt::MediaPlayer::implementation
         com_ptr<IMFSourceReader> m_SourceReader;
         com_ptr<MediaEngineWrapper> m_MediaEngineWrapper;
         Microsoft::UI::Xaml::Controls::SwapChainPanel m_SwapChainPanel;
+        Microsoft::UI::Dispatching::DispatcherQueue m_UIDispatcherQueue = nullptr;
 
         HANDLE m_VideoSurfaceHandle;
-
-        event<Microsoft::UI::Xaml::Data::PropertyChangedEventHandler> m_PropertyChanged;
     };
 }
 namespace winrt::MediaPlayer::factory_implementation

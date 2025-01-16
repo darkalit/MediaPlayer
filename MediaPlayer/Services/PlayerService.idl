@@ -1,8 +1,19 @@
-import "Services/IPlayerService.idl";
+import "Models/MediaMetadata.idl";
+import "Framework/BindableBase.idl";
 
 namespace MediaPlayer
 {
-    runtimeclass PlayerService : IPlayerService
+    enum PlayerServiceState
+    {
+        CLOSED,
+        READY,
+        STOPPED,
+        PLAYING,
+        PAUSED,
+    };
+
+    [default_interface]
+    unsealed runtimeclass PlayerService : BindableBase
     {
         PlayerService();
         void Init();
@@ -10,6 +21,7 @@ namespace MediaPlayer
         void AddSource(String path, String displayName);
         void SetSource(String path);
         Boolean HasSource();
+        Int32 GetMediaIndexById(GUID id);
 
         void Next();
         void Prev();
@@ -33,5 +45,6 @@ namespace MediaPlayer
         MediaMetadata Metadata { get; };
         Windows.Foundation.Collections.IVector<MediaMetadata> Playlist { get; };
         Microsoft.UI.Xaml.Controls.SwapChainPanel SwapChainPanel;
+        Microsoft.UI.Dispatching.DispatcherQueue UIDispatcher;
     }
 }

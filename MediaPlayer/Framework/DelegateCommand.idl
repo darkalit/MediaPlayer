@@ -1,0 +1,7 @@
+namespace MediaPlayer
+{
+    runtimeclass DelegateCommand : Microsoft.UI.Xaml.DependencyObject, Microsoft.UI.Xaml.Input.ICommand
+    {
+        void RaiseCanExecuteChanged();
+    }
+}

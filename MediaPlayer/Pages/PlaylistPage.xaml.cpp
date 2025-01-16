@@ -5,62 +5,73 @@
 #endif
 
 #include "App.xaml.h"
+#include "ViewModels/PlaylistViewModel.h"
 #include "windows.foundation.collections.h"
 
 using namespace winrt;
-using namespace Microsoft::UI::Xaml;
-using namespace Windows::Foundation::Collections;
+using namespace Microsoft::UI;
+using namespace Xaml;
+using namespace Xaml::Input;
+using namespace Windows::Foundation;
+using namespace Collections;
 
 namespace winrt::MediaPlayer::implementation
 {
     PlaylistPage::PlaylistPage()
-        :
-        m_PlayerService(App::GetPlayerService())
     {
+        m_ViewModel = make<MediaPlayer::implementation::PlaylistViewModel>();
+        DataContext(ViewModel());
     }
 
     void PlaylistPage::OnLoad(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
-        m_PlayerService.SwapChainPanel(SwapChainPanel_Video());
+        m_ViewModel.SetSwapChain().Execute(SwapChainPanel_Video());
+
+        Slider_Timeline().AddHandler(
+            UIElement::PointerPressedEvent(),
+            box_value(PointerEventHandler{ this, &PlaylistPage::Slider_Timeline_PointerPressed }),
+            true);
+        Slider_Timeline().AddHandler(
+            UIElement::PointerReleasedEvent(),
+            box_value(PointerEventHandler{ this, &PlaylistPage::Slider_Timeline_PointerReleased }),
+            true);
     }
 
     void PlaylistPage::SwapChainPanel_Video_SizeChanged(Windows::Foundation::IInspectable const&, SizeChangedEventArgs const&)
     {
-        auto size = SwapChainPanel_Video().ActualSize();
-        m_PlayerService.ResizeVideo(size.x, size.y);
+        m_ViewModel.ResizeVideo().Execute(box_value(SwapChainPanel_Video().ActualSize()));
     }
 
     void PlaylistPage::ItemsView_Playlist_ItemInvoked(Controls::ItemsView const& sender, Controls::ItemsViewItemInvokedEventArgs const&)
     {
         auto index = sender.CurrentItemIndex();
-        m_PlayerService.StartByIndex(index);
-    }
-
-    void PlaylistPage::Button_ClearPlaylist_Click(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
-    {
-        m_PlayerService.Clear();
+        m_ViewModel.PlayMediaByIndex().Execute(box_value(index));
     }
 
     void PlaylistPage::Button_DeleteItem_Click(Windows::Foundation::IInspectable const& sender, RoutedEventArgs const&)
     {
         auto button = sender.as<Controls::Button>();
-        auto metadata = button.DataContext().try_as<MediaMetadata>();
+        auto id = button.DataContext().try_as<guid>();
 
-        if (metadata)
+        if (id)
         {
-            unsigned int index;
-            m_PlayerService.Playlist().IndexOf(*metadata, index);
-            m_PlayerService.DeleteByIndex(index);
+            m_ViewModel.DeleteMedia().Execute(box_value(*id));
         }
     }
 
-    IPlayerService PlaylistPage::PlayerService()
+    void PlaylistPage::Slider_Timeline_PointerReleased(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
     {
-        return m_PlayerService;
+        auto time = static_cast<uint64_t>(ViewModel().CurrentTimeValue()) * 1000;
+        ViewModel().Play().Execute(box_value(time));
     }
 
-    IVector<MediaMetadata> PlaylistPage::Playlist()
+    void PlaylistPage::Slider_Timeline_PointerPressed(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
     {
-        return m_PlayerService.Playlist();
+        ViewModel().Pause().Execute(IInspectable());
+    }
+
+    MediaPlayer::PlaylistViewModel PlaylistPage::ViewModel()
+    {
+        return m_ViewModel;
     }
 }

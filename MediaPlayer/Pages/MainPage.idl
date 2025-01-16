@@ -1,8 +1,11 @@
+import "ViewModels/MainPageViewModel.idl";
+
 namespace MediaPlayer
 {
     [default_interface]
     runtimeclass MainPage : Microsoft.UI.Xaml.Controls.Page
     {
         MainPage();
+        MainPageViewModel ViewModel{ get; };
     }
 }

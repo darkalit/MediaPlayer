@@ -1,0 +1,15 @@
+import "Framework/BindableBase.idl";
+import "Framework/DelegateCommand.idl";
+import "Models/MediaMetadata.idl";
+
+namespace MediaPlayer
+{
+    [default_interface]
+    unsealed runtimeclass MenuBarControlViewModel : BindableBase
+    {
+        MenuBarControlViewModel();
+        Microsoft.UI.Xaml.Input.ICommand ChangePlaybackSpeed{ get; };
+        Microsoft.UI.Xaml.Input.ICommand Exit{ get; };
+        Microsoft.UI.Xaml.Input.ICommand OpenFiles{ get; };
+    }
+}

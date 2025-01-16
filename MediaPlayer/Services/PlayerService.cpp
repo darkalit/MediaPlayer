@@ -129,21 +129,32 @@ namespace winrt::MediaPlayer::implementation
         check_hresult(MFCreateSourceReaderFromURL(path.c_str(), nullptr, m_SourceReader.put()));
         m_MediaEngineWrapper->SetSource(m_SourceReader.get());
         if (SwapChainPanel()) {
-            SwapChainPanel().DispatcherQueue().TryEnqueue([&]()
-                {
-                    auto size = SwapChainPanel().ActualSize();
-                    m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
-                });
+            m_UIDispatcherQueue.TryEnqueue([&]()
+            {
+                auto size = SwapChainPanel().ActualSize();
+                m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
+            });
         }
         Position(0);
         State(PlayerServiceState::STOPPED);
-
-        m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Metadata" });
     }
 
     bool PlayerService::HasSource()
     {
         return !!m_SourceReader && m_MediaEngineWrapper && m_Playlist.Size() > 0 && CurrentMediaIndex() > -1;
+    }
+
+    int32_t PlayerService::GetMediaIndexById(guid const& id)
+    {
+        for (int32_t i = 0; i < m_Playlist.Size(); ++i)
+        {
+            if (m_Playlist.GetAt(i).Id == id)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     void PlayerService::Next()
@@ -242,6 +253,10 @@ namespace winrt::MediaPlayer::implementation
         }
 
         State(PlayerServiceState::PLAYING);
+
+        auto md = Metadata();
+        md.IsSelected = true;
+        Metadata(md);
     }
 
     void PlayerService::Start(uint64_t timePos)
@@ -268,11 +283,16 @@ namespace winrt::MediaPlayer::implementation
         }
 
         State(PlayerServiceState::PLAYING);
+
+        auto md = Metadata();
+        md.IsSelected = true;
+        Metadata(md);
     }
 
     void PlayerService::Stop()
     {
         State(PlayerServiceState::STOPPED);
+        if (!HasSource()) return;
 
         try
         {
@@ -287,7 +307,8 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::Pause()
     {
-       State(PlayerServiceState::PAUSED);
+        State(PlayerServiceState::PAUSED);
+        if (!HasSource()) return;
 
         try
         {
@@ -316,7 +337,7 @@ namespace winrt::MediaPlayer::implementation
         if (m_Position != value)
         {
             m_Position = value;
-            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Position" });
+            RaisePropertyChanged(L"Position");
         }
     }
 
@@ -337,7 +358,7 @@ namespace winrt::MediaPlayer::implementation
         {
             m_PlaybackSpeed = value;
             m_MediaEngineWrapper->SetPlaybackSpeed(value);
-            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"PlaybackSpeed" });
+            RaisePropertyChanged(L"PlaybackSpeed");
         }
     }
 
@@ -351,15 +372,13 @@ namespace winrt::MediaPlayer::implementation
         if (m_CurrentMediaIndex != value)
         {
             m_CurrentMediaIndex = value;
-            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"CurrentMediaIndex" });
-            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Metadata" });
+            RaisePropertyChanged(L"CurrentMediaIndex");
+            RaisePropertyChanged(L"Metadata");
         }
     }
 
     double PlayerService::Volume()
     {
-        if (!HasSource()) return 0;
-
         return m_MediaEngineWrapper->GetVolume();
     }
 
@@ -368,7 +387,7 @@ namespace winrt::MediaPlayer::implementation
         if (m_MediaEngineWrapper->GetVolume() != value)
         {
             m_MediaEngineWrapper->SetVolume(value);
-            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Volume" });
+            RaisePropertyChanged(L"Volume");
         }        
     }
 
@@ -382,7 +401,7 @@ namespace winrt::MediaPlayer::implementation
         if (m_State != value)
         {
             m_State = value;
-            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"State" });
+            RaisePropertyChanged(L"State");
         }
     }
 
@@ -398,8 +417,8 @@ namespace winrt::MediaPlayer::implementation
         if (m_Playlist.GetAt(CurrentMediaIndex()) != value)
         {
             m_Playlist.GetAt(CurrentMediaIndex()) = value;
-            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Metadata" });
-            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"Playlist" });
+            RaisePropertyChanged(L"Metadata");
+            RaisePropertyChanged(L"Playlist");
         }
     }
 
@@ -422,27 +441,31 @@ namespace winrt::MediaPlayer::implementation
 
             if (m_VideoSurfaceHandle && m_SwapChainPanel)
             {
-                m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]()
-                    {
-                        com_ptr<ISwapChainPanelNative2> panelNative;
-                        m_SwapChainPanel.as(panelNative);
-                        check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
-                        auto size = m_SwapChainPanel.ActualSize();
-                        m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
-                    });
+                m_UIDispatcherQueue.TryEnqueue([&]()
+                {
+                    com_ptr<ISwapChainPanelNative2> panelNative;
+                    m_SwapChainPanel.as(panelNative);
+                    check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
+                    auto size = m_SwapChainPanel.ActualSize();
+                    m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
+                });
             }
-            m_PropertyChanged(*this, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs{ L"SwapChainPanel" });
+            RaisePropertyChanged(L"SwapChainPanel");
         }
     }
 
-    event_token PlayerService::PropertyChanged(Microsoft::UI::Xaml::Data::PropertyChangedEventHandler const& handler)
+    Microsoft::UI::Dispatching::DispatcherQueue PlayerService::UIDispatcher()
     {
-        return m_PropertyChanged.add(handler);
+        return m_UIDispatcherQueue;
     }
 
-    void PlayerService::PropertyChanged(event_token const& token) noexcept
+    void PlayerService::UIDispatcher(Microsoft::UI::Dispatching::DispatcherQueue const& value)
     {
-        m_PropertyChanged.remove(token);
+        if (m_UIDispatcherQueue != value)
+        {
+            m_UIDispatcherQueue = value;
+            RaisePropertyChanged(L"UIDispatcherQueue");
+        }
     }
 
     MediaMetadata PlayerService::GetMetadataInternal(
@@ -455,6 +478,7 @@ namespace winrt::MediaPlayer::implementation
 
         metadata.Id = GuidHelper::CreateNewGuid();
         metadata.Path = path;
+        metadata.IsSelected = false;
 
         try
         {
@@ -594,18 +618,21 @@ namespace winrt::MediaPlayer::implementation
 
         if (m_VideoSurfaceHandle && m_SwapChainPanel)
         {
-            m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]()
-                {
-                    com_ptr<ISwapChainPanelNative2> panelNative;
-                    m_SwapChainPanel.as(panelNative);
-                    check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
-                });
+            m_UIDispatcherQueue.TryEnqueue([&]()
+            {
+                com_ptr<ISwapChainPanelNative2> panelNative;
+                m_SwapChainPanel.as(panelNative);
+                check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
+            });
         }
     }
 
     void PlayerService::OnPlaybackEnded()
     {
-        Next();
+        m_UIDispatcherQueue.TryEnqueue([&]()
+        {
+            Next();
+        });
     }
 
     void PlayerService::OnError(MF_MEDIA_ENGINE_ERR error, HRESULT hr)

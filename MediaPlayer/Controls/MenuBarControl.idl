@@ -1,0 +1,11 @@
+import "ViewModels/MenuBarControlViewModel.idl";
+
+namespace MediaPlayer
+{
+    [default_interface]
+    runtimeclass MenuBarControl : Microsoft.UI.Xaml.Controls.UserControl
+    {
+        MenuBarControl();
+        MenuBarControlViewModel ViewModel{ get; };
+    }
+}

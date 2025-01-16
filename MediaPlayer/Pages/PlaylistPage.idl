@@ -1,5 +1,4 @@
-import "Services/MediaMetadata.idl";
-import "Services/IPlayerService.idl";
+import "ViewModels/PlaylistViewModel.idl";
 
 namespace MediaPlayer
 {
@@ -7,7 +6,6 @@ namespace MediaPlayer
     runtimeclass PlaylistPage : Microsoft.UI.Xaml.Controls.Page
     {
         PlaylistPage();
-        IPlayerService PlayerService { get; };
-        IVector<MediaMetadata> Playlist{ get; };
+        PlaylistViewModel ViewModel{ get; };
     }
 }

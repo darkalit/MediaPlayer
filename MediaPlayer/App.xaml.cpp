@@ -10,7 +10,6 @@ using namespace Microsoft::UI::Xaml::Controls;
 namespace winrt::MediaPlayer::implementation
 {
     Window App::s_Window = nullptr;
-    //com_ptr<PlayerService> App::s_PlayerService = nullptr;
 
     App::App()
     {
@@ -34,11 +33,13 @@ namespace winrt::MediaPlayer::implementation
         auto mainWindow = s_Window.try_as<MainWindow>();
         mainWindow->Navigate<MainPage>();
         s_Window.Activate();
+
+        GetPlayerService().UIDispatcher(s_Window.DispatcherQueue());
     }
 
-    IPlayerService App::GetPlayerService()
+    MediaPlayer::PlayerService App::GetPlayerService()
     {
-        return Application::Current().Resources().TryLookup(box_value(L"PlayerService")).as<IPlayerService>();
+        return Application::Current().Resources().TryLookup(box_value(L"PlayerService")).as<MediaPlayer::PlayerService>();
     }
 
     HWND App::GetMainWindow()

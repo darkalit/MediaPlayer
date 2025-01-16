@@ -1,0 +1,35 @@
+import "Framework/BindableBase.idl";
+import "Framework/DelegateCommand.idl";
+import "Models/MediaMetadata.idl";
+
+namespace MediaPlayer
+{
+    [default_interface]
+    unsealed runtimeclass PlaylistViewModel : BindableBase
+    {
+        PlaylistViewModel();
+        IVector<MediaMetadata> Playlist{ get; };
+        Microsoft.UI.Xaml.Input.ICommand DeleteMedia{ get; };
+        Microsoft.UI.Xaml.Input.ICommand ClearPlaylist{ get; };
+        Microsoft.UI.Xaml.Input.ICommand PlayMediaByIndex{ get; };
+
+        String Title{ get; };
+        String AuthorAlbum{ get; };
+        String VolumeText{ get; };
+        Double VolumeValue;
+        String CurrentTimeText{ get; };
+        String RemainingTimeText{ get; };
+        Double CurrentTimeValue;
+        Double DurationValue{ get; };
+        String PlayPauseIconSource;
+        Boolean ControlsEnabled{ get; };
+        Microsoft.UI.Xaml.Input.ICommand ResizeVideo{ get; };
+        Microsoft.UI.Xaml.Input.ICommand SetSwapChain{ get; };
+        Microsoft.UI.Xaml.Input.ICommand OpenPlaylists{ get; };
+        Microsoft.UI.Xaml.Input.ICommand PlayPause{ get; };
+        Microsoft.UI.Xaml.Input.ICommand Play{ get; };
+        Microsoft.UI.Xaml.Input.ICommand Pause{ get; };
+        Microsoft.UI.Xaml.Input.ICommand Next{ get; };
+        Microsoft.UI.Xaml.Input.ICommand Prev{ get; };
+    }
+}

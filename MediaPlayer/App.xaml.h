@@ -15,7 +15,7 @@ namespace winrt::MediaPlayer::implementation
 
         void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
 
-        static IPlayerService GetPlayerService();
+        static MediaPlayer::PlayerService GetPlayerService();
         static HWND GetMainWindow();
 
         template <typename T>

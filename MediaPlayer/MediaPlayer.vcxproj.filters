@@ -11,16 +11,14 @@
     <Page Include="Pages\PlaylistPage.xaml">
       <Filter>Pages</Filter>
     </Page>
+    <Page Include="Controls\MenuBarControl.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />
-    <Midl Include="Services\MediaMetadata.idl">
+    <Midl Include="Models\MediaMetadata.idl">
       <Filter>Services</Filter>
     </Midl>
     <Midl Include="Services\PlayerService.idl">
-      <Filter>Services</Filter>
-    </Midl>
-    <Midl Include="Services\IPlayerService.idl">
       <Filter>Services</Filter>
     </Midl>
     <Midl Include="Converters\DurationToStringConverter.idl">
@@ -32,6 +30,11 @@
     <Midl Include="Converters\IsSelectedColorConverter.idl">
       <Filter>Converters</Filter>
     </Midl>
+    <Midl Include="Framework\BindableBase.idl" />
+    <Midl Include="Framework\DelegateCommand.idl" />
+    <Midl Include="ViewModels\PlaylistViewModel.idl" />
+    <Midl Include="ViewModels\MainPageViewModel.idl" />
+    <Midl Include="ViewModels\MenuBarControlViewModel.idl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -62,6 +65,11 @@
       <Filter>Converters</Filter>
     </ClCompile>
     <ClCompile Include="Converters\IsSelectedColorConverter.cpp" />
+    <ClCompile Include="Framework\BindableBase.cpp" />
+    <ClCompile Include="Framework\DelegateCommand.cpp" />
+    <ClCompile Include="ViewModels\PlaylistViewModel.cpp" />
+    <ClCompile Include="ViewModels\MenuBarControlViewModel.cpp" />
+    <ClCompile Include="ViewModels\MainPageViewModel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -91,6 +99,11 @@
       <Filter>Converters</Filter>
     </ClInclude>
     <ClInclude Include="Converters\IsSelectedColorConverter.h" />
+    <ClInclude Include="Framework\BindableBase.h" />
+    <ClInclude Include="Framework\DelegateCommand.h" />
+    <ClInclude Include="ViewModels\PlaylistViewModel.h" />
+    <ClInclude Include="ViewModels\MenuBarControlViewModel.h" />
+    <ClInclude Include="ViewModels\MainPageViewModel.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">

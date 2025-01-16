@@ -88,9 +88,9 @@
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">stdcpp20</LanguageStandard>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpp20</LanguageStandard>
     </ClCompile>
@@ -108,9 +108,9 @@
     <ClCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">stdcpp20</LanguageStandard>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpp20</LanguageStandard>
     </ClCompile>
@@ -131,8 +131,14 @@
     <Manifest Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Controls\MenuBarControl.xaml.h">
+      <DependentUpon>Controls\MenuBarControl.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="Converters\EmptyStringToDefaultConverter.h" />
     <ClInclude Include="Converters\IsSelectedColorConverter.h" />
+    <ClInclude Include="Framework\BindableBase.h" />
+    <ClInclude Include="Framework\DelegateCommand.h" />
     <ClInclude Include="Media\MediaEngineExtension.h" />
     <ClInclude Include="Media\MediaEngineNotifyImpl.h" />
     <ClInclude Include="Media\MediaEngineWrapper.h" />
@@ -156,9 +162,15 @@
     <ClInclude Include="Converters\DurationToStringConverter.h" />
     <ClInclude Include="Services\PlayerService.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="ViewModels\MainPageViewModel.h" />
+    <ClInclude Include="ViewModels\MenuBarControlViewModel.h" />
+    <ClInclude Include="ViewModels\PlaylistViewModel.h" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml" />
+    <Page Include="Controls\MenuBarControl.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="MainWindow.xaml" />
     <Page Include="Pages\MainPage.xaml">
       <SubType>Designer</SubType>
@@ -168,8 +180,14 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Controls\MenuBarControl.xaml.cpp">
+      <DependentUpon>Controls\MenuBarControl.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="Converters\EmptyStringToDefaultConverter.cpp" />
     <ClCompile Include="Converters\IsSelectedColorConverter.cpp" />
+    <ClCompile Include="Framework\BindableBase.cpp" />
+    <ClCompile Include="Framework\DelegateCommand.cpp" />
     <ClCompile Include="Media\MediaEngineExtension.cpp" />
     <ClCompile Include="Media\MediaEngineNotifyImpl.cpp" />
     <ClCompile Include="Media\MediaEngineWrapper.cpp" />
@@ -196,10 +214,19 @@
     <ClCompile Include="Converters\DurationToStringConverter.cpp" />
     <ClCompile Include="Services\PlayerService.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="ViewModels\MainPageViewModel.cpp" />
+    <ClCompile Include="ViewModels\MenuBarControlViewModel.cpp" />
+    <ClCompile Include="ViewModels\PlaylistViewModel.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Midl Include="Controls\MenuBarControl.idl">
+      <DependentUpon>Controls\MenuBarControl.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
     <Midl Include="Converters\EmptyStringToDefaultConverter.idl" />
     <Midl Include="Converters\IsSelectedColorConverter.idl" />
+    <Midl Include="Framework\BindableBase.idl" />
+    <Midl Include="Framework\DelegateCommand.idl" />
     <Midl Include="MainWindow.idl">
       <SubType>Code</SubType>
       <DependentUpon>MainWindow.xaml</DependentUpon>
@@ -213,9 +240,11 @@
       <SubType>Code</SubType>
     </Midl>
     <Midl Include="Converters\DurationToStringConverter.idl" />
-    <Midl Include="Services\IPlayerService.idl" />
-    <Midl Include="Services\MediaMetadata.idl" />
+    <Midl Include="Models\MediaMetadata.idl" />
     <Midl Include="Services\PlayerService.idl" />
+    <Midl Include="ViewModels\MenuBarControlViewModel.idl" />
+    <Midl Include="ViewModels\MainPageViewModel.idl" />
+    <Midl Include="ViewModels\PlaylistViewModel.idl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LeftSkipIcon.png" />
