@@ -26,6 +26,7 @@ namespace winrt::MediaPlayer::implementation
     {
         try
         {
+            //check_hresult(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
             check_hresult(MFStartup(MF_VERSION));
 
             //Init();
@@ -41,6 +42,7 @@ namespace winrt::MediaPlayer::implementation
         try
         {
             check_hresult(MFShutdown());
+            //CoUninitialize();
         }
         catch (const hresult_error& e)
         {
@@ -126,8 +128,9 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::SetSource(hstring const& path)
     {
-        check_hresult(MFCreateSourceReaderFromURL(path.c_str(), nullptr, m_SourceReader.put()));
-        m_MediaEngineWrapper->SetSource(m_SourceReader.get());
+        com_ptr<IMFSourceReader> tempSourceReader;
+        check_hresult(MFCreateSourceReaderFromURL(path.c_str(), nullptr, tempSourceReader.put()));
+        m_MediaEngineWrapper->SetSource(tempSourceReader.get());
         if (SwapChainPanel()) {
             m_UIDispatcherQueue.TryEnqueue([&]()
             {
@@ -136,6 +139,7 @@ namespace winrt::MediaPlayer::implementation
             });
         }
         Position(0);
+        m_SourceReader = tempSourceReader;
         State(PlayerServiceState::STOPPED);
     }
 
@@ -337,7 +341,6 @@ namespace winrt::MediaPlayer::implementation
         if (m_Position != value)
         {
             m_Position = value;
-            RaisePropertyChanged(L"Position");
         }
     }
 
@@ -358,7 +361,6 @@ namespace winrt::MediaPlayer::implementation
         {
             m_PlaybackSpeed = value;
             m_MediaEngineWrapper->SetPlaybackSpeed(value);
-            RaisePropertyChanged(L"PlaybackSpeed");
         }
     }
 
@@ -372,8 +374,6 @@ namespace winrt::MediaPlayer::implementation
         if (m_CurrentMediaIndex != value)
         {
             m_CurrentMediaIndex = value;
-            RaisePropertyChanged(L"CurrentMediaIndex");
-            RaisePropertyChanged(L"Metadata");
         }
     }
 
@@ -387,7 +387,6 @@ namespace winrt::MediaPlayer::implementation
         if (m_MediaEngineWrapper->GetVolume() != value)
         {
             m_MediaEngineWrapper->SetVolume(value);
-            RaisePropertyChanged(L"Volume");
         }        
     }
 
@@ -401,7 +400,6 @@ namespace winrt::MediaPlayer::implementation
         if (m_State != value)
         {
             m_State = value;
-            RaisePropertyChanged(L"State");
         }
     }
 
@@ -417,8 +415,6 @@ namespace winrt::MediaPlayer::implementation
         if (m_Playlist.GetAt(CurrentMediaIndex()) != value)
         {
             m_Playlist.GetAt(CurrentMediaIndex()) = value;
-            RaisePropertyChanged(L"Metadata");
-            RaisePropertyChanged(L"Playlist");
         }
     }
 
@@ -450,7 +446,6 @@ namespace winrt::MediaPlayer::implementation
                     m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
                 });
             }
-            RaisePropertyChanged(L"SwapChainPanel");
         }
     }
 
@@ -464,7 +459,6 @@ namespace winrt::MediaPlayer::implementation
         if (m_UIDispatcherQueue != value)
         {
             m_UIDispatcherQueue = value;
-            RaisePropertyChanged(L"UIDispatcherQueue");
         }
     }
 

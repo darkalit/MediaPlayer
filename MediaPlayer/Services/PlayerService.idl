@@ -13,7 +13,7 @@ namespace MediaPlayer
     };
 
     [default_interface]
-    unsealed runtimeclass PlayerService : BindableBase
+    unsealed runtimeclass PlayerService
     {
         PlayerService();
         void Init();

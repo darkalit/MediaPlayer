@@ -1,7 +1,6 @@
 #pragma once
 #include "PlayerService.g.h"
 
-#include "Framework/BindableBase.h"
 #include "winrt/MediaPlayer.h"
 #include "Media/MediaEngineWrapper.h"
 
@@ -15,7 +14,7 @@ struct IMFActivate;
 
 namespace winrt::MediaPlayer::implementation
 {
-    struct PlayerService : PlayerServiceT<PlayerService, MediaPlayer::implementation::BindableBase>
+    struct PlayerService : PlayerServiceT<PlayerService>
     {
         PlayerService();
         ~PlayerService() override;
