@@ -3,7 +3,7 @@ namespace MediaPlayer
     struct MediaMetadata
     {
         Boolean IsSelected;
-        GUID Id;
+        Guid Id;
         String Path;
         UInt64 Duration; // duration in milliseconds
 

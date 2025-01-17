@@ -202,11 +202,35 @@ namespace winrt::MediaPlayer::implementation
         RaisePropertyChanged(L"RemainingTimeText");
         RaisePropertyChanged(L"DurationValue");
         RaisePropertyChanged(L"ControlsEnabled");
+        RaisePropertyChanged(L"CurrentMediaId");
+        if (m_CurrentIndex != m_PlayerService.CurrentMediaIndex())
+        {
+            ChangePlayingItem(m_PlayerService.CurrentMediaIndex());
+        }
     }
 
     Collections::IVector<MediaMetadata> PlaylistViewModel::Playlist()
     {
         return m_PlayerService.Playlist();
+    }
+
+    void PlaylistViewModel::ChangePlayingItem(int32_t newIndex)
+    {
+        if (m_CurrentIndex != -1 && m_CurrentIndex < Playlist().Size())
+        {
+            auto item = Playlist().GetAt(m_CurrentIndex);
+            item.IsSelected = false;
+            Playlist().SetAt(m_CurrentIndex, item);
+        }
+
+        m_CurrentIndex = newIndex;
+
+        if (m_CurrentIndex != -1 && m_CurrentIndex < Playlist().Size())
+        {
+            auto item = Playlist().GetAt(m_CurrentIndex);
+            item.IsSelected = true;
+            Playlist().SetAt(m_CurrentIndex, item);
+        }
     }
 
     Microsoft::UI::Xaml::Input::ICommand PlaylistViewModel::DeleteMedia()

@@ -11,6 +11,7 @@ namespace winrt::MediaPlayer::implementation
         PlaylistViewModel();
 
         winrt::Windows::Foundation::Collections::IVector<winrt::MediaPlayer::MediaMetadata> Playlist();
+        void ChangePlayingItem(int32_t newIndex);
         winrt::Microsoft::UI::Xaml::Input::ICommand DeleteMedia();
         winrt::Microsoft::UI::Xaml::Input::ICommand ClearPlaylist();
         winrt::Microsoft::UI::Xaml::Input::ICommand ResizeVideo();
@@ -51,6 +52,7 @@ namespace winrt::MediaPlayer::implementation
         Microsoft::UI::Dispatching::DispatcherQueueTimer m_Timer;
 
         double m_CurrentTime = 0.0;
+        int32_t m_CurrentIndex = 0;
         hstring m_PlayPauseIconSource = L"ms-appx:///Assets/PlayIcon.png";
 
         MediaPlayer::DelegateCommand m_OpenPlaylistsCommand = nullptr;

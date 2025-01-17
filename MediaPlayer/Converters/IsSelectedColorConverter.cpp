@@ -12,8 +12,7 @@ namespace winrt::MediaPlayer::implementation
     {
         auto textColor = Application::Current().Resources().TryLookup(box_value(L"TextFillColorPrimaryBrush")).as<Media::SolidColorBrush>();
         auto accentTextColor = Application::Current().Resources().TryLookup(box_value(L"AccentTextFillColorPrimaryBrush")).as<Media::SolidColorBrush>();
-        //auto currentMediaId = ;
-
+        
         if (unbox_value<bool>(value))
         {
             return box_value(accentTextColor);

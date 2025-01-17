@@ -7,6 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
+    x:Name="PlaylistPage"
     Loaded="OnLoad">
 
     <Grid>
@@ -17,31 +18,28 @@
         <SplitView DisplayMode="Inline" IsPaneOpen="True" OpenPaneLength="{x:Bind Slider_PaneLength.Value, Mode=OneWay}" Grid.Row="0">
             <SplitView.Pane>
                 <Grid Background="{ThemeResource TextOnAccentFillColorSecondaryBrush}">
-                    <Slider
-                    x:Name="Slider_PaneLength"
-                    VerticalAlignment="Stretch"
-                    Value="250" 
-                    Minimum="6"
-                    Maximum="800"
-                    Opacity="0"
-                    IsThumbToolTipEnabled="False"
-                    MinWidth="800"/>
-                    <Grid
-                    Margin="0,0,6,0"
-                    Padding="10"
-                    Background="{ThemeResource TextOnAccentFillColorPrimaryBrush}">
+                    <Slider x:Name="Slider_PaneLength"
+                            VerticalAlignment="Stretch"
+                            Value="250" 
+                            Minimum="6"
+                            Maximum="800"
+                            Opacity="0"
+                            IsThumbToolTipEnabled="False"
+                            MinWidth="800"/>
+                    <Grid Margin="0,0,6,0"
+                          Padding="10"
+                          Background="{ThemeResource TextOnAccentFillColorPrimaryBrush}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <Button
-                        BorderBrush="Transparent"
-                        Background="Transparent"
-                        Content="My Playlist"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        VerticalAlignment="Top"
-                        Grid.Row="0"/>
+                        <Button BorderBrush="Transparent"
+                                Background="Transparent"
+                                Content="My Playlist"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                VerticalAlignment="Top"
+                                Grid.Row="0"/>
                         <SwapChainPanel x:Name="SwapChainPanel_Video" SizeChanged="SwapChainPanel_Video_SizeChanged" Grid.Row="1"/>
                     </Grid>
                 </Grid>
@@ -55,18 +53,17 @@
                         </StackPanel>
                     </Button>
                 </StackPanel>
-                <ItemsView
-                x:Name="ItemsView_Playlist"
-                SelectionMode="Single"
-                IsItemInvokedEnabled="True"
-                ItemInvoked="ItemsView_Playlist_ItemInvoked"
-                ItemsSource="{x:Bind ViewModel.Playlist, Mode=OneWay}">
+                <ItemsView x:Name="ItemsView_Playlist"
+                           SelectionMode="Single"
+                           IsItemInvokedEnabled="True"
+                           ItemInvoked="ItemsView_Playlist_ItemInvoked"
+                           ItemsSource="{x:Bind ViewModel.Playlist, Mode=OneWay}">
                     <ItemsView.Layout>
                         <StackLayout Spacing="5"/>
                     </ItemsView.Layout>
                     <ItemsView.ItemTemplate>
                         <DataTemplate x:DataType="local:MediaMetadata">
-                            <ItemContainer AutomationProperties.Name="{x:Bind Title}">
+                            <ItemContainer>
                                 <Grid Padding="10">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -74,9 +71,14 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{x:Bind Title}" Foreground="{x:Bind IsSelected, Converter={StaticResource IsSelectedColorConverter}, Mode=OneWay}" Grid.Column="0"/>
-                                    <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationToStringConverter}}" Grid.Column="1"/>
-                                    <TextBlock Text="{x:Bind AlbumTitle}" Grid.Column="2"/>
+                                    <TextBlock Text="{x:Bind Title}"
+                                               Foreground="{x:Bind IsSelected, Converter={StaticResource IsSelectedColorConverter}}" Grid.Column="0"/>
+                                    <TextBlock Text="{x:Bind Duration, Converter={StaticResource DurationToStringConverter}}"
+                                               Foreground="{x:Bind IsSelected, Converter={StaticResource IsSelectedColorConverter}}"
+                                               Grid.Column="1"/>
+                                    <TextBlock Text="{x:Bind AlbumTitle}"
+                                               Foreground="{x:Bind IsSelected, Converter={StaticResource IsSelectedColorConverter}}"
+                                               Grid.Column="2"/>
                                     <Button Click="Button_DeleteItem_Click" DataContext="{x:Bind Id}"  Grid.Column="3">
                                         <FontIcon Glyph="&#xE711;"/>
                                     </Button>

@@ -9,6 +9,7 @@ namespace MediaPlayer
     {
         PlaylistViewModel();
         IVector<MediaMetadata> Playlist{ get; };
+        void ChangePlayingItem(Int32 newIndex);
         Microsoft.UI.Xaml.Input.ICommand DeleteMedia{ get; };
         Microsoft.UI.Xaml.Input.ICommand ClearPlaylist{ get; };
         Microsoft.UI.Xaml.Input.ICommand PlayMediaByIndex{ get; };
