@@ -52,7 +52,7 @@ namespace winrt::MediaPlayer::implementation
         Microsoft::UI::Dispatching::DispatcherQueueTimer m_Timer;
 
         double m_CurrentTime = 0.0;
-        int32_t m_CurrentIndex = 0;
+        int32_t m_CurrentIndex = -1;
         hstring m_PlayPauseIconSource = L"ms-appx:///Assets/PlayIcon.png";
 
         MediaPlayer::DelegateCommand m_OpenPlaylistsCommand = nullptr;
