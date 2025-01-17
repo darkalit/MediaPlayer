@@ -9,6 +9,7 @@
             <local:DurationToStringConverter x:Key="DurationToStringConverter"/>
             <local:EmptyStringToDefaultConverter x:Key="EmptyStringToDefaultConverter"/>
             <local:IsSelectedColorConverter x:Key="IsSelectedColorConverter"/>
+            <local:DateToStringConverter x:Key="DateToStringConverter"/>
             <local:PlayerService x:Key="PlayerService"/>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />

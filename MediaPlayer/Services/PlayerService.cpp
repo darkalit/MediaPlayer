@@ -473,6 +473,7 @@ namespace winrt::MediaPlayer::implementation
         metadata.Id = GuidHelper::CreateNewGuid();
         metadata.Path = path;
         metadata.IsSelected = false;
+        metadata.AddedAt = clock::now();
 
         try
         {

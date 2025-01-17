@@ -11,7 +11,9 @@
     <Page Include="Pages\PlaylistPage.xaml">
       <Filter>Pages</Filter>
     </Page>
-    <Page Include="Controls\MenuBarControl.xaml" />
+    <Page Include="Controls\MenuBarControl.xaml">
+      <Filter>Controls</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />
@@ -30,11 +32,24 @@
     <Midl Include="Converters\IsSelectedColorConverter.idl">
       <Filter>Converters</Filter>
     </Midl>
-    <Midl Include="Framework\BindableBase.idl" />
-    <Midl Include="Framework\DelegateCommand.idl" />
-    <Midl Include="ViewModels\PlaylistViewModel.idl" />
-    <Midl Include="ViewModels\MainPageViewModel.idl" />
-    <Midl Include="ViewModels\MenuBarControlViewModel.idl" />
+    <Midl Include="Converters\DateToStringConverter.idl">
+      <Filter>Converters</Filter>
+    </Midl>
+    <Midl Include="Framework\BindableBase.idl">
+      <Filter>Framework</Filter>
+    </Midl>
+    <Midl Include="Framework\DelegateCommand.idl">
+      <Filter>Framework</Filter>
+    </Midl>
+    <Midl Include="ViewModels\PlaylistViewModel.idl">
+      <Filter>ViewModels</Filter>
+    </Midl>
+    <Midl Include="ViewModels\MainPageViewModel.idl">
+      <Filter>ViewModels</Filter>
+    </Midl>
+    <Midl Include="ViewModels\MenuBarControlViewModel.idl">
+      <Filter>ViewModels</Filter>
+    </Midl>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -64,12 +79,27 @@
     <ClCompile Include="Converters\EmptyStringToDefaultConverter.cpp">
       <Filter>Converters</Filter>
     </ClCompile>
-    <ClCompile Include="Converters\IsSelectedColorConverter.cpp" />
-    <ClCompile Include="Framework\BindableBase.cpp" />
-    <ClCompile Include="Framework\DelegateCommand.cpp" />
-    <ClCompile Include="ViewModels\PlaylistViewModel.cpp" />
-    <ClCompile Include="ViewModels\MenuBarControlViewModel.cpp" />
-    <ClCompile Include="ViewModels\MainPageViewModel.cpp" />
+    <ClCompile Include="Converters\DateToStringConverter.cpp">
+      <Filter>Converters</Filter>
+    </ClCompile>
+    <ClCompile Include="Framework\BindableBase.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="Framework\DelegateCommand.cpp">
+      <Filter>Framework</Filter>
+    </ClCompile>
+    <ClCompile Include="Converters\IsSelectedColorConverter.cpp">
+      <Filter>Converters</Filter>
+    </ClCompile>
+    <ClCompile Include="ViewModels\PlaylistViewModel.cpp">
+      <Filter>ViewModels</Filter>
+    </ClCompile>
+    <ClCompile Include="ViewModels\MainPageViewModel.cpp">
+      <Filter>ViewModels</Filter>
+    </ClCompile>
+    <ClCompile Include="ViewModels\MenuBarControlViewModel.cpp">
+      <Filter>ViewModels</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -98,12 +128,27 @@
     <ClInclude Include="Converters\EmptyStringToDefaultConverter.h">
       <Filter>Converters</Filter>
     </ClInclude>
-    <ClInclude Include="Converters\IsSelectedColorConverter.h" />
-    <ClInclude Include="Framework\BindableBase.h" />
-    <ClInclude Include="Framework\DelegateCommand.h" />
-    <ClInclude Include="ViewModels\PlaylistViewModel.h" />
-    <ClInclude Include="ViewModels\MenuBarControlViewModel.h" />
-    <ClInclude Include="ViewModels\MainPageViewModel.h" />
+    <ClInclude Include="Converters\DateToStringConverter.h">
+      <Filter>Converters</Filter>
+    </ClInclude>
+    <ClInclude Include="Framework\BindableBase.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="Framework\DelegateCommand.h">
+      <Filter>Framework</Filter>
+    </ClInclude>
+    <ClInclude Include="Converters\IsSelectedColorConverter.h">
+      <Filter>Converters</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewModels\PlaylistViewModel.h">
+      <Filter>ViewModels</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewModels\MainPageViewModel.h">
+      <Filter>ViewModels</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewModels\MenuBarControlViewModel.h">
+      <Filter>ViewModels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -155,6 +200,15 @@
     </Filter>
     <Filter Include="Converters">
       <UniqueIdentifier>{1be7b333-b186-493e-92a8-6463361d3829}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Controls">
+      <UniqueIdentifier>{c93d4b24-e8be-45e0-a16b-a700a2ed5045}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ViewModels">
+      <UniqueIdentifier>{1b8c01db-5925-4285-8c59-0467fb8d06e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Framework">
+      <UniqueIdentifier>{9a7082bf-7d7d-4906-96c7-bfbf0071fe2e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

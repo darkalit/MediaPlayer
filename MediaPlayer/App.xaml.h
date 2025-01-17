@@ -4,6 +4,7 @@
 #include "Converters/DurationToStringConverter.h"
 #include "Converters/EmptyStringToDefaultConverter.h"
 #include "Converters/IsSelectedColorConverter.h"
+#include "Converters/DateToStringConverter.h"
 #include "MainWindow.xaml.h"
 #include "Services/PlayerService.h"
 

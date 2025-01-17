@@ -135,6 +135,7 @@
       <DependentUpon>Controls\MenuBarControl.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClInclude>
+    <ClInclude Include="Converters\DateToStringConverter.h" />
     <ClInclude Include="Converters\EmptyStringToDefaultConverter.h" />
     <ClInclude Include="Converters\IsSelectedColorConverter.h" />
     <ClInclude Include="Framework\BindableBase.h" />
@@ -184,6 +185,7 @@
       <DependentUpon>Controls\MenuBarControl.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClCompile>
+    <ClCompile Include="Converters\DateToStringConverter.cpp" />
     <ClCompile Include="Converters\EmptyStringToDefaultConverter.cpp" />
     <ClCompile Include="Converters\IsSelectedColorConverter.cpp" />
     <ClCompile Include="Framework\BindableBase.cpp" />
@@ -223,6 +225,7 @@
       <DependentUpon>Controls\MenuBarControl.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Midl>
+    <Midl Include="Converters\DateToStringConverter.idl" />
     <Midl Include="Converters\EmptyStringToDefaultConverter.idl" />
     <Midl Include="Converters\IsSelectedColorConverter.idl" />
     <Midl Include="Framework\BindableBase.idl" />

@@ -53,6 +53,19 @@
                         </StackPanel>
                     </Button>
                 </StackPanel>
+                <Grid Padding="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Title" Grid.Column="0"/>
+                    <TextBlock Text="Duration" Grid.Column="1"/>
+                    <TextBlock Text="Album" Grid.Column="2"/>
+                    <TextBlock Text="Time added" Grid.Column="3"/>
+                </Grid>
                 <ItemsView x:Name="ItemsView_Playlist"
                            SelectionMode="Single"
                            IsItemInvokedEnabled="True"
@@ -70,6 +83,7 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="{x:Bind Title}"
                                                Foreground="{x:Bind IsSelected, Converter={StaticResource IsSelectedColorConverter}}" Grid.Column="0"/>
@@ -79,7 +93,10 @@
                                     <TextBlock Text="{x:Bind AlbumTitle}"
                                                Foreground="{x:Bind IsSelected, Converter={StaticResource IsSelectedColorConverter}}"
                                                Grid.Column="2"/>
-                                    <Button Click="Button_DeleteItem_Click" DataContext="{x:Bind Id}"  Grid.Column="3">
+                                    <TextBlock Text="{x:Bind AddedAt, Converter={StaticResource DateToStringConverter}}"
+                                               Foreground="{x:Bind IsSelected, Converter={StaticResource IsSelectedColorConverter}}"
+                                               Grid.Column="3"/>
+                                    <Button Click="Button_DeleteItem_Click" DataContext="{x:Bind Id}"  Grid.Column="4">
                                         <FontIcon Glyph="&#xE711;"/>
                                     </Button>
                                 </Grid>

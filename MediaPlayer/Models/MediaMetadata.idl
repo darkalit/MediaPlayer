@@ -6,6 +6,7 @@ namespace MediaPlayer
         Guid Id;
         String Path;
         UInt64 Duration; // duration in milliseconds
+        Windows.Foundation.DateTime AddedAt;
 
         UInt32 AudioChannelCount;
         UInt32 AudioBitrate; // bits per second

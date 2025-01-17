@@ -1,0 +1,7 @@
+namespace MediaPlayer
+{
+    runtimeclass DateToStringConverter : [default] Microsoft.UI.Xaml.Data.IValueConverter
+    {
+        DateToStringConverter();
+    }
+}

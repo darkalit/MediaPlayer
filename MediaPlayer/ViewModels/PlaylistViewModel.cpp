@@ -25,6 +25,7 @@ namespace winrt::MediaPlayer::implementation
 
             auto index = m_PlayerService.GetMediaIndexById(id);
             m_PlayerService.DeleteByIndex(index);
+            ChangePlayingItem(m_PlayerService.CurrentMediaIndex());
         });
 
         m_ClearPlaylistCommand = make<DelegateCommand>([&](auto&&)
