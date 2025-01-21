@@ -18,6 +18,9 @@
 #include "microsoft.ui.xaml.media.dxinterop.h"
 #include "d3d11.h"
 
+#include "libavcodec/avcodec.h"
+#include "libavformat/avformat.h"
+
 using namespace winrt::Windows::Foundation;
 
 namespace winrt::MediaPlayer::implementation
@@ -106,6 +109,8 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::AddSource(hstring const& path, hstring const& displayName)
     {
+        m_FfmepDecoder.OpenFile(path);
+
         auto res = GetMetadataInternal(path);
 
         if (res.Title.empty())

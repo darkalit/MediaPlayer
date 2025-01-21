@@ -2,6 +2,7 @@
 #include "PlayerService.g.h"
 
 #include "winrt/MediaPlayer.h"
+#include "Media/FfmpegDecoder.h"
 #include "Media/MediaEngineWrapper.h"
 
 struct IMFMediaSource;
@@ -75,6 +76,8 @@ namespace winrt::MediaPlayer::implementation
         com_ptr<MediaEngineWrapper> m_MediaEngineWrapper;
         Microsoft::UI::Xaml::Controls::SwapChainPanel m_SwapChainPanel;
         Microsoft::UI::Dispatching::DispatcherQueue m_UIDispatcherQueue = nullptr;
+
+        FfmpegDecoder m_FfmepDecoder;
 
         HANDLE m_VideoSurfaceHandle;
     };

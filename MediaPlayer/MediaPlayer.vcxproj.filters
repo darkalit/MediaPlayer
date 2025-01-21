@@ -100,6 +100,9 @@
     <ClCompile Include="ViewModels\MenuBarControlViewModel.cpp">
       <Filter>ViewModels</Filter>
     </ClCompile>
+    <ClCompile Include="Media\FfmpegDecoder.cpp">
+      <Filter>Media</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -148,6 +151,9 @@
     </ClInclude>
     <ClInclude Include="ViewModels\MenuBarControlViewModel.h">
       <Filter>ViewModels</Filter>
+    </ClInclude>
+    <ClInclude Include="Media\FfmpegDecoder.h">
+      <Filter>Media</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

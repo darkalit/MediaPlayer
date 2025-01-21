@@ -88,39 +88,69 @@
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(ProjectDir)External\ffmpeg\include;$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)External\ffmpeg\include;$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)External\ffmpeg\include;$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">stdcpp20</LanguageStandard>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(ProjectDir)External\ffmpeg\include;$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)External\ffmpeg\include;$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)External\ffmpeg\include;$(GeneratedFilesDir)Controls;$(GeneratedFilesDir)Pages;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">stdcpp20</LanguageStandard>
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">propsys.lib;Mf.lib;mfuuid.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PostBuildEvent>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup Condition="'$(WindowsPackageType)'!='None' and Exists('Package.appxmanifest')">
     <AppxManifest Include="Package.appxmanifest">
@@ -140,6 +170,7 @@
     <ClInclude Include="Converters\IsSelectedColorConverter.h" />
     <ClInclude Include="Framework\BindableBase.h" />
     <ClInclude Include="Framework\DelegateCommand.h" />
+    <ClInclude Include="Media\FfmpegDecoder.h" />
     <ClInclude Include="Media\MediaEngineExtension.h" />
     <ClInclude Include="Media\MediaEngineNotifyImpl.h" />
     <ClInclude Include="Media\MediaEngineWrapper.h" />
@@ -190,6 +221,7 @@
     <ClCompile Include="Converters\IsSelectedColorConverter.cpp" />
     <ClCompile Include="Framework\BindableBase.cpp" />
     <ClCompile Include="Framework\DelegateCommand.cpp" />
+    <ClCompile Include="Media\FfmpegDecoder.cpp" />
     <ClCompile Include="Media\MediaEngineExtension.cpp" />
     <ClCompile Include="Media\MediaEngineNotifyImpl.cpp" />
     <ClCompile Include="Media\MediaEngineWrapper.cpp" />
@@ -280,6 +312,18 @@
   -->
   <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
     <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
