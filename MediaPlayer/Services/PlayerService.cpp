@@ -109,7 +109,7 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::AddSource(hstring const& path, hstring const& displayName)
     {
-        m_FfmepDecoder.OpenFile(path);
+        //m_FfmepDecoder.OpenFile(path);
 
         auto res = GetMetadataInternal(path);
 
@@ -133,8 +133,18 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::SetSource(hstring const& path)
     {
+        m_FfmpegDecoder.OpenFile(path);
+        auto& buffer = m_FfmpegDecoder.GetWavBuffer();
+
+        //com_ptr<IStream> stream;
+        //stream.copy_from());
+
+        com_ptr<IMFByteStream> byteStream;
+        check_hresult(MFCreateMFByteStreamOnStreamEx(SHCreateMemStream(buffer.data(), buffer.size()), byteStream.put()));
+
         com_ptr<IMFSourceReader> tempSourceReader;
-        check_hresult(MFCreateSourceReaderFromURL(path.c_str(), nullptr, tempSourceReader.put()));
+        //check_hresult(MFCreateSourceReaderFromURL(path.c_str(), nullptr, tempSourceReader.put()));
+        MFCreateSourceReaderFromByteStream(byteStream.get(), nullptr, tempSourceReader.put());
         m_MediaEngineWrapper->SetSource(tempSourceReader.get());
         if (SwapChainPanel()) {
             m_UIDispatcherQueue.TryEnqueue([&]()

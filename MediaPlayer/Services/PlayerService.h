@@ -77,7 +77,7 @@ namespace winrt::MediaPlayer::implementation
         Microsoft::UI::Xaml::Controls::SwapChainPanel m_SwapChainPanel;
         Microsoft::UI::Dispatching::DispatcherQueue m_UIDispatcherQueue = nullptr;
 
-        FfmpegDecoder m_FfmepDecoder;
+        FfmpegDecoder m_FfmpegDecoder;
 
         HANDLE m_VideoSurfaceHandle;
     };

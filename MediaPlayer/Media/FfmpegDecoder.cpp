@@ -71,7 +71,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         &m_SwrContext,
         // Output
         &m_AudioCodecContext->ch_layout,
-        AV_SAMPLE_FMT_U8,
+        AV_SAMPLE_FMT_S16,
         44100,
         // Input
         &m_AudioCodecContext->ch_layout,
@@ -91,54 +91,66 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         return;
     }
 
-    uint8_t* audioBuffer = nullptr;
-    int audioSize = 0;
-    while (DecodeNextFrame(audioBuffer, audioSize))
-    {
-        OutputDebugString((L"DecodeNextFrame size: " + to_hstring(audioSize) + L"\n").c_str());
-        av_free(audioBuffer);
-    }
-}
-
-bool FfmpegDecoder::DecodeNextFrame(uint8_t*& outBuffer, int& outSize)
-{
     auto frame = av_frame_alloc();
     defer{ av_frame_free(&frame); };
 
     auto packet = av_packet_alloc();
     defer{ av_packet_free(&packet); };
 
-    int error = av_read_frame(m_FormatContext, packet);
-    if (error != 0)
+    std::vector<uint8_t> pcmData;
+
+    while (av_read_frame(m_FormatContext, packet) == 0)
     {
-        return false;
+        defer{ av_packet_unref(packet); };
+
+        if (packet->stream_index != m_AudioStreamIndex)
+        {
+            continue;
+        }
+
+        error = avcodec_send_packet(m_AudioCodecContext, packet);
+        if (error != 0)
+        {
+            continue;
+        }
+
+        error = avcodec_receive_frame(m_AudioCodecContext, frame);
+        if (error != 0)
+        {
+            continue;
+        }
+
+        uint8_t* buffer = nullptr;
+        int outSamples = swr_get_out_samples(m_SwrContext, frame->nb_samples);
+        av_samples_alloc(&buffer, nullptr, 2, outSamples, AV_SAMPLE_FMT_S16, 0);
+
+        outSamples = swr_convert(
+            m_SwrContext,
+            &buffer,
+            outSamples,
+            frame->data,
+            frame->nb_samples);
+
+        int dataSize = outSamples * 2 * 2;
+        pcmData.insert(pcmData.end(), buffer, buffer + dataSize);
+        av_free(buffer);
     }
-    defer{ av_packet_unref(packet); };
 
-    if (packet->stream_index != m_AudioStreamIndex)
-    {
-        return true;
-    }
+    WavHeader header;
+    header.NumChannels = 2;
+    header.SampleRate = 44100;
+    header.BitsPerSample = 16;
+    header.BlockAlign = header.NumChannels * header.BitsPerSample / 8;
+    header.ByteRate = header.SampleRate * header.BlockAlign;
+    header.DataSize = static_cast<uint32_t>(pcmData.size());
+    header.ChunkSize = sizeof(header) - 8 + header.DataSize;
 
-    avcodec_send_packet(m_AudioCodecContext, packet);
-    error = avcodec_receive_frame(m_AudioCodecContext, frame);
-    if (error != 0)
-    {
-        return false;
-    }
+    m_WavBuffer.resize(sizeof(WavHeader) + header.DataSize);
+    memcpy(m_WavBuffer.data(), &header, sizeof(WavHeader));
+    memcpy(m_WavBuffer.data() + sizeof(WavHeader), pcmData.data(), pcmData.size());
+}
 
-    int bufferSize = av_samples_get_buffer_size(
-        nullptr,
-        frame->ch_layout.nb_channels,
-        frame->nb_samples,
-        AV_SAMPLE_FMT_U8, 1);
-    outBuffer = static_cast<uint8_t*>(av_malloc(bufferSize));
-    outSize = swr_convert(
-        m_SwrContext,
-        &outBuffer, 
-        frame->nb_samples,
-        frame->data,
-        frame->nb_samples);
-
-    return true;
+std::vector<uint8_t>& FfmpegDecoder::GetWavBuffer()
+{
+    return m_WavBuffer;
 }
