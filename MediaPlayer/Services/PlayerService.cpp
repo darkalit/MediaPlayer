@@ -29,10 +29,7 @@ namespace winrt::MediaPlayer::implementation
     {
         try
         {
-            //check_hresult(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
             check_hresult(MFStartup(MF_VERSION));
-
-            //Init();
         }
         catch (const hresult_error& e)
         {
@@ -45,7 +42,6 @@ namespace winrt::MediaPlayer::implementation
         try
         {
             check_hresult(MFShutdown());
-            //CoUninitialize();
         }
         catch (const hresult_error& e)
         {
@@ -109,8 +105,6 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::AddSource(hstring const& path, hstring const& displayName)
     {
-        //m_FfmepDecoder.OpenFile(path);
-
         auto res = GetMetadataInternal(path);
 
         if (res.Title.empty())
@@ -133,19 +127,27 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::SetSource(hstring const& path)
     {
+        // memory leak temporarily fix
+        // TODO: find better way to control m_SourceReader references
+        while (m_SourceReader)
+        {
+            if (m_SourceReader->Release() <= 2)
+            {
+                break;
+            }
+        }
+
         m_FfmpegDecoder.OpenFile(path);
         auto& buffer = m_FfmpegDecoder.GetWavBuffer();
 
-        //com_ptr<IStream> stream;
-        //stream.copy_from());
+        com_ptr<IStream> stream;
+        stream.attach(SHCreateMemStream(buffer.data(), buffer.size()));
 
         com_ptr<IMFByteStream> byteStream;
-        check_hresult(MFCreateMFByteStreamOnStreamEx(SHCreateMemStream(buffer.data(), buffer.size()), byteStream.put()));
+        check_hresult(MFCreateMFByteStreamOnStreamEx(stream.get(), byteStream.put()));
 
-        com_ptr<IMFSourceReader> tempSourceReader;
-        //check_hresult(MFCreateSourceReaderFromURL(path.c_str(), nullptr, tempSourceReader.put()));
-        MFCreateSourceReaderFromByteStream(byteStream.get(), nullptr, tempSourceReader.put());
-        m_MediaEngineWrapper->SetSource(tempSourceReader.get());
+        MFCreateSourceReaderFromByteStream(byteStream.get(), nullptr, m_SourceReader.put());
+        m_MediaEngineWrapper->SetSource(m_SourceReader.get());
         if (SwapChainPanel()) {
             m_UIDispatcherQueue.TryEnqueue([&]()
             {
@@ -154,7 +156,6 @@ namespace winrt::MediaPlayer::implementation
             });
         }
         Position(0);
-        m_SourceReader = tempSourceReader;
         State(PlayerServiceState::STOPPED);
     }
 

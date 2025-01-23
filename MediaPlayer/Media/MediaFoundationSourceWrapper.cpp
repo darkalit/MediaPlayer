@@ -6,14 +6,14 @@
 
 MediaFoundationSourceWrapper::MediaFoundationSourceWrapper(IMFSourceReader* sourceReader)
 {
-    m_SourceReader.copy_from(sourceReader);
+    //m_SourceReader.attach(sourceReader);
     BOOL validStream = false;
     DWORD streamIndexIn = 0;
     DWORD mediaStreamIndex = 0;
     while (true)
     {
         validStream = false;
-        HRESULT hr = m_SourceReader->GetStreamSelection(streamIndexIn, &validStream);
+        HRESULT hr = sourceReader->GetStreamSelection(streamIndexIn, &validStream);
         if (hr == MF_E_INVALIDSTREAMNUMBER)
         {
             hr = S_OK;
@@ -23,7 +23,7 @@ MediaFoundationSourceWrapper::MediaFoundationSourceWrapper(IMFSourceReader* sour
         if (validStream)
         {
             winrt::com_ptr<IMFMediaType> mediaType;
-            winrt::check_hresult(m_SourceReader->GetCurrentMediaType(streamIndexIn, mediaType.put()));
+            winrt::check_hresult(sourceReader->GetCurrentMediaType(streamIndexIn, mediaType.put()));
             GUID guidMajorType;
             winrt::check_hresult(mediaType->GetMajorType(&guidMajorType));
             if (guidMajorType == MFMediaType_Audio || guidMajorType == MFMediaType_Video)

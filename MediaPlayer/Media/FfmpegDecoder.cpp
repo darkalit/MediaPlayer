@@ -23,6 +23,9 @@ FfmpegDecoder::~FfmpegDecoder()
 
 void FfmpegDecoder::OpenFile(hstring const& filepath)
 {
+    m_WavBuffer.clear();
+    m_WavBuffer.resize(0);
+
     int error = avformat_open_input(&m_FormatContext, to_string(filepath).c_str(), nullptr, nullptr);
     if (error != 0)
     {

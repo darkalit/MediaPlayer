@@ -50,7 +50,7 @@ private:
 
     std::vector<winrt::com_ptr<MediaFoundationStreamWrapper>> m_MediaStreams;
     winrt::com_ptr<IMFMediaEventQueue> m_MediaEventQueue;
-    winrt::com_ptr<IMFSourceReader> m_SourceReader;
+    //winrt::com_ptr<IMFSourceReader> m_SourceReader;
     State m_State = State::INITIALIZED;
     float m_CurrentRate = 0.0f;
     bool m_PresentationEnded = false;
