@@ -3,6 +3,7 @@
 struct AVFormatContext;
 struct AVCodecContext;
 struct SwrContext;
+struct SwsContext;
 
 struct WavHeader
 {
@@ -26,6 +27,14 @@ struct WavHeader
     uint32_t DataSize;
 };
 
+struct VideoFrame
+{
+    std::vector<uint8_t> Buffer;
+    int Width;
+    int Height;
+    int RowPitch;
+};
+
 class FfmpegDecoder
 {
 public:
@@ -34,12 +43,18 @@ public:
 
     void OpenFile(winrt::hstring const& filepath);
     std::vector<uint8_t>& GetWavBuffer();
+    VideoFrame GetNextFrame();
 
 private:
     AVFormatContext* m_FormatContext;
     AVCodecContext* m_AudioCodecContext;
+    AVCodecContext* m_VideoCodecContext;
     int m_AudioStreamIndex;
+    int m_VideoStreamIndex;
     SwrContext* m_SwrContext;
+    SwsContext* m_SwsContext;
+
+    bool m_FileOpened = false;
 
     std::vector<uint8_t> m_WavBuffer;
 };
