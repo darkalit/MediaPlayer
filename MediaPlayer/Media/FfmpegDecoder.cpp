@@ -78,7 +78,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         OutputDebugString(L"FfmpegDecoder::OpenFile Audio avcodec_open2");
         return;
     }
-
+    
     error = swr_alloc_set_opts2(
         &m_SwrContext,
         // Output
@@ -138,7 +138,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         m_VideoCodecContext->pix_fmt,
         m_VideoCodecContext->width,
         m_VideoCodecContext->height,
-        AV_PIX_FMT_BGRA, SWS_BILINEAR,
+        AV_PIX_FMT_RGBA, SWS_BILINEAR,
         nullptr,
         nullptr,
         nullptr);
@@ -255,7 +255,7 @@ VideoFrame FfmpegDecoder::GetNextFrame()
         linesize,
         m_VideoCodecContext->width,
         m_VideoCodecContext->height,
-        AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_RGBA,
         1);
     if (error < 0)
     {

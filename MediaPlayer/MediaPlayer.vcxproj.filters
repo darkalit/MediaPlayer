@@ -103,6 +103,15 @@
     <ClCompile Include="Media\FfmpegDecoder.cpp">
       <Filter>Media</Filter>
     </ClCompile>
+    <ClCompile Include="DirectX\TexturePlaneRenderer.cpp">
+      <Filter>DirectX</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectX\DirectXUtils.cpp">
+      <Filter>DirectX</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectX\DeviceResources.cpp">
+      <Filter>DirectX</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -154,6 +163,15 @@
     </ClInclude>
     <ClInclude Include="Media\FfmpegDecoder.h">
       <Filter>Media</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectX\TexturePlaneRenderer.h">
+      <Filter>DirectX</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectX\DirectXUtils.h">
+      <Filter>DirectX</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectX\DeviceResources.h">
+      <Filter>DirectX</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -216,6 +234,9 @@
     <Filter Include="Framework">
       <UniqueIdentifier>{9a7082bf-7d7d-4906-96c7-bfbf0071fe2e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DirectX">
+      <UniqueIdentifier>{6a4289a7-df99-48bd-a3ee-83c65405c60f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="app.manifest" />
@@ -228,5 +249,13 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Assets\PlanePS.hlsl">
+      <Filter>Assets</Filter>
+    </FxCompile>
+    <FxCompile Include="Assets\PlaneVS.hlsl">
+      <Filter>Assets</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

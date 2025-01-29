@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "PlayerService.h"
+
 #include "PlayerService.g.cpp"
 
 #include "mfapi.h"
@@ -17,6 +18,10 @@
 #include "Audioclient.h"
 #include "microsoft.ui.xaml.media.dxinterop.h"
 #include "d3d11.h"
+#include "dxgi1_3.h"
+#include "d3d11_3.h"
+#include "DirectXColors.h"
+#include "App.xaml.h"
 
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
@@ -51,42 +56,18 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::Init()
     {
+        m_DeviceResources = App::GetDeviceResources();
+        m_TexturePlaneRenderer = std::make_shared<TexturePlaneRenderer>(m_DeviceResources);
+
         m_DeviceManager = nullptr;
         UINT resetToken = 0;
         check_hresult(MFLockDXGIDeviceManager(&resetToken, m_DeviceManager.put()));
 
-        com_ptr<ID3D11Device> d3d11Device;
-        UINT creationgFlags = D3D11_CREATE_DEVICE_VIDEO_SUPPORT
-            | D3D11_CREATE_DEVICE_BGRA_SUPPORT
-            | D3D11_CREATE_DEVICE_PREVENT_INTERNAL_THREADING_OPTIMIZATIONS;
-        constexpr D3D_FEATURE_LEVEL featureLevels[] = {
-            D3D_FEATURE_LEVEL_11_1,
-            D3D_FEATURE_LEVEL_11_0,
-            D3D_FEATURE_LEVEL_10_1,
-            D3D_FEATURE_LEVEL_10_0,
-            D3D_FEATURE_LEVEL_9_3,
-            D3D_FEATURE_LEVEL_9_2,
-            D3D_FEATURE_LEVEL_9_1
-        };
-
-        check_hresult(D3D11CreateDevice(
-            nullptr,
-            D3D_DRIVER_TYPE_HARDWARE,
-            0,
-            creationgFlags,
-            featureLevels,
-            ARRAYSIZE(featureLevels),
-            D3D11_SDK_VERSION,
-            d3d11Device.put(),
-            nullptr,
-            nullptr
-        ));
-
         com_ptr<ID3D10Multithread> multithreadedDevice;
-        d3d11Device.as(multithreadedDevice);
+        m_DeviceResources->GetD3DDevice()->QueryInterface(IID_PPV_ARGS(multithreadedDevice.put()));
         multithreadedDevice->SetMultithreadProtected(true);
 
-        check_hresult(m_DeviceManager->ResetDevice(d3d11Device.get(), resetToken));
+        check_hresult(m_DeviceManager->ResetDevice(m_DeviceResources->GetD3DDevice(), resetToken));
 
         auto onLoadedCB = std::bind(&PlayerService::OnLoaded, this);
         auto onPlaybackEndedCB = std::bind(&PlayerService::OnPlaybackEnded, this);
@@ -99,6 +80,7 @@ namespace winrt::MediaPlayer::implementation
             onErrorCB,
             0,
             0);
+        //RecreateResources(1280, 720);
 
         State(PlayerServiceState::READY);
     }
@@ -148,12 +130,28 @@ namespace winrt::MediaPlayer::implementation
 
         MFCreateSourceReaderFromByteStream(byteStream.get(), nullptr, m_SourceReader.put());
         m_MediaEngineWrapper->SetSource(m_SourceReader.get());
-        if (SwapChainPanel()) {
-            m_UIDispatcherQueue.TryEnqueue([&]()
-            {
-                auto size = SwapChainPanel().ActualSize();
-                m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
-            });
+        if (SwapChainPanel())
+        {
+            auto frame = m_FfmpegDecoder.GetNextFrame();
+            auto size = SwapChainPanel().ActualSize();
+            m_LastFrameSize = { static_cast<float>(frame.Width), static_cast<float>(frame.Height) };
+
+            m_TexturePlaneRenderer->SetImage(frame.Buffer.data(), frame.Width, frame.Height);
+            ResizeVideo(size.x, size.y);
+
+            auto context = m_DeviceResources->GetD3DDeviceContext();
+            //auto viewport = m_DeviceResources->GetScreenViewport();
+
+            //context->RSSetViewports(1, &viewport);
+
+            ID3D11RenderTargetView* const targets[1] = { m_DeviceResources->GetBackBufferRenderTargetView() };
+            context->OMSetRenderTargets(1, targets, m_DeviceResources->GetDepthStencilView());
+
+            context->ClearRenderTargetView(m_DeviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Transparent);
+            context->ClearDepthStencilView(m_DeviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+            m_TexturePlaneRenderer->Render();
+            m_DeviceResources->Present();
         }
         Position(0);
         State(PlayerServiceState::STOPPED);
@@ -340,10 +338,33 @@ namespace winrt::MediaPlayer::implementation
         }
     }
 
-    void PlayerService::ResizeVideo(uint32_t width, uint32_t height)
+    void PlayerService::ResizeVideo(float width, float height)
     {
         if (!m_MediaEngineWrapper) return;
         m_MediaEngineWrapper->WindowUpdate(width, height);
+        m_DeviceResources->SetLogicalSize({ width, height });
+        m_TexturePlaneRenderer->CreateWindowSizeDependentResources();
+
+        auto context = m_DeviceResources->GetD3DDeviceContext();
+        auto viewport = m_DeviceResources->GetScreenViewport();
+        float panelAspect = width / height;
+        float videoAspect = m_LastFrameSize.Width / m_LastFrameSize.Height;
+        if (panelAspect > videoAspect)
+        {
+            float widthCorrected = height * videoAspect;
+            viewport.TopLeftX = (width - widthCorrected) / 2;
+            viewport.Width = widthCorrected;
+            viewport.Height = height;
+        }
+        else
+        {
+            float heightCorrected = width / videoAspect;
+            viewport.TopLeftY = (height - heightCorrected) / 2;
+            viewport.Width = width;
+            viewport.Height = heightCorrected;
+        }
+
+        context->RSSetViewports(1, &viewport);
     }
 
     uint64_t PlayerService::Position()
@@ -449,19 +470,16 @@ namespace winrt::MediaPlayer::implementation
         if (m_SwapChainPanel != value)
         {
             m_SwapChainPanel = value;
-            m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
 
-            if (m_VideoSurfaceHandle && m_SwapChainPanel)
+            m_DeviceResources->SetSwapChainPanel(value);
+
+            m_UIDispatcherQueue.TryEnqueue([&]()
             {
-                m_UIDispatcherQueue.TryEnqueue([&]()
-                {
-                    com_ptr<ISwapChainPanelNative2> panelNative;
-                    m_SwapChainPanel.as(panelNative);
-                    check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
-                    auto size = m_SwapChainPanel.ActualSize();
-                    m_MediaEngineWrapper->WindowUpdate(size.x, size.y);
-                });
-            }
+                //App::GetDeviceResources()->SetSwapChainPanel(value);
+                com_ptr<ISwapChainPanelNative2> panelNative;
+                m_SwapChainPanel.as(panelNative);
+                panelNative->SetSwapChain(m_DeviceResources->GetSwapChain());
+            });
         }
     }
 
@@ -627,15 +645,15 @@ namespace winrt::MediaPlayer::implementation
     {
         m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
 
-        if (m_VideoSurfaceHandle && m_SwapChainPanel)
-        {
-            m_UIDispatcherQueue.TryEnqueue([&]()
-            {
-                com_ptr<ISwapChainPanelNative2> panelNative;
-                m_SwapChainPanel.as(panelNative);
-                check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
-            });
-        }
+        //if (m_VideoSurfaceHandle && m_SwapChainPanel)
+        //{
+        //    m_UIDispatcherQueue.TryEnqueue([&]()
+        //    {
+        //        com_ptr<ISwapChainPanelNative2> panelNative;
+        //        m_SwapChainPanel.as(panelNative);
+        //        check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
+        //    });
+        //}
     }
 
     void PlayerService::OnPlaybackEnded()

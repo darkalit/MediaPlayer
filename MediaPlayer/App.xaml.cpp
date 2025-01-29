@@ -10,6 +10,7 @@ using namespace Microsoft::UI::Xaml::Controls;
 namespace winrt::MediaPlayer::implementation
 {
     Window App::s_Window = nullptr;
+    std::shared_ptr<DeviceResources> App::s_DeviceResources = nullptr;
 
     App::App()
     {
@@ -27,6 +28,8 @@ namespace winrt::MediaPlayer::implementation
 
     void App::OnLaunched([[maybe_unused]] LaunchActivatedEventArgs const& e)
     {
+        s_DeviceResources = std::make_shared<DeviceResources>();
+
         GetPlayerService().Init();
 
         s_Window = make<MainWindow>();
@@ -40,6 +43,11 @@ namespace winrt::MediaPlayer::implementation
     MediaPlayer::PlayerService App::GetPlayerService()
     {
         return Application::Current().Resources().TryLookup(box_value(L"PlayerService")).as<MediaPlayer::PlayerService>();
+    }
+
+    std::shared_ptr<DeviceResources> App::GetDeviceResources()
+    {
+        return s_DeviceResources;
     }
 
     HWND App::GetMainWindow()

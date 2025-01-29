@@ -6,6 +6,7 @@
 #include "Converters/IsSelectedColorConverter.h"
 #include "Converters/DateToStringConverter.h"
 #include "MainWindow.xaml.h"
+#include "DirectX/DeviceResources.h"
 #include "Services/PlayerService.h"
 
 namespace winrt::MediaPlayer::implementation
@@ -17,6 +18,7 @@ namespace winrt::MediaPlayer::implementation
         void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
 
         static MediaPlayer::PlayerService GetPlayerService();
+        static std::shared_ptr<DeviceResources> GetDeviceResources();
         static HWND GetMainWindow();
 
         template <typename T>
@@ -27,6 +29,7 @@ namespace winrt::MediaPlayer::implementation
 
     private:
         static Microsoft::UI::Xaml::Window s_Window;
+        static std::shared_ptr<DeviceResources> s_DeviceResources;
     };
 
     template <typename T>

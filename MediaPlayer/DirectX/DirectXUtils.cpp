@@ -21,8 +21,6 @@ namespace DXUtils
     {
         auto folder = Windows::ApplicationModel::Package::Current().InstalledLocation();
 
-        //auto folder = ApplicationData::Current().LocalFolder();
-
         StorageFile file = co_await folder.GetFileAsync(filename);
         IBuffer fileBuffer = co_await FileIO::ReadBufferAsync(file);
 

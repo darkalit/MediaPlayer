@@ -25,6 +25,7 @@
     <WindowsTargetPlatformMinVersion>10.0.17763.0</WindowsTargetPlatformMinVersion>
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <ItemGroup Label="ProjectConfigurations">
@@ -74,7 +75,17 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="UserMacros">
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <AppxPackageSigningEnabled>False</AppxPackageSigningEnabled>
+    <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+    <AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
+    <GenerateTestArtifacts>True</GenerateTestArtifacts>
+    <AppxBundle>Never</AppxBundle>
+    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+    <PackageCertificateThumbprint>02B7B08ED5C8E497FD5145F596DA9E397BC0AA7C</PackageCertificateThumbprint>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -95,28 +106,28 @@
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib;User32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib;User32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib;User32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
@@ -132,24 +143,24 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib;User32.lib</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib;User32.lib</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">propsys.lib;Mf.lib;mfuuid.lib;Mfplat.lib;Shlwapi.lib;swscale.lib;swresample.lib;postproc.lib;avutil.lib;avformat.lib;avfilter.lib;avdevice.lib;avcodec.lib;User32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)External\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup Condition="'$(WindowsPackageType)'!='None' and Exists('Package.appxmanifest')">
@@ -168,6 +179,9 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
     <ClInclude Include="Converters\DateToStringConverter.h" />
     <ClInclude Include="Converters\EmptyStringToDefaultConverter.h" />
     <ClInclude Include="Converters\IsSelectedColorConverter.h" />
+    <ClInclude Include="DirectX\DeviceResources.h" />
+    <ClInclude Include="DirectX\DirectXUtils.h" />
+    <ClInclude Include="DirectX\TexturePlaneRenderer.h" />
     <ClInclude Include="Framework\BindableBase.h" />
     <ClInclude Include="Framework\DelegateCommand.h" />
     <ClInclude Include="Media\FfmpegDecoder.h" />
@@ -219,6 +233,9 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
     <ClCompile Include="Converters\DateToStringConverter.cpp" />
     <ClCompile Include="Converters\EmptyStringToDefaultConverter.cpp" />
     <ClCompile Include="Converters\IsSelectedColorConverter.cpp" />
+    <ClCompile Include="DirectX\DeviceResources.cpp" />
+    <ClCompile Include="DirectX\DirectXUtils.cpp" />
+    <ClCompile Include="DirectX\TexturePlaneRenderer.cpp" />
     <ClCompile Include="Framework\BindableBase.cpp" />
     <ClCompile Include="Framework\DelegateCommand.cpp" />
     <ClCompile Include="Media\FfmpegDecoder.cpp" />
@@ -304,6 +321,24 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX"</Command>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Assets\PlanePS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Assets\PlaneVS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
   </ItemGroup>
   <!--
     Defining the "HasPackageAndPublishMenuAddedByProject" property here allows the Solution

@@ -1,13 +1,13 @@
 struct VS_IN
 {
     float2 pos : POSITION;
-    float2 uv : TEXCOORD;
+    float2 uv : UV;
 };
 
 struct PS_IN
 {
     float4 pos : SV_POSITION;
-    float2 uv : TEXCOORD;
+    float2 uv : UV;
 };
 
 PS_IN main(VS_IN input)

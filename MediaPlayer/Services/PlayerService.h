@@ -1,5 +1,7 @@
 #pragma once
+
 #include "PlayerService.g.h"
+#include "DirectX/TexturePlaneRenderer.h"
 
 #include "winrt/MediaPlayer.h"
 #include "Media/FfmpegDecoder.h"
@@ -12,6 +14,8 @@ struct IMFTopologyNode;
 struct IMFPresentationDescriptor;
 struct IMFStreamDescriptor;
 struct IMFActivate;
+struct IDXGISwapChain1;
+struct ID3D11Texture2D;
 
 namespace winrt::MediaPlayer::implementation
 {
@@ -36,7 +40,7 @@ namespace winrt::MediaPlayer::implementation
         void Stop();
         void Pause();
 
-        void ResizeVideo(uint32_t width, uint32_t height);
+        void ResizeVideo(float width, float height);
 
         uint64_t Position();
         void Position(uint64_t value);
@@ -71,6 +75,11 @@ namespace winrt::MediaPlayer::implementation
         Windows::Foundation::Collections::IVector<MediaMetadata> m_Playlist = single_threaded_observable_vector<MediaMetadata>();
         int32_t m_CurrentMediaIndex = -1;
 
+        Windows::Foundation::Size m_LastFrameSize;
+        std::thread m_VideoThread;
+        std::shared_ptr<DeviceResources> m_DeviceResources;
+        std::shared_ptr<TexturePlaneRenderer> m_TexturePlaneRenderer;
+        com_ptr<ID3D11ShaderResourceView> m_ShaderResourceView;
         com_ptr<IMFDXGIDeviceManager> m_DeviceManager;
         com_ptr<IMFSourceReader> m_SourceReader;
         com_ptr<MediaEngineWrapper> m_MediaEngineWrapper;

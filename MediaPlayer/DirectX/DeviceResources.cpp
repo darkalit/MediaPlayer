@@ -285,11 +285,11 @@ void DeviceResources::CreateWindowSizeDependentResources()
 
         swapChain.as(m_SwapChain);
 
-        m_SwapChainPanel.DispatcherQueue().TryEnqueue([&]()
+        m_SwapChainPanel.DispatcherQueue().TryEnqueue([=]()
         {
             com_ptr<ISwapChainPanelNative2> panelNative;
-            m_SwapChainPanel.as(panelNative);
-            panelNative->SetSwapChain(m_SwapChain.get());
+            //m_SwapChainPanel.as(panelNative);
+        //    panelNative->SetSwapChain(m_SwapChain.get());
 
             check_hresult(dxgiDevice->SetMaximumFrameLatency(1));
         });

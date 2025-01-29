@@ -9,9 +9,12 @@ public:
     void CreateDeviceDependentResources();
     void CreateWindowSizeDependentResources();
     void ReleaseDeviceDependentResources();
+    void SetImage(const uint8_t* data, uint32_t width, uint32_t height);
     void Render();
 
 private:
+    void CreateFrameTexture(const uint8_t* data, uint32_t width, uint32_t height);
+
     std::shared_ptr<DeviceResources> m_DeviceResources;
 
     winrt::com_ptr<ID3D11InputLayout> m_InputLayout;
@@ -19,6 +22,8 @@ private:
     winrt::com_ptr<ID3D11VertexShader> m_VertexShader;
     winrt::com_ptr<ID3D11PixelShader> m_PixelShader;
     winrt::com_ptr<ID3D11SamplerState> m_SamplerState;
+    winrt::com_ptr<ID3D11Texture2D> m_FrameTexture;
+    winrt::com_ptr<ID3D11ShaderResourceView> m_ImageShaderResourceView;
 
     uint32_t m_VerticesCount = 0;
     uint32_t m_Stride = 0;
