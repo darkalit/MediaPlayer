@@ -122,6 +122,8 @@ void TexturePlaneRenderer::ReleaseDeviceDependentResources()
 
 void TexturePlaneRenderer::SetImage(const uint8_t* data, uint32_t width, uint32_t height)
 {
+    if (!m_DeviceResources) return;
+
     if (!m_FrameTexture)
     {
         CreateFrameTexture(data, width, height);
@@ -147,7 +149,7 @@ void TexturePlaneRenderer::SetImage(const uint8_t* data, uint32_t width, uint32_
 
 void TexturePlaneRenderer::Render()
 {
-    if (!m_LoadingComplete)
+    if (!m_LoadingComplete || !m_DeviceResources)
     {
         return;
     }
@@ -179,6 +181,8 @@ void TexturePlaneRenderer::Render()
 
 void TexturePlaneRenderer::CreateFrameTexture(const uint8_t* data, uint32_t width, uint32_t height)
 {
+    if (!m_DeviceResources) return;
+
     D3D11_TEXTURE2D_DESC textureDesc = {
         .Width = width,
         .Height = height,

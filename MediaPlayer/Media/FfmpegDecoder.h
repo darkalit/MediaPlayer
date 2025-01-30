@@ -33,6 +33,7 @@ struct VideoFrame
     int Width;
     int Height;
     int RowPitch;
+    double FrameTime;
 };
 
 class FfmpegDecoder
@@ -44,6 +45,7 @@ public:
     void OpenFile(winrt::hstring const& filepath);
     std::vector<uint8_t>& GetWavBuffer();
     VideoFrame GetNextFrame();
+    void Seek(uint64_t time); // in milliseconds
 
 private:
     AVFormatContext* m_FormatContext;

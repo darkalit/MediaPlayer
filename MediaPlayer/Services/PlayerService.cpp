@@ -17,6 +17,8 @@
 
 #include "Audioclient.h"
 #include "microsoft.ui.xaml.media.dxinterop.h"
+#include "windows.system.threading.core.h"
+#include "windows.system.threading.h"
 #include "d3d11.h"
 #include "dxgi1_3.h"
 #include "d3d11_3.h"
@@ -46,6 +48,9 @@ namespace winrt::MediaPlayer::implementation
     {
         try
         {
+            m_State = PlayerServiceState::CLOSED;
+            m_VideoThread.join();
+
             check_hresult(MFShutdown());
         }
         catch (const hresult_error& e)
@@ -80,7 +85,6 @@ namespace winrt::MediaPlayer::implementation
             onErrorCB,
             0,
             0);
-        //RecreateResources(1280, 720);
 
         State(PlayerServiceState::READY);
     }
@@ -130,28 +134,75 @@ namespace winrt::MediaPlayer::implementation
 
         MFCreateSourceReaderFromByteStream(byteStream.get(), nullptr, m_SourceReader.put());
         m_MediaEngineWrapper->SetSource(m_SourceReader.get());
+
+        m_LastTime = 0.0;
+        m_ElapsedFrameTime = 0.0;
         if (SwapChainPanel())
         {
-            auto frame = m_FfmpegDecoder.GetNextFrame();
             auto size = SwapChainPanel().ActualSize();
-            m_LastFrameSize = { static_cast<float>(frame.Width), static_cast<float>(frame.Height) };
-
-            m_TexturePlaneRenderer->SetImage(frame.Buffer.data(), frame.Width, frame.Height);
             ResizeVideo(size.x, size.y);
+            
+            m_VideoThread = std::thread([&]()
+            {
+                VideoFrame frame = {};
 
-            auto context = m_DeviceResources->GetD3DDeviceContext();
-            //auto viewport = m_DeviceResources->GetScreenViewport();
+                while(m_State != PlayerServiceState::CLOSED)
+                {
+                    auto now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() / 1000000.0;
+                    double delta = now - m_LastTime;
+                    m_LastTime = now;
+                    m_ElapsedFrameTime += delta;
 
-            //context->RSSetViewports(1, &viewport);
+                    if ((frame.Buffer.empty() || m_ElapsedFrameTime > frame.FrameTime) && m_State == PlayerServiceState::PLAYING)
+                    {
+                        frame = m_FfmpegDecoder.GetNextFrame();
+                        m_LastFrameSize = { static_cast<float>(frame.Width), static_cast<float>(frame.Height) };
+                    }
 
-            ID3D11RenderTargetView* const targets[1] = { m_DeviceResources->GetBackBufferRenderTargetView() };
-            context->OMSetRenderTargets(1, targets, m_DeviceResources->GetDepthStencilView());
+                    auto context = m_DeviceResources->GetD3DDeviceContext();
+                    m_TexturePlaneRenderer->SetImage(frame.Buffer.data(), frame.Width, frame.Height);
 
-            context->ClearRenderTargetView(m_DeviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Transparent);
-            context->ClearDepthStencilView(m_DeviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+                    if (m_ResizeNeeded)
+                    {
+                        float width = m_DesiredSize.Width;
+                        float height = m_DesiredSize.Height;
+                        m_MediaEngineWrapper->WindowUpdate(width, height);
+                        m_DeviceResources->SetLogicalSize({ width, height });
+                        m_TexturePlaneRenderer->CreateWindowSizeDependentResources();
 
-            m_TexturePlaneRenderer->Render();
-            m_DeviceResources->Present();
+                        auto viewport = m_DeviceResources->GetScreenViewport();
+                        float panelAspect = width / height;
+                        float videoAspect = m_LastFrameSize.Width / m_LastFrameSize.Height;
+                        if (panelAspect > videoAspect)
+                        {
+                            float widthCorrected = height * videoAspect;
+                            viewport.TopLeftX = (width - widthCorrected) / 2;
+                            viewport.Width = widthCorrected;
+                            viewport.Height = height;
+                        }
+                        else
+                        {
+                            float heightCorrected = width / videoAspect;
+                            viewport.TopLeftY = (height - heightCorrected) / 2;
+                            viewport.Width = width;
+                            viewport.Height = heightCorrected;
+                        }
+
+                        context->RSSetViewports(1, &viewport);
+
+                        m_ResizeNeeded = false;
+                    }
+
+                    ID3D11RenderTargetView* const targets[1] = { m_DeviceResources->GetBackBufferRenderTargetView() };
+                    context->OMSetRenderTargets(1, targets, m_DeviceResources->GetDepthStencilView());
+
+                    context->ClearRenderTargetView(m_DeviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Transparent);
+                    context->ClearDepthStencilView(m_DeviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+                    m_TexturePlaneRenderer->Render();
+                    m_DeviceResources->Present();
+                }
+            });
         }
         Position(0);
         State(PlayerServiceState::STOPPED);
@@ -262,6 +313,7 @@ namespace winrt::MediaPlayer::implementation
             }
 
             double position = static_cast<double>(Position()) / 1000.0;
+            m_FfmpegDecoder.Seek(position);
             m_MediaEngineWrapper->Start(position);
             PlaybackSpeed(m_PlaybackSpeed);
         }
@@ -292,6 +344,7 @@ namespace winrt::MediaPlayer::implementation
             }
 
             double position = static_cast<double>(timePos) / 1000.0;
+            m_FfmpegDecoder.Seek(position);
             m_MediaEngineWrapper->Start(position);
             PlaybackSpeed(m_PlaybackSpeed);
         }
@@ -340,31 +393,10 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::ResizeVideo(float width, float height)
     {
+        //std::scoped_lock lock(m_Mutex);
         if (!m_MediaEngineWrapper) return;
-        m_MediaEngineWrapper->WindowUpdate(width, height);
-        m_DeviceResources->SetLogicalSize({ width, height });
-        m_TexturePlaneRenderer->CreateWindowSizeDependentResources();
-
-        auto context = m_DeviceResources->GetD3DDeviceContext();
-        auto viewport = m_DeviceResources->GetScreenViewport();
-        float panelAspect = width / height;
-        float videoAspect = m_LastFrameSize.Width / m_LastFrameSize.Height;
-        if (panelAspect > videoAspect)
-        {
-            float widthCorrected = height * videoAspect;
-            viewport.TopLeftX = (width - widthCorrected) / 2;
-            viewport.Width = widthCorrected;
-            viewport.Height = height;
-        }
-        else
-        {
-            float heightCorrected = width / videoAspect;
-            viewport.TopLeftY = (height - heightCorrected) / 2;
-            viewport.Width = width;
-            viewport.Height = heightCorrected;
-        }
-
-        context->RSSetViewports(1, &viewport);
+        m_ResizeNeeded = true;
+        m_DesiredSize = { width, height };
     }
 
     uint64_t PlayerService::Position()

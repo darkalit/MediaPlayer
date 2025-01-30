@@ -75,8 +75,13 @@ namespace winrt::MediaPlayer::implementation
         Windows::Foundation::Collections::IVector<MediaMetadata> m_Playlist = single_threaded_observable_vector<MediaMetadata>();
         int32_t m_CurrentMediaIndex = -1;
 
+        bool m_ResizeNeeded = false;
+        Windows::Foundation::Size m_DesiredSize;
         Windows::Foundation::Size m_LastFrameSize;
+        double m_ElapsedFrameTime;
+        double m_LastTime;
         std::thread m_VideoThread;
+
         std::shared_ptr<DeviceResources> m_DeviceResources;
         std::shared_ptr<TexturePlaneRenderer> m_TexturePlaneRenderer;
         com_ptr<ID3D11ShaderResourceView> m_ShaderResourceView;
