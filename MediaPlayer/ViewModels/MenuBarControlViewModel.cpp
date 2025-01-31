@@ -25,7 +25,14 @@ namespace winrt::MediaPlayer::implementation
         {
             if (!m_PlayerService.HasSource()) return;
 
-            auto speed = unbox_value<double>(parameter);
+            auto s = unbox_value<hstring>(parameter);
+            wchar_t* endPtr = nullptr;
+            double speed = std::wcstod(s.c_str(), &endPtr);
+
+            if (endPtr == s.c_str())
+            {
+                speed = 1.0;
+            }
 
             m_PlayerService.PlaybackSpeed(speed);
         });
