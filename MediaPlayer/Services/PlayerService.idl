@@ -10,6 +10,7 @@ namespace MediaPlayer
         STOPPED,
         PLAYING,
         PAUSED,
+        SOURCE_SWITCH,
     };
 
     [default_interface]

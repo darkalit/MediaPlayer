@@ -78,8 +78,7 @@ namespace winrt::MediaPlayer::implementation
         bool m_ResizeNeeded = false;
         Windows::Foundation::Size m_DesiredSize;
         Windows::Foundation::Size m_LastFrameSize;
-        double m_ElapsedFrameTime;
-        double m_LastTime;
+        bool m_Seeked = false;
         std::thread m_VideoThread;
 
         std::shared_ptr<DeviceResources> m_DeviceResources;

@@ -113,6 +113,8 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::SetSource(hstring const& path)
     {
+        State(PlayerServiceState::SOURCE_SWITCH);
+
         // memory leak temporarily fix
         // TODO: find better way to control m_SourceReader references
         while (m_SourceReader)
@@ -135,34 +137,52 @@ namespace winrt::MediaPlayer::implementation
         MFCreateSourceReaderFromByteStream(byteStream.get(), nullptr, m_SourceReader.put());
         m_MediaEngineWrapper->SetSource(m_SourceReader.get());
 
-        m_LastTime = 0.0;
-        m_ElapsedFrameTime = 0.0;
+        Position(0);
+        State(PlayerServiceState::STOPPED);
+
         if (SwapChainPanel())
         {
             auto size = SwapChainPanel().ActualSize();
             ResizeVideo(size.x, size.y);
-            
+
+            if (m_VideoThread.joinable())
+            {
+                m_VideoThread.join();
+            }
+
             m_VideoThread = std::thread([&]()
             {
                 VideoFrame frame = {};
+                double videoStartTime = -1.0;
 
-                while(m_State != PlayerServiceState::CLOSED)
+                while(m_State != PlayerServiceState::CLOSED && m_State != PlayerServiceState::SOURCE_SWITCH)
                 {
-                    auto now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() / 1000000.0;
-                    double delta = now - m_LastTime;
-                    m_LastTime = now;
-                    m_ElapsedFrameTime += delta;
+                    double audioTime = Position() / 1000.0;
 
-                    if ((frame.Buffer.empty() || m_ElapsedFrameTime > frame.FrameTime) && m_State == PlayerServiceState::PLAYING)
+                    if (videoStartTime < 0)
                     {
+                        videoStartTime = audioTime - frame.FrameTime;
                         frame = m_FfmpegDecoder.GetNextFrame();
                         m_LastFrameSize = { static_cast<float>(frame.Width), static_cast<float>(frame.Height) };
+                    }
+
+                    if (m_State != PlayerServiceState::PAUSED && !frame.Buffer.empty())
+                    {
+                        double frameTime = videoStartTime + frame.FrameTime;
+                        double syncOffset = audioTime - frameTime;
+                        constexpr double SYNC_THRESHOLD = 0.02;
+                        if (syncOffset > SYNC_THRESHOLD || m_Seeked)
+                        {
+                            frame = m_FfmpegDecoder.GetNextFrame();
+                            m_Seeked = false;
+                            m_LastFrameSize = { static_cast<float>(frame.Width), static_cast<float>(frame.Height) };
+                        }
                     }
 
                     auto context = m_DeviceResources->GetD3DDeviceContext();
                     m_TexturePlaneRenderer->SetImage(frame.Buffer.data(), frame.Width, frame.Height);
 
-                    if (m_ResizeNeeded)
+                    if (m_ResizeNeeded && !frame.Buffer.empty())
                     {
                         float width = m_DesiredSize.Width;
                         float height = m_DesiredSize.Height;
@@ -204,8 +224,6 @@ namespace winrt::MediaPlayer::implementation
                 }
             });
         }
-        Position(0);
-        State(PlayerServiceState::STOPPED);
     }
 
     bool PlayerService::HasSource()
@@ -313,7 +331,8 @@ namespace winrt::MediaPlayer::implementation
             }
 
             double position = static_cast<double>(Position()) / 1000.0;
-            m_FfmpegDecoder.Seek(position);
+            m_FfmpegDecoder.Seek(Position());
+            m_Seeked = true;
             m_MediaEngineWrapper->Start(position);
             PlaybackSpeed(m_PlaybackSpeed);
         }
@@ -345,6 +364,7 @@ namespace winrt::MediaPlayer::implementation
 
             double position = static_cast<double>(timePos) / 1000.0;
             m_FfmpegDecoder.Seek(timePos);
+            m_Seeked = true;
             m_MediaEngineWrapper->Start(position);
             PlaybackSpeed(m_PlaybackSpeed);
         }
@@ -401,7 +421,7 @@ namespace winrt::MediaPlayer::implementation
 
     uint64_t PlayerService::Position()
     {
-        m_Position = m_MediaEngineWrapper->GetCurrentTime() * 1000;
+        m_Position = m_MediaEngineWrapper->GetCurrentTime() * 1000.0;
         return m_Position;
     }
 

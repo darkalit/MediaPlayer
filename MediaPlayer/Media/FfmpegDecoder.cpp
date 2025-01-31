@@ -278,6 +278,7 @@ VideoFrame FfmpegDecoder::GetNextFrame()
     outFrame.Height = m_VideoCodecContext->height;
     outFrame.Buffer.assign(data[0], data[0] + linesize[0] * outFrame.Height);
     outFrame.RowPitch = linesize[0];
+    //outFrame.FrameTime = av_rescale_q(frame->best_effort_timestamp, m_FormatContext->streams[m_VideoStreamIndex]->time_base, AV_TIME_BASE_Q);
     outFrame.FrameTime = static_cast<double>(frame->pts) * av_q2d(m_FormatContext->streams[m_VideoStreamIndex]->time_base);
     return outFrame;
 }
