@@ -290,6 +290,6 @@ void FfmpegDecoder::Seek(uint64_t time)
         m_FormatContext->streams[m_VideoStreamIndex]->time_base
     );
 
-    av_seek_frame(m_FormatContext, m_VideoStreamIndex, seekTarget, AVSEEK_FLAG_ANY);
+    av_seek_frame(m_FormatContext, m_VideoStreamIndex, seekTarget, AVSEEK_FLAG_BACKWARD);
     avcodec_flush_buffers(m_VideoCodecContext);
 }

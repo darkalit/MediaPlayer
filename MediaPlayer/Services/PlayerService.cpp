@@ -344,7 +344,7 @@ namespace winrt::MediaPlayer::implementation
             }
 
             double position = static_cast<double>(timePos) / 1000.0;
-            m_FfmpegDecoder.Seek(position);
+            m_FfmpegDecoder.Seek(timePos);
             m_MediaEngineWrapper->Start(position);
             PlaybackSpeed(m_PlaybackSpeed);
         }
