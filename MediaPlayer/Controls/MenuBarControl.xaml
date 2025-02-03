@@ -24,6 +24,11 @@
                 <RadioMenuFlyoutItem x:Name="MenuItem_Speed175" Text="x1.75" Command="{x:Bind ViewModel.ChangePlaybackSpeed}" CommandParameter="1.75" GroupName="PlaybackSpeedGroup"/>
                 <RadioMenuFlyoutItem x:Name="MenuItem_Speed2" Text="x2" Command="{x:Bind ViewModel.ChangePlaybackSpeed}" CommandParameter="2.0" GroupName="PlaybackSpeedGroup"/>
             </MenuFlyoutSubItem>
+            <MenuFlyoutSubItem Text="Play mode">
+                <RadioMenuFlyoutItem x:Name="MenuItem_ModeFfmpeg" Text="Force FFMPEG" Command="{x:Bind ViewModel.ChangePlaybackMode}" CommandParameter="ffmpeg" GroupName="PlaybackModeGroup"/>
+                <RadioMenuFlyoutItem x:Name="MenuItem_ModeMediaFoundation" Text="Force Media Foundation" Command="{x:Bind ViewModel.ChangePlaybackMode}" CommandParameter="mediafoundation" GroupName="PlaybackModeGroup"/>
+                <RadioMenuFlyoutItem x:Name="MenuItem_ModeAuto" Text="Auto" Command="{x:Bind ViewModel.ChangePlaybackMode}" CommandParameter="auto" GroupName="PlaybackModeGroup" IsChecked="True"/>
+            </MenuFlyoutSubItem>
         </MenuBarItem>
     </MenuBar>
 </UserControl>

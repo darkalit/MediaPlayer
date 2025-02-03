@@ -21,6 +21,25 @@ namespace winrt::MediaPlayer::implementation
     MenuBarControlViewModel::MenuBarControlViewModel()
         : m_PlayerService(App::GetPlayerService())
     {
+        m_ChangePlaybackModeCommand = make<DelegateCommand>([&](IInspectable const& parameter)
+        {
+            if (!m_PlayerService.HasSource()) return;
+
+            auto s = unbox_value<hstring>(parameter);
+            if (s == L"ffmpeg")
+            {
+                m_PlayerService.Mode(PlayerServiceMode::FFMPEG);
+            }
+            else if (s == L"mediafoundation")
+            {
+                m_PlayerService.Mode(PlayerServiceMode::MEDIA_FOUNDATION);
+            }
+            else if (s == L"auto")
+            {
+                m_PlayerService.Mode(PlayerServiceMode::AUTO);
+            }
+        });
+
         m_ChangePlaybackSpeedCommand = make<DelegateCommand>([&](IInspectable const& parameter)
         {
             if (!m_PlayerService.HasSource()) return;
@@ -67,10 +86,28 @@ namespace winrt::MediaPlayer::implementation
             L".mp3",
             L".m4a", L".m4v", L".mov", L".mp4",
             L".sami", L".smi",
-            L".wav"
-            });
+            L".wav",
+            L".flac", L".oga",
+            L".ogg", L".ogv", L".opus",
+            L".mkv", L".mka", L".mk3d",
+            L".flv", L".swf", L".f4v",
+            L".webm",
+            L".ts", L".m2ts", L".mts",
+            L".rm", L".rmvb", L".ra", L".ram",
+            L".ac3", L".amr", L".ape", L".au",
+            L".dts", L".dvr-ms", L".vob", L".wtv",
+            L".mpg", L".mpeg", L".m2v",
+            L".dv", L".mxf", L".nut",
+            L".srt", L".ass", L".ssa", L".sub",
+            L".bmp", L".png", L".jpg", L".jpeg", L".gif"
+        });
 
         co_return co_await filePicker.PickMultipleFilesAsync();
+    }
+
+    Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::ChangePlaybackMode()
+    {
+        return m_ChangePlaybackModeCommand;
     }
 
     Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::ChangePlaybackSpeed()

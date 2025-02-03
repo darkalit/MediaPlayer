@@ -51,6 +51,8 @@ namespace winrt::MediaPlayer::implementation
         void CurrentMediaIndex(int32_t value);
         double Volume();
         void Volume(double value);
+        PlayerServiceMode Mode();
+        void Mode(PlayerServiceMode const& value);
         PlayerServiceState State();
         void State(PlayerServiceState value);
         MediaMetadata Metadata();
@@ -71,10 +73,12 @@ namespace winrt::MediaPlayer::implementation
 
         uint64_t m_Position = 0;
         double m_PlaybackSpeed = 1.0;
+        PlayerServiceMode m_Mode = PlayerServiceMode::AUTO;
         PlayerServiceState m_State = PlayerServiceState::CLOSED;
         Windows::Foundation::Collections::IVector<MediaMetadata> m_Playlist = single_threaded_observable_vector<MediaMetadata>();
         int32_t m_CurrentMediaIndex = -1;
 
+        bool m_IsMFSupported = false;
         bool m_ResizeNeeded = false;
         Windows::Foundation::Size m_DesiredSize;
         Windows::Foundation::Size m_LastFrameSize;

@@ -12,12 +12,14 @@ namespace winrt::MediaPlayer::implementation
 
         Windows::Foundation::IAsyncOperation<Windows::Foundation::Collections::IVectorView<Windows::Storage::StorageFile>> OpenFilePickerAsync();
 
+        Microsoft::UI::Xaml::Input::ICommand ChangePlaybackMode();
         Microsoft::UI::Xaml::Input::ICommand ChangePlaybackSpeed();
         Microsoft::UI::Xaml::Input::ICommand Exit();
         Microsoft::UI::Xaml::Input::ICommand OpenFiles();
 
     private:
         MediaPlayer::PlayerService m_PlayerService;
+        MediaPlayer::DelegateCommand m_ChangePlaybackModeCommand = nullptr;
         MediaPlayer::DelegateCommand m_ChangePlaybackSpeedCommand = nullptr;
         MediaPlayer::DelegateCommand m_ExitCommand = nullptr;
         MediaPlayer::DelegateCommand m_OpenFilesCommand = nullptr;

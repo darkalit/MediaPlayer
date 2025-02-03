@@ -13,6 +13,13 @@ namespace MediaPlayer
         SOURCE_SWITCH,
     };
 
+    enum PlayerServiceMode
+    {
+        FFMPEG,
+        MEDIA_FOUNDATION,
+        AUTO,
+    };
+
     [default_interface]
     unsealed runtimeclass PlayerService
     {
@@ -42,6 +49,7 @@ namespace MediaPlayer
         Double PlaybackSpeed;
         Int32 CurrentMediaIndex;
         Double Volume;
+        PlayerServiceMode Mode;
         PlayerServiceState State { get; };
         MediaMetadata Metadata { get; };
         Windows.Foundation.Collections.IVector<MediaMetadata> Playlist { get; };

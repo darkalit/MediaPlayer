@@ -125,6 +125,39 @@ namespace winrt::MediaPlayer::implementation
             }
         }
 
+        m_IsMFSupported = false;
+        if (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION)
+        {
+            auto hr = MFCreateSourceReaderFromURL(path.c_str(), nullptr, m_SourceReader.put());
+            m_IsMFSupported = SUCCEEDED(hr);
+        }
+
+        SwapChainPanel(SwapChainPanel());
+
+        if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
+        {
+            m_MediaEngineWrapper->SetSource(m_SourceReader.get());
+
+            if (SwapChainPanel())
+            {
+                m_UIDispatcherQueue.TryEnqueue([&]()
+                {
+                    auto size = SwapChainPanel().ActualSize();
+                    ResizeVideo(size.x, size.y);
+                });
+            }
+
+            Position(0);
+            State(PlayerServiceState::STOPPED);
+
+            return;
+        }
+
+        if (!(!m_IsMFSupported || m_Mode != PlayerServiceMode::FFMPEG))
+        {
+            return;
+        }
+
         m_FfmpegDecoder.OpenFile(path);
         auto& buffer = m_FfmpegDecoder.GetWavBuffer();
 
@@ -331,7 +364,10 @@ namespace winrt::MediaPlayer::implementation
             }
 
             double position = static_cast<double>(Position()) / 1000.0;
-            m_FfmpegDecoder.Seek(Position());
+            if (!m_IsMFSupported || !(m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
+            {
+                m_FfmpegDecoder.Seek(Position());
+            }
             m_Seeked = true;
             m_MediaEngineWrapper->Start(position);
             PlaybackSpeed(m_PlaybackSpeed);
@@ -363,7 +399,10 @@ namespace winrt::MediaPlayer::implementation
             }
 
             double position = static_cast<double>(timePos) / 1000.0;
-            m_FfmpegDecoder.Seek(timePos);
+            if (!m_IsMFSupported || !(m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
+            {
+                m_FfmpegDecoder.Seek(timePos);
+            }
             m_Seeked = true;
             m_MediaEngineWrapper->Start(position);
             PlaybackSpeed(m_PlaybackSpeed);
@@ -413,8 +452,13 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::ResizeVideo(float width, float height)
     {
-        //std::scoped_lock lock(m_Mutex);
         if (!m_MediaEngineWrapper) return;
+        if (m_IsMFSupported && (m_Mode == PlayerServiceMode::MEDIA_FOUNDATION || m_Mode == PlayerServiceMode::AUTO))
+        {
+            m_MediaEngineWrapper->WindowUpdate(width, height);
+            return;
+        }
+
         m_ResizeNeeded = true;
         m_DesiredSize = { width, height };
     }
@@ -479,6 +523,19 @@ namespace winrt::MediaPlayer::implementation
         }        
     }
 
+    PlayerServiceMode PlayerService::Mode()
+    {
+        return m_Mode;
+    }
+
+    void PlayerService::Mode(PlayerServiceMode const& value)
+    {
+        if (m_Mode != value)
+        {
+            m_Mode = value;
+        }
+    }
+
     PlayerServiceState PlayerService::State()
     {
         return m_State;
@@ -523,13 +580,26 @@ namespace winrt::MediaPlayer::implementation
         {
             m_SwapChainPanel = value;
 
+            if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
+            {
+                m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
+            }
+
             m_DeviceResources->SetSwapChainPanel(value);
 
             m_UIDispatcherQueue.TryEnqueue([&]()
             {
-                //App::GetDeviceResources()->SetSwapChainPanel(value);
                 com_ptr<ISwapChainPanelNative2> panelNative;
                 m_SwapChainPanel.as(panelNative);
+
+                if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
+                {
+                    check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
+                    auto size = m_SwapChainPanel.ActualSize();
+                    ResizeVideo(size.x, size.y);
+                    return;
+                }
+
                 panelNative->SetSwapChain(m_DeviceResources->GetSwapChain());
             });
         }
