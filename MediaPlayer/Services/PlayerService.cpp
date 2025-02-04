@@ -213,7 +213,10 @@ namespace winrt::MediaPlayer::implementation
                     }
 
                     auto context = m_DeviceResources->GetD3DDeviceContext();
-                    m_TexturePlaneRenderer->SetImage(frame.Buffer.data(), frame.Width, frame.Height);
+                    if (!frame.Buffer.empty())
+                    {
+                        m_TexturePlaneRenderer->SetImage(frame.Buffer.data(), frame.Width, frame.Height);
+                    }
 
                     if (m_ResizeNeeded && !frame.Buffer.empty())
                     {
@@ -252,7 +255,10 @@ namespace winrt::MediaPlayer::implementation
                     context->ClearRenderTargetView(m_DeviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Transparent);
                     context->ClearDepthStencilView(m_DeviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-                    m_TexturePlaneRenderer->Render();
+                    if (!frame.Buffer.empty())
+                    {
+                        m_TexturePlaneRenderer->Render();
+                    }
                     m_DeviceResources->Present();
                 }
             });
