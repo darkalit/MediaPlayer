@@ -132,8 +132,6 @@ namespace winrt::MediaPlayer::implementation
             m_IsMFSupported = SUCCEEDED(hr);
         }
 
-        SwapChainPanel(SwapChainPanel());
-
         if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
         {
             m_MediaEngineWrapper->SetSource(m_SourceReader.get());
@@ -582,33 +580,30 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::SwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& value)
     {
-        if (m_SwapChainPanel != value)
+        m_SwapChainPanel = value;
+
+        if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
         {
-            m_SwapChainPanel = value;
+            m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
+        }
+
+        m_UIDispatcherQueue.TryEnqueue([&]()
+        {
+            m_DeviceResources->SetSwapChainPanel(m_SwapChainPanel);
+
+            com_ptr<ISwapChainPanelNative2> panelNative;
+            m_SwapChainPanel.as(panelNative);
 
             if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
             {
-                m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
+                check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
+                auto size = m_SwapChainPanel.ActualSize();
+                ResizeVideo(size.x, size.y);
+                return;
             }
 
-            m_DeviceResources->SetSwapChainPanel(value);
-
-            m_UIDispatcherQueue.TryEnqueue([&]()
-            {
-                com_ptr<ISwapChainPanelNative2> panelNative;
-                m_SwapChainPanel.as(panelNative);
-
-                if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
-                {
-                    check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
-                    auto size = m_SwapChainPanel.ActualSize();
-                    ResizeVideo(size.x, size.y);
-                    return;
-                }
-
-                panelNative->SetSwapChain(m_DeviceResources->GetSwapChain());
-            });
-        }
+            panelNative->SetSwapChain(m_DeviceResources->GetSwapChain());
+        });
     }
 
     Microsoft::UI::Dispatching::DispatcherQueue PlayerService::UIDispatcher()
@@ -771,17 +766,7 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::OnLoaded()
     {
-        m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
-
-        //if (m_VideoSurfaceHandle && m_SwapChainPanel)
-        //{
-        //    m_UIDispatcherQueue.TryEnqueue([&]()
-        //    {
-        //        com_ptr<ISwapChainPanelNative2> panelNative;
-        //        m_SwapChainPanel.as(panelNative);
-        //        check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
-        //    });
-        //}
+        SwapChainPanel(SwapChainPanel());
     }
 
     void PlayerService::OnPlaybackEnded()
