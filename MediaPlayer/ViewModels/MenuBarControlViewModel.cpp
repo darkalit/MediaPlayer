@@ -23,8 +23,6 @@ namespace winrt::MediaPlayer::implementation
     {
         m_ChangePlaybackModeCommand = make<DelegateCommand>([&](IInspectable const& parameter)
         {
-            if (!m_PlayerService.HasSource()) return;
-
             auto s = unbox_value<hstring>(parameter);
             if (s == L"ffmpeg")
             {
