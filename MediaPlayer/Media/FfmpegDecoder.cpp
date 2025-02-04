@@ -78,12 +78,17 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         OutputDebugString(L"FfmpegDecoder::OpenFile Audio avcodec_open2");
         return;
     }
-    
+
+    AVChannelLayout outChLayout;
+    av_channel_layout_default(&outChLayout, 2);
+
+    AVSampleFormat outFormat = AV_SAMPLE_FMT_S16;
+
     error = swr_alloc_set_opts2(
         &m_SwrContext,
         // Output
-        &m_AudioCodecContext->ch_layout,
-        AV_SAMPLE_FMT_S16,
+        &outChLayout,
+        outFormat,
         44100,
         // Input
         &m_AudioCodecContext->ch_layout,
@@ -105,43 +110,41 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
 
     const AVCodec* videoCodec = nullptr;
     m_VideoStreamIndex = av_find_best_stream(m_FormatContext, AVMEDIA_TYPE_VIDEO, -1, -1, &videoCodec, 0);
-    if (m_VideoStreamIndex < 0)
-    {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Video av_find_best_stream");
-        return;
-    }
 
-    m_VideoCodecContext = avcodec_alloc_context3(videoCodec);
-    if (!m_VideoCodecContext)
+    if (m_VideoStreamIndex >= 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Video avcodec_alloc_context3");
-        return;
-    }
+        m_VideoCodecContext = avcodec_alloc_context3(videoCodec);
+        if (!m_VideoCodecContext)
+        {
+            OutputDebugString(L"FfmpegDecoder::OpenFile Video avcodec_alloc_context3");
+            return;
+        }
 
-    error = avcodec_parameters_to_context(m_VideoCodecContext, m_FormatContext->streams[m_VideoStreamIndex]->codecpar);
-    if (error != 0)
-    {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Video avcodec_parameters_to_context");
-        return;
-    }
+        error = avcodec_parameters_to_context(m_VideoCodecContext, m_FormatContext->streams[m_VideoStreamIndex]->codecpar);
+        if (error != 0)
+        {
+            OutputDebugString(L"FfmpegDecoder::OpenFile Video avcodec_parameters_to_context");
+            return;
+        }
 
-    error = avcodec_open2(m_VideoCodecContext, videoCodec, nullptr);
-    if (error != 0)
-    {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Video avcodec_open2");
-        return;
-    }
+        error = avcodec_open2(m_VideoCodecContext, videoCodec, nullptr);
+        if (error != 0)
+        {
+            OutputDebugString(L"FfmpegDecoder::OpenFile Video avcodec_open2");
+            return;
+        }
 
-    m_SwsContext = sws_getContext(
-        m_VideoCodecContext->width,
-        m_VideoCodecContext->height,
-        m_VideoCodecContext->pix_fmt,
-        m_VideoCodecContext->width,
-        m_VideoCodecContext->height,
-        AV_PIX_FMT_RGBA, SWS_BILINEAR,
-        nullptr,
-        nullptr,
-        nullptr);
+        m_SwsContext = sws_getContext(
+            m_VideoCodecContext->width,
+            m_VideoCodecContext->height,
+            m_VideoCodecContext->pix_fmt,
+            m_VideoCodecContext->width,
+            m_VideoCodecContext->height,
+            AV_PIX_FMT_RGBA, SWS_BILINEAR,
+            nullptr,
+            nullptr,
+            nullptr);
+    }
 
     auto frame = av_frame_alloc();
     defer{ av_frame_free(&frame); };
@@ -172,20 +175,48 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
             continue;
         }
 
-        uint8_t* buffer = nullptr;
+        
         int outSamples = swr_get_out_samples(m_SwrContext, frame->nb_samples);
-        av_samples_alloc(&buffer, nullptr, 2, outSamples, AV_SAMPLE_FMT_S16, 0);
 
-        outSamples = swr_convert(
-            m_SwrContext,
-            &buffer,
-            outSamples,
-            frame->data,
-            frame->nb_samples);
+        if (av_sample_fmt_is_planar(static_cast<AVSampleFormat>(frame->format)))
+        {
+            uint8_t** buffer = nullptr;
+            av_samples_alloc_array_and_samples(&buffer, nullptr, outChLayout.nb_channels, outSamples, outFormat, 0);
+            outSamples = swr_convert(
+                m_SwrContext,
+                buffer,
+                outSamples,
+                frame->extended_data,
+                frame->nb_samples);
+            //int dataSize = av_samples_get_buffer_size(nullptr, outChLayout.nb_channels, outSamples, outFormat, 0);
+            int dataSize = outSamples * outChLayout.nb_channels * 2;
+            pcmData.insert(pcmData.end(), buffer[0], buffer[0] + dataSize);
 
-        int dataSize = outSamples * 2 * 2;
-        pcmData.insert(pcmData.end(), buffer, buffer + dataSize);
-        av_free(buffer);
+            if (buffer)
+            {
+                av_free(buffer[0]);
+                av_free(buffer);
+            }
+        }
+        else
+        {
+            uint8_t* buffer = nullptr;
+            av_samples_alloc(&buffer, nullptr, outChLayout.nb_channels, outSamples, outFormat, 0);
+            outSamples = swr_convert(
+                m_SwrContext,
+                &buffer,
+                outSamples,
+                frame->data,
+                frame->nb_samples);
+            //int dataSize = av_samples_get_buffer_size(nullptr, outChLayout.nb_channels, outSamples, outFormat, 0);
+            int dataSize = outSamples * outChLayout.nb_channels * 2;
+            pcmData.insert(pcmData.end(), buffer, buffer + dataSize);
+
+            if (buffer)
+            {
+                av_free(buffer);
+            }
+        }
     }
 
     WavHeader header;
@@ -216,6 +247,11 @@ std::vector<uint8_t>& FfmpegDecoder::GetWavBuffer()
 
 VideoFrame FfmpegDecoder::GetNextFrame()
 {
+    if (m_VideoStreamIndex < 0)
+    {
+        return {};
+    }
+            
     auto frame = av_frame_alloc();
     defer{ av_frame_free(&frame); };
 
@@ -285,6 +321,11 @@ VideoFrame FfmpegDecoder::GetNextFrame()
 
 void FfmpegDecoder::Seek(uint64_t time)
 {
+    if (m_VideoStreamIndex < 0)
+    {
+        return;
+    }
+
     const int64_t seekTarget = av_rescale_q(
         time * 1000,
         AV_TIME_BASE_Q,
