@@ -9,6 +9,13 @@
     mc:Ignorable="d"
     Loaded="OnLoad">
 
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Up" Invoked="Up_Invoked"/>
+        <KeyboardAccelerator Key="Down" Invoked="Down_Invoked"/>
+        <KeyboardAccelerator Key="Left" Invoked="Left_Invoked"/>
+        <KeyboardAccelerator Key="Right" Invoked="Right_Invoked"/>
+    </Page.KeyboardAccelerators>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>

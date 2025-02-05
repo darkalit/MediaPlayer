@@ -18,10 +18,13 @@ namespace winrt::MediaPlayer::implementation
     {
         m_ViewModel = make<MediaPlayer::implementation::MainPageViewModel>();
         DataContext(ViewModel());
+        //KeyDown(KeyEventHandler{ this, &MainPage::OnKeyDown });
     }
 
     void MainPage::OnLoad(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
+        this->Focus(FocusState::Programmatic);
+
         ViewModel().SetSwapChain().Execute(SwapChainPanel_Video());
 
         Slider_Timeline().AddHandler(
@@ -32,6 +35,40 @@ namespace winrt::MediaPlayer::implementation
             UIElement::PointerReleasedEvent(),
             box_value(PointerEventHandler{ this, &MainPage::Slider_Timeline_PointerReleased }),
             true);
+    }
+
+    void MainPage::Up_Invoked(Microsoft::UI::Xaml::Input::KeyboardAccelerator const& sender,
+        Microsoft::UI::Xaml::Input::KeyboardAcceleratorInvokedEventArgs const& args)
+    {
+        ViewModel().VolumeValue(ViewModel().VolumeValue() + 5);
+        args.Handled(true);
+    }
+
+    void MainPage::Down_Invoked(Microsoft::UI::Xaml::Input::KeyboardAccelerator const& sender,
+        Microsoft::UI::Xaml::Input::KeyboardAcceleratorInvokedEventArgs const& args)
+    {
+        ViewModel().VolumeValue(ViewModel().VolumeValue() - 5);
+        args.Handled(true);
+    }
+
+    void MainPage::Left_Invoked(Microsoft::UI::Xaml::Input::KeyboardAccelerator const& sender,
+        Microsoft::UI::Xaml::Input::KeyboardAcceleratorInvokedEventArgs const& args)
+    {
+        ViewModel().Pause().Execute(IInspectable());
+        ViewModel().CurrentTimeValue(ViewModel().CurrentTimeValue() - 5);
+        auto time = static_cast<uint64_t>(ViewModel().CurrentTimeValue()) * 1000;
+        ViewModel().Play().Execute(box_value(time));
+        args.Handled(true);
+    }
+
+    void MainPage::Right_Invoked(Microsoft::UI::Xaml::Input::KeyboardAccelerator const& sender,
+        Microsoft::UI::Xaml::Input::KeyboardAcceleratorInvokedEventArgs const& args)
+    {
+        ViewModel().Pause().Execute(IInspectable());
+        ViewModel().CurrentTimeValue(ViewModel().CurrentTimeValue() + 5);
+        auto time = static_cast<uint64_t>(ViewModel().CurrentTimeValue()) * 1000;
+        ViewModel().Play().Execute(box_value(time));
+        args.Handled(true);
     }
 
     void MainPage::SwapChainPanel_Video_SizeChanged(Windows::Foundation::IInspectable const&, SizeChangedEventArgs const&)
