@@ -80,6 +80,7 @@ namespace winrt::MediaPlayer::implementation
 
         bool m_IsMFSupported = false;
         bool m_ResizeNeeded = false;
+        bool m_ChangingSwapchain = false;
         Windows::Foundation::Size m_DesiredSize;
         Windows::Foundation::Size m_LastFrameSize;
         bool m_Seeked = false;

@@ -210,51 +210,55 @@ namespace winrt::MediaPlayer::implementation
                         }
                     }
 
+                    if (m_ChangingSwapchain) continue;
+
                     auto context = m_DeviceResources->GetD3DDeviceContext();
+
                     if (!frame.Buffer.empty())
                     {
                         m_TexturePlaneRenderer->SetImage(frame.Buffer.data(), frame.Width, frame.Height);
                     }
 
+                    float width = m_DesiredSize.Width;
+                    float height = m_DesiredSize.Height;
+
                     if (m_ResizeNeeded && !frame.Buffer.empty())
                     {
-                        float width = m_DesiredSize.Width;
-                        float height = m_DesiredSize.Height;
-                        m_MediaEngineWrapper->WindowUpdate(width, height);
                         m_DeviceResources->SetLogicalSize({ width, height });
                         m_TexturePlaneRenderer->CreateWindowSizeDependentResources();
-
-                        auto viewport = m_DeviceResources->GetScreenViewport();
-                        float panelAspect = width / height;
-                        float videoAspect = m_LastFrameSize.Width / m_LastFrameSize.Height;
-                        if (panelAspect > videoAspect)
-                        {
-                            float widthCorrected = height * videoAspect;
-                            viewport.TopLeftX = (width - widthCorrected) / 2;
-                            viewport.Width = widthCorrected;
-                            viewport.Height = height;
-                        }
-                        else
-                        {
-                            float heightCorrected = width / videoAspect;
-                            viewport.TopLeftY = (height - heightCorrected) / 2;
-                            viewport.Width = width;
-                            viewport.Height = heightCorrected;
-                        }
-
-                        context->RSSetViewports(1, &viewport);
 
                         m_ResizeNeeded = false;
                     }
 
+                    auto viewport = m_DeviceResources->GetScreenViewport();
+                    float panelAspect = width / height;
+                    float videoAspect = m_LastFrameSize.Width / m_LastFrameSize.Height;
+                    if (panelAspect > videoAspect)
+                    {
+                        float widthCorrected = height * videoAspect;
+                        viewport.TopLeftX = (width - widthCorrected) / 2;
+                        viewport.Width = widthCorrected;
+                        viewport.Height = height;
+                    }
+                    else
+                    {
+                        float heightCorrected = width / videoAspect;
+                        viewport.TopLeftY = (height - heightCorrected) / 2;
+                        viewport.Width = width;
+                        viewport.Height = heightCorrected;
+                    }
+
+                    context->RSSetViewports(1, &viewport);
+
                     ID3D11RenderTargetView* const targets[1] = { m_DeviceResources->GetBackBufferRenderTargetView() };
-                    context->OMSetRenderTargets(1, targets, m_DeviceResources->GetDepthStencilView());
-
-                    context->ClearRenderTargetView(m_DeviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Transparent);
-                    context->ClearDepthStencilView(m_DeviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
+                    if (!targets[0]) continue;
                     if (!frame.Buffer.empty())
                     {
+                        context->OMSetRenderTargets(1, targets, m_DeviceResources->GetDepthStencilView());
+
+                        context->ClearRenderTargetView(m_DeviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Transparent);
+                        context->ClearDepthStencilView(m_DeviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
                         m_TexturePlaneRenderer->Render();
                     }
                     m_DeviceResources->Present();
@@ -580,6 +584,7 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::SwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& value)
     {
+        m_ChangingSwapchain = true;
         m_SwapChainPanel = value;
 
         if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
@@ -599,10 +604,12 @@ namespace winrt::MediaPlayer::implementation
                 check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
                 auto size = m_SwapChainPanel.ActualSize();
                 ResizeVideo(size.x, size.y);
+                m_ChangingSwapchain = false;
                 return;
             }
 
             panelNative->SetSwapChain(m_DeviceResources->GetSwapChain());
+            m_ChangingSwapchain = false;
         });
     }
 
