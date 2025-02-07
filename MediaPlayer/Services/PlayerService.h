@@ -30,6 +30,7 @@ namespace winrt::MediaPlayer::implementation
         bool HasSource();
         int32_t GetMediaIndexById(guid const& id);
 
+        void CreateSnapshot();
         void Next();
         void Prev();
         void StartByIndex(int32_t index);
@@ -78,6 +79,7 @@ namespace winrt::MediaPlayer::implementation
         Windows::Foundation::Collections::IVector<MediaMetadata> m_Playlist = single_threaded_observable_vector<MediaMetadata>();
         int32_t m_CurrentMediaIndex = -1;
 
+        VideoFrame m_CurFrame;
         bool m_IsMFSupported = false;
         bool m_ResizeNeeded = false;
         bool m_ChangingSwapchain = false;

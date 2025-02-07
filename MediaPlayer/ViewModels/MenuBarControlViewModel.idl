@@ -8,6 +8,7 @@ namespace MediaPlayer
     unsealed runtimeclass MenuBarControlViewModel : BindableBase
     {
         MenuBarControlViewModel();
+        Microsoft.UI.Xaml.Input.ICommand CreateSnapshotFile{ get; };
         Microsoft.UI.Xaml.Input.ICommand ChangePlaybackMode{ get; };
         Microsoft.UI.Xaml.Input.ICommand ChangePlaybackSpeed{ get; };
         Microsoft.UI.Xaml.Input.ICommand Exit{ get; };

@@ -30,5 +30,8 @@
                 <RadioMenuFlyoutItem x:Name="MenuItem_ModeAuto" Text="Auto" Command="{x:Bind ViewModel.ChangePlaybackMode}" CommandParameter="auto" GroupName="PlaybackModeGroup" IsChecked="True"/>
             </MenuFlyoutSubItem>
         </MenuBarItem>
+        <MenuBarItem Title="Video">
+            <MenuFlyoutItem Command="{x:Bind ViewModel.CreateSnapshotFile}" Text="Create snapshot file"/>
+        </MenuBarItem>
     </MenuBar>
 </UserControl>

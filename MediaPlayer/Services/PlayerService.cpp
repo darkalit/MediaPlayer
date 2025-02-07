@@ -11,6 +11,7 @@
 #include "propkeydef.h"
 #include "propkey.h"
 #include "Shlwapi.h"
+#include "wincodec.h"
 
 #include "string"
 #include "iostream"
@@ -24,6 +25,8 @@
 #include "d3d11_3.h"
 #include "DirectXColors.h"
 #include "App.xaml.h"
+#include "winrt/Windows.ApplicationModel.h"
+#include "winrt/Windows.Storage.h"
 
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
@@ -183,7 +186,7 @@ namespace winrt::MediaPlayer::implementation
 
             m_VideoThread = std::thread([&]()
             {
-                VideoFrame frame = {};
+                m_CurFrame = {};
                 double videoStartTime = -1.0;
 
                 while(m_State != PlayerServiceState::CLOSED && m_State != PlayerServiceState::SOURCE_SWITCH)
@@ -192,21 +195,21 @@ namespace winrt::MediaPlayer::implementation
 
                     if (videoStartTime < 0)
                     {
-                        videoStartTime = audioTime - frame.FrameTime;
-                        frame = m_FfmpegDecoder.GetNextFrame();
-                        m_LastFrameSize = { static_cast<float>(frame.Width), static_cast<float>(frame.Height) };
+                        videoStartTime = audioTime - m_CurFrame.FrameTime;
+                        m_CurFrame = m_FfmpegDecoder.GetNextFrame();
+                        m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
                     }
 
-                    if (m_State != PlayerServiceState::PAUSED && !frame.Buffer.empty())
+                    if (m_State != PlayerServiceState::PAUSED && !m_CurFrame.Buffer.empty())
                     {
-                        double frameTime = videoStartTime + frame.FrameTime;
+                        double frameTime = videoStartTime + m_CurFrame.FrameTime;
                         double syncOffset = audioTime - frameTime;
                         constexpr double SYNC_THRESHOLD = 0.02;
                         if (syncOffset > SYNC_THRESHOLD || m_Seeked)
                         {
-                            frame = m_FfmpegDecoder.GetNextFrame();
+                            m_CurFrame = m_FfmpegDecoder.GetNextFrame();
                             m_Seeked = false;
-                            m_LastFrameSize = { static_cast<float>(frame.Width), static_cast<float>(frame.Height) };
+                            m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
                         }
                     }
 
@@ -214,15 +217,15 @@ namespace winrt::MediaPlayer::implementation
 
                     auto context = m_DeviceResources->GetD3DDeviceContext();
 
-                    if (!frame.Buffer.empty())
+                    if (!m_CurFrame.Buffer.empty())
                     {
-                        m_TexturePlaneRenderer->SetImage(frame.Buffer.data(), frame.Width, frame.Height);
+                        m_TexturePlaneRenderer->SetImage(m_CurFrame.Buffer.data(), m_CurFrame.Width, m_CurFrame.Height);
                     }
 
                     float width = m_DesiredSize.Width;
                     float height = m_DesiredSize.Height;
 
-                    if (m_ResizeNeeded && !frame.Buffer.empty())
+                    if (m_ResizeNeeded && !m_CurFrame.Buffer.empty())
                     {
                         m_DeviceResources->SetLogicalSize({ width, height });
                         m_TexturePlaneRenderer->CreateWindowSizeDependentResources();
@@ -252,7 +255,7 @@ namespace winrt::MediaPlayer::implementation
 
                     ID3D11RenderTargetView* const targets[1] = { m_DeviceResources->GetBackBufferRenderTargetView() };
                     if (!targets[0]) continue;
-                    if (!frame.Buffer.empty())
+                    if (!m_CurFrame.Buffer.empty())
                     {
                         context->OMSetRenderTargets(1, targets, m_DeviceResources->GetDepthStencilView());
 
@@ -283,6 +286,106 @@ namespace winrt::MediaPlayer::implementation
         }
 
         return -1;
+    }
+
+    void PlayerService::CreateSnapshot()
+    {
+        uint32_t width = Metadata().VideoWidth, height = Metadata().VideoHeight, rowPitch = 0;
+
+        auto wicFactory = create_instance<IWICImagingFactory>(CLSID_WICImagingFactory);
+
+        com_ptr<IWICBitmapEncoder> encoder;
+        check_hresult(wicFactory->CreateEncoder(GUID_ContainerFormatPng, nullptr, encoder.put()));
+
+        com_ptr<IWICStream> stream;
+        check_hresult(wicFactory->CreateStream(stream.put()));
+
+        Windows::Storage::StorageFolder folder = Windows::ApplicationModel::Package::Current().InstalledLocation();
+
+        hstring pos = to_hstring(round(static_cast<double>(Position()) / 10.0) / 100.0);
+        hstring time = to_hstring(clock::now().time_since_epoch().count());
+        hstring path = folder.Path() + L"\\snapshot_" + Metadata().Title + L"_" + pos + L"_" + time + L".png";
+
+        check_hresult(stream->InitializeFromFilename(path.c_str(), GENERIC_WRITE));
+        check_hresult(encoder->Initialize(stream.get(), WICBitmapEncoderNoCache));
+
+        com_ptr<IWICBitmapFrameEncode> frame;
+        com_ptr<IPropertyBag2> props;
+        check_hresult(encoder->CreateNewFrame(frame.put(), props.put()));
+        check_hresult(frame->Initialize(props.get()));
+        check_hresult(frame->SetSize(width, height));
+
+        WICPixelFormatGUID format = GUID_WICPixelFormat32bppRGBA;
+        check_hresult(frame->SetPixelFormat(&format));
+
+        if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
+        {
+            m_MediaEngineWrapper->SetCurrentTime(Position() / 1000.0);
+
+            auto device = m_DeviceResources->GetD3DDevice();
+            auto context = m_DeviceResources->GetD3DDeviceContext();
+
+            com_ptr<ID3D11Texture2D> texture;
+            D3D11_TEXTURE2D_DESC desc {
+                .Width = width,
+                .Height = height,
+                .MipLevels = 1,
+                .ArraySize = 1,
+                .Format = DXGI_FORMAT_B8G8R8A8_UNORM,
+                .SampleDesc = {
+                    .Count = 1,
+                    .Quality = 0,
+                },
+                .Usage = D3D11_USAGE_DEFAULT,
+                .BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
+            };
+            check_hresult(device->CreateTexture2D(&desc, nullptr, texture.put()));
+
+            MFVideoNormalizedRect srcRect = { 0, 0, 1, 1 };
+            RECT dstRect = { 0, 0, width, height };
+            MFARGB bgColor = { 0, 0, 0, 0 };
+
+            m_MediaEngineWrapper->TransferVideoFrame(texture.get(), &srcRect, &dstRect, &bgColor);
+
+            com_ptr<ID3D11Texture2D> stagingTexture;
+
+            desc.BindFlags = 0;
+            desc.MiscFlags &= D3D11_RESOURCE_MISC_TEXTURECUBE;
+            desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+            desc.Usage = D3D11_USAGE_STAGING;
+
+            check_hresult(device->CreateTexture2D(&desc, nullptr, stagingTexture.put()));
+
+            context->CopyResource(stagingTexture.get(), texture.get());
+
+            D3D11_MAPPED_SUBRESOURCE mapped;
+            check_hresult(context->Map(stagingTexture.get(), 0, D3D11_MAP_READ, 0, &mapped));
+            check_hresult(frame->WritePixels(
+                height,
+                mapped.RowPitch,
+                height * mapped.RowPitch,
+                static_cast<BYTE*>(mapped.pData)
+            ));
+            context->Unmap(stagingTexture.get(), 0);
+        }
+        else
+        {
+            auto buffer = m_CurFrame.Buffer;
+            for (size_t i = 0; i < buffer.size(); i += 4)
+            {
+                std::swap(buffer[i], buffer[i + 2]);
+            }
+
+            check_hresult(frame->WritePixels(
+                height,
+                m_CurFrame.RowPitch,
+                height * m_CurFrame.RowPitch,
+                buffer.data()
+            ));
+        }
+
+        check_hresult(frame->Commit());
+        check_hresult(encoder->Commit());
     }
 
     void PlayerService::Next()

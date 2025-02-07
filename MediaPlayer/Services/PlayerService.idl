@@ -30,6 +30,7 @@ namespace MediaPlayer
         void SetSource(String path);
         Boolean HasSource();
         Int32 GetMediaIndexById(GUID id);
+        void CreateSnapshot();
 
         void Next();
         void Prev();

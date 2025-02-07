@@ -18,6 +18,7 @@ public:
 
     void SetSource(IMFSourceReader* sourceReader);
 
+    void TransferVideoFrame(IUnknown* pDstSurf, const MFVideoNormalizedRect* pSrc, const RECT* pDst, const MFARGB* pBorderClr);
     // Start from time stamp in seconds
     void Start(double timeStamp);
     void Stop();

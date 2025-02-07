@@ -21,6 +21,11 @@ namespace winrt::MediaPlayer::implementation
     MenuBarControlViewModel::MenuBarControlViewModel()
         : m_PlayerService(App::GetPlayerService())
     {
+        m_CreateSnapshotFileCommand = make<DelegateCommand>([&](auto&&)
+        {
+            m_PlayerService.CreateSnapshot();
+        });
+
         m_ChangePlaybackModeCommand = make<DelegateCommand>([&](IInspectable const& parameter)
         {
             auto s = unbox_value<hstring>(parameter);
@@ -101,6 +106,11 @@ namespace winrt::MediaPlayer::implementation
         });
 
         co_return co_await filePicker.PickMultipleFilesAsync();
+    }
+
+    Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::CreateSnapshotFile()
+    {
+        return m_CreateSnapshotFileCommand;
     }
 
     Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::ChangePlaybackMode()

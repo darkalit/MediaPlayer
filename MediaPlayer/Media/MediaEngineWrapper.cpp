@@ -51,6 +51,11 @@ void MediaEngineWrapper::SetSource(IMFSourceReader* sourceReader)
     }
 }
 
+void MediaEngineWrapper::TransferVideoFrame(IUnknown* pDstSurf, const MFVideoNormalizedRect* pSrc, const RECT* pDst, const MFARGB* pBorderClr)
+{
+    winrt::check_hresult(m_MediaEngine->TransferVideoFrame(pDstSurf, pSrc, pDst, pBorderClr));
+}
+
 void MediaEngineWrapper::Start(double timeStamp)
 {
     SetCurrentTime(timeStamp);
