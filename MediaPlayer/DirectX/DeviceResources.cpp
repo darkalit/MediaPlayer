@@ -24,6 +24,7 @@ DeviceResources::DeviceResources()
     , m_CompositionScale({ 1.0f, 1.0f })
     , m_Dpi(-1.0f)
 {
+    CreateDeviceIndependentResources();
     CreateDeviceResources();
 }
 
@@ -62,6 +63,7 @@ void DeviceResources::SetSwapChainPanel(winrt::Microsoft::UI::Xaml::Controls::Sw
     m_Dpi = GetDpiForWindow(MediaPlayer::implementation::App::GetMainWindow());
     m_LogicalSize = panel.ActualSize();
     m_CompositionScale = { panel.CompositionScaleX(), panel.CompositionScaleY() };
+    m_D2dContext->SetDpi(m_Dpi, m_Dpi);
 
     CreateWindowSizeDependentResources();
 }
@@ -108,6 +110,7 @@ void DeviceResources::SetDpi(float dpi)
     if (m_Dpi != dpi)
     {
         m_Dpi = dpi;
+        //m_D2dContext->SetDpi(m_Dpi, m_Dpi);
         CreateWindowSizeDependentResources();
     }
 }
@@ -150,6 +153,58 @@ ID3D11DepthStencilView* DeviceResources::GetDepthStencilView() const
 D3D11_VIEWPORT DeviceResources::GetScreenViewport() const
 {
     return m_ScreenViewport;
+}
+
+ID2D1Factory3* DeviceResources::GetD2DFactory() const
+{
+    return m_D2dFactory.get();
+}
+
+ID2D1Device2* DeviceResources::GetD2DDevice() const
+{
+    return m_D2dDevice.get();
+}
+
+ID2D1DeviceContext2* DeviceResources::GetD2DDeviceContext() const
+{
+    return m_D2dContext.get();
+}
+
+ID2D1Bitmap1* DeviceResources::GetD2DTargetBitmap() const
+{
+    return m_D2dTargetBitmap.get();
+}
+
+IDWriteFactory3* DeviceResources::GetDWriteFactory() const
+{
+    return m_DWriteFactory.get();
+}
+
+D2D1::Matrix3x2F DeviceResources::GetOrientationTransform2D() const
+{
+    return m_OrientationTransform2D;
+}
+
+void DeviceResources::CreateDeviceIndependentResources()
+{
+    D2D1_FACTORY_OPTIONS options = {};
+
+#ifdef _DEBUG
+    options.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
+#endif
+
+    check_hresult(D2D1CreateFactory(
+        D2D1_FACTORY_TYPE_SINGLE_THREADED,
+        __uuidof(ID2D1Factory3),
+        &options,
+        m_D2dFactory.put_void()
+    ));
+
+    check_hresult(DWriteCreateFactory(
+        DWRITE_FACTORY_TYPE_SHARED,
+        __uuidof(IDWriteFactory3),
+        reinterpret_cast<IUnknown**>(m_DWriteFactory.put())
+    ));
 }
 
 void DeviceResources::CreateDeviceResources()
@@ -210,6 +265,11 @@ void DeviceResources::CreateDeviceResources()
 
     device.as(m_D3dDevice);
     context.as(m_D3dContext);
+
+    com_ptr<IDXGIDevice3> dxgiDevice;
+    m_D3dDevice.as(dxgiDevice);
+    check_hresult(m_D2dFactory->CreateDevice(dxgiDevice.get(), m_D2dDevice.put()));
+    check_hresult(m_D2dDevice->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, m_D2dContext.put()));
 }
 
 void DeviceResources::CreateWindowSizeDependentResources()
@@ -217,6 +277,9 @@ void DeviceResources::CreateWindowSizeDependentResources()
     ID3D11RenderTargetView* nullViews[] = { nullptr };
     m_D3dContext->OMSetRenderTargets(ARRAYSIZE(nullViews), nullViews, nullptr);
     m_D3dRenderTargetView = nullptr;
+    m_D3dDepthStencilView = nullptr;
+    m_D2dTargetBitmap = nullptr;
+    m_D2dContext->SetTarget(nullptr);
     m_D3dContext->Flush1(D3D11_CONTEXT_TYPE_ALL, nullptr);
 
     UpdateRenderTargetSize();
@@ -295,6 +358,8 @@ void DeviceResources::CreateWindowSizeDependentResources()
         });
     }
 
+    m_OrientationTransform2D = D2D1::Matrix3x2F::Identity();
+
     //check_hresult(m_SwapChain->SetRotation(displayRotation));
 
     DXGI_MATRIX_3X2_F inverseScale = {0};
@@ -340,6 +405,25 @@ void DeviceResources::CreateWindowSizeDependentResources()
         m_D3dRenderTargetSize.Height
     );
     m_D3dContext->RSSetViewports(1, &m_ScreenViewport);
+
+    D2D1_BITMAP_PROPERTIES1 bitmapProps = D2D1::BitmapProperties1(
+        D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+        D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
+        m_Dpi,
+        m_Dpi
+    );
+
+    com_ptr<IDXGISurface2> dxgiBackBuffer;
+    check_hresult(m_SwapChain->GetBuffer(0, IID_PPV_ARGS(dxgiBackBuffer.put())));
+    check_hresult(m_D2dContext->CreateBitmapFromDxgiSurface(
+        dxgiBackBuffer.get(),
+        &bitmapProps,
+        m_D2dTargetBitmap.put()
+    ));
+
+    m_D2dContext->SetTarget(m_D2dTargetBitmap.get());
+    m_D2dContext->SetDpi(m_Dpi, m_Dpi);
+    m_D2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
 }
 
 void DeviceResources::UpdateRenderTargetSize()

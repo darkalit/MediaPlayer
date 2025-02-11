@@ -181,6 +181,7 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <ClInclude Include="Converters\IsSelectedColorConverter.h" />
     <ClInclude Include="DirectX\DeviceResources.h" />
     <ClInclude Include="DirectX\DirectXUtils.h" />
+    <ClInclude Include="DirectX\TextRenderer.h" />
     <ClInclude Include="DirectX\TexturePlaneRenderer.h" />
     <ClInclude Include="Framework\BindableBase.h" />
     <ClInclude Include="Framework\DelegateCommand.h" />
@@ -235,6 +236,7 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <ClCompile Include="Converters\IsSelectedColorConverter.cpp" />
     <ClCompile Include="DirectX\DeviceResources.cpp" />
     <ClCompile Include="DirectX\DirectXUtils.cpp" />
+    <ClCompile Include="DirectX\TextRenderer.cpp" />
     <ClCompile Include="DirectX\TexturePlaneRenderer.cpp" />
     <ClCompile Include="Framework\BindableBase.cpp" />
     <ClCompile Include="Framework\DelegateCommand.cpp" />

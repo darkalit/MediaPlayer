@@ -2,6 +2,8 @@
 
 #include "d3d11_3.h"
 #include "dxgi1_4.h"
+#include "d2d1_3.h"
+#include "dwrite_3.h"
 
 class DeviceResources
 {
@@ -29,7 +31,15 @@ public:
     ID3D11DepthStencilView* GetDepthStencilView() const;
     D3D11_VIEWPORT GetScreenViewport() const;
 
+    ID2D1Factory3* GetD2DFactory() const;
+    ID2D1Device2* GetD2DDevice() const;
+    ID2D1DeviceContext2* GetD2DDeviceContext() const;
+    ID2D1Bitmap1* GetD2DTargetBitmap() const;
+    IDWriteFactory3* GetDWriteFactory() const;
+    D2D1::Matrix3x2F GetOrientationTransform2D() const;
+
 private:
+    void CreateDeviceIndependentResources();
     void CreateDeviceResources();
     void CreateWindowSizeDependentResources();
     void UpdateRenderTargetSize();
@@ -43,6 +53,12 @@ private:
     winrt::com_ptr<ID3D11DepthStencilView> m_D3dDepthStencilView;
     D3D11_VIEWPORT m_ScreenViewport;
 
+    winrt::com_ptr<ID2D1Factory3> m_D2dFactory;
+    winrt::com_ptr<ID2D1Device2> m_D2dDevice;
+    winrt::com_ptr<ID2D1DeviceContext2> m_D2dContext;
+    winrt::com_ptr<ID2D1Bitmap1> m_D2dTargetBitmap;
+    winrt::com_ptr<IDWriteFactory3> m_DWriteFactory;
+
     winrt::Microsoft::UI::Xaml::Controls::SwapChainPanel m_SwapChainPanel;
 
     D3D_FEATURE_LEVEL m_D3dFeatureLevel;
@@ -53,5 +69,7 @@ private:
     winrt::Windows::Graphics::Display::DisplayOrientations m_CurrentOrientation;
     winrt::Windows::Foundation::Size m_CompositionScale;
     float m_Dpi;
+
+    D2D1::Matrix3x2F m_OrientationTransform2D;
 };
 
