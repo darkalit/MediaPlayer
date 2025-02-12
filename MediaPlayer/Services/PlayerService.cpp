@@ -891,8 +891,9 @@ namespace winrt::MediaPlayer::implementation
             {
                 m_TextRenderer->Render(sub.Text, 0.0f, -10.0f);
             }
+
+            m_DeviceResources->Present();
         }
-        m_DeviceResources->Present();
     }
 
     void PlayerService::OnLoaded()
