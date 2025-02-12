@@ -3,6 +3,7 @@
 namespace Utils
 {
     winrt::hstring DurationToString(uint64_t duration);
+    std::wstring StringToWString(const std::string& str);
 
     struct DeferDummy {};
 
