@@ -11,7 +11,7 @@ TextRenderer::TextRenderer(const std::shared_ptr<DeviceResources>& deviceResourc
     check_hresult(m_DeviceResources->GetDWriteFactory()->CreateTextFormat(
         L"Segoe UI",
         nullptr,
-        DWRITE_FONT_WEIGHT_LIGHT,
+        DWRITE_FONT_WEIGHT_MEDIUM,
         DWRITE_FONT_STYLE_NORMAL,
         DWRITE_FONT_STRETCH_NORMAL,
         32.0f,
@@ -28,7 +28,9 @@ TextRenderer::TextRenderer(const std::shared_ptr<DeviceResources>& deviceResourc
 
 void TextRenderer::CreateDeviceDependentResources()
 {
-    check_hresult(m_DeviceResources->GetD2DDeviceContext()->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), m_WhiteBrush.put()));
+    auto context = m_DeviceResources->GetD2DDeviceContext();
+    check_hresult(context->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), m_WhiteBrush.put()));
+    check_hresult(context->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), m_BlackBrush.put()));
 }
 
 void TextRenderer::Render(const winrt::hstring& text, float x, float y)
@@ -38,7 +40,7 @@ void TextRenderer::Render(const winrt::hstring& text, float x, float y)
         text.c_str(),
         text.size(),
         m_TextFormat.get(),
-        m_DeviceResources->GetOutputSize().Width * 0.9f,
+        m_DeviceResources->GetOutputSize().Width,
         50.0f,
         textLayout.put()
     ));
@@ -57,7 +59,29 @@ void TextRenderer::Render(const winrt::hstring& text, float x, float y)
         logicalSize.Height - m_TextMetrics.layoutHeight
     );
     context->SetTransform(screenTransform * m_DeviceResources->GetOrientationTransform2D());
-    m_TextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_TRAILING);
+    m_TextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+
+    float thickness = 1.6f;
+    const D2D1_POINT_2F offsets[] =
+    {
+        {x - thickness, y - thickness},
+        {x, y - thickness},
+        {x + thickness, y - thickness},
+        {x - thickness, y},
+        {x + thickness, y},
+        {x - thickness, y + thickness},
+        {x, y + thickness},
+        {x + thickness, y + thickness}
+    };
+
+    for (auto& offset : offsets)
+    {
+        context->DrawTextLayout(
+            offset,
+            m_TextLayout.get(),
+            m_BlackBrush.get()
+        );
+    }
 
     context->DrawTextLayout(
         D2D1::Point2(x, y),

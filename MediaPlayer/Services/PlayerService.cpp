@@ -865,7 +865,7 @@ namespace winrt::MediaPlayer::implementation
                 viewport.Width = widthCorrected;
                 viewport.Height = height;
             }
-            else
+            else if (videoAspect >= panelAspect)
             {
                 float heightCorrected = width / videoAspect;
                 viewport.TopLeftY = (height - heightCorrected) / 2;
@@ -877,22 +877,22 @@ namespace winrt::MediaPlayer::implementation
 
             ID3D11RenderTargetView* const targets[1] = { m_DeviceResources->GetBackBufferRenderTargetView() };
             if (!targets[0]) continue;
+            context->OMSetRenderTargets(1, targets, m_DeviceResources->GetDepthStencilView());
+
+            context->ClearRenderTargetView(m_DeviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Transparent);
+            context->ClearDepthStencilView(m_DeviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
             if (!m_CurFrame.Buffer.empty())
             {
-                context->OMSetRenderTargets(1, targets, m_DeviceResources->GetDepthStencilView());
-
-                context->ClearRenderTargetView(m_DeviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Transparent);
-                context->ClearDepthStencilView(m_DeviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
                 m_TexturePlaneRenderer->Render();
-
-                for (auto& sub : currentSubs)
-                {
-                    m_TextRenderer->Render(sub.Text, -10.0f, -10.0f);
-                }
             }
-            m_DeviceResources->Present();
+
+            for (auto& sub : currentSubs)
+            {
+                m_TextRenderer->Render(sub.Text, 0.0f, -10.0f);
+            }
         }
+        m_DeviceResources->Present();
     }
 
     void PlayerService::OnLoaded()

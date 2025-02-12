@@ -14,6 +14,7 @@ private:
 
     DWRITE_TEXT_METRICS m_TextMetrics;
     winrt::com_ptr<ID2D1SolidColorBrush> m_WhiteBrush;
+    winrt::com_ptr<ID2D1SolidColorBrush> m_BlackBrush;
     winrt::com_ptr<IDWriteTextFormat2> m_TextFormat;
     winrt::com_ptr<IDWriteTextLayout3> m_TextLayout;
     winrt::com_ptr<ID2D1DrawingStateBlock1> m_StateBlock;
