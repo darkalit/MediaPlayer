@@ -66,6 +66,7 @@ namespace winrt::MediaPlayer::implementation
     {
         m_DeviceResources = App::GetDeviceResources();
         m_TexturePlaneRenderer = std::make_shared<TexturePlaneRenderer>(m_DeviceResources);
+        m_TextRenderer = std::make_shared<TextRenderer>(m_DeviceResources);
 
         m_DeviceManager = nullptr;
         UINT resetToken = 0;
@@ -184,89 +185,7 @@ namespace winrt::MediaPlayer::implementation
                 m_VideoThread.join();
             }
 
-            m_VideoThread = std::thread([&]()
-            {
-                m_CurFrame = {};
-                double videoStartTime = -1.0;
-
-                while(m_State != PlayerServiceState::CLOSED && m_State != PlayerServiceState::SOURCE_SWITCH)
-                {
-                    double audioTime = Position() / 1000.0;
-
-                    if (videoStartTime < 0)
-                    {
-                        videoStartTime = audioTime - m_CurFrame.FrameTime;
-                        m_CurFrame = m_FfmpegDecoder.GetNextFrame();
-                        m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
-                    }
-
-                    if (m_State != PlayerServiceState::PAUSED && !m_CurFrame.Buffer.empty())
-                    {
-                        double frameTime = videoStartTime + m_CurFrame.FrameTime;
-                        double syncOffset = audioTime - frameTime;
-                        constexpr double SYNC_THRESHOLD = 0.02;
-                        if (syncOffset > SYNC_THRESHOLD || m_Seeked)
-                        {
-                            m_CurFrame = m_FfmpegDecoder.GetNextFrame();
-                            m_Seeked = false;
-                            m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
-                        }
-                    }
-
-                    if (m_ChangingSwapchain) continue;
-
-                    auto context = m_DeviceResources->GetD3DDeviceContext();
-
-                    if (!m_CurFrame.Buffer.empty())
-                    {
-                        m_TexturePlaneRenderer->SetImage(m_CurFrame.Buffer.data(), m_CurFrame.Width, m_CurFrame.Height);
-                    }
-
-                    float width = m_DesiredSize.Width;
-                    float height = m_DesiredSize.Height;
-
-                    if (m_ResizeNeeded && !m_CurFrame.Buffer.empty())
-                    {
-                        m_DeviceResources->SetLogicalSize({ width, height });
-                        m_TexturePlaneRenderer->CreateWindowSizeDependentResources();
-
-                        m_ResizeNeeded = false;
-                    }
-
-                    auto viewport = m_DeviceResources->GetScreenViewport();
-                    float panelAspect = width / height;
-                    float videoAspect = m_LastFrameSize.Width / m_LastFrameSize.Height;
-                    if (panelAspect > videoAspect)
-                    {
-                        float widthCorrected = height * videoAspect;
-                        viewport.TopLeftX = (width - widthCorrected) / 2;
-                        viewport.Width = widthCorrected;
-                        viewport.Height = height;
-                    }
-                    else
-                    {
-                        float heightCorrected = width / videoAspect;
-                        viewport.TopLeftY = (height - heightCorrected) / 2;
-                        viewport.Width = width;
-                        viewport.Height = heightCorrected;
-                    }
-
-                    context->RSSetViewports(1, &viewport);
-
-                    ID3D11RenderTargetView* const targets[1] = { m_DeviceResources->GetBackBufferRenderTargetView() };
-                    if (!targets[0]) continue;
-                    if (!m_CurFrame.Buffer.empty())
-                    {
-                        context->OMSetRenderTargets(1, targets, m_DeviceResources->GetDepthStencilView());
-
-                        context->ClearRenderTargetView(m_DeviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Transparent);
-                        context->ClearDepthStencilView(m_DeviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-                        m_TexturePlaneRenderer->Render();
-                    }
-                    m_DeviceResources->Present();
-                }
-            });
+            m_VideoThread = std::thread(&PlayerService::VideoRender, this);
         }
     }
 
@@ -872,6 +791,108 @@ namespace winrt::MediaPlayer::implementation
         }
 
         return metadata;
+    }
+
+    void PlayerService::VideoRender()
+    {
+        m_CurFrame = {};
+        std::list<SubtitleItem> currentSubs;
+        double videoStartTime = -1.0;
+
+        while (m_State != PlayerServiceState::CLOSED && m_State != PlayerServiceState::SOURCE_SWITCH)
+        {
+            double audioTime = Position() / 1000.0;
+
+            if (videoStartTime < 0)
+            {
+                videoStartTime = audioTime - m_CurFrame.FrameTime;
+                m_CurFrame = m_FfmpegDecoder.GetNextFrame();
+                m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
+            }
+
+            if (m_State != PlayerServiceState::PAUSED && !m_CurFrame.Buffer.empty())
+            {
+                double frameTime = videoStartTime + m_CurFrame.FrameTime;
+                double syncOffset = audioTime - frameTime;
+                constexpr double SYNC_THRESHOLD = 0.02;
+                if (syncOffset > SYNC_THRESHOLD || m_Seeked)
+                {
+                    m_CurFrame = m_FfmpegDecoder.GetNextFrame();
+                    m_Seeked = false;
+                    m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
+                }
+            }
+
+            if (!m_FfmpegDecoder.GetSubsQueue().empty() &&
+                m_FfmpegDecoder.GetSubsQueue().front().EndTime < audioTime + (m_FfmpegDecoder.GetSubsQueue().front().EndTime - m_FfmpegDecoder.GetSubsQueue().front().StartTime))
+            {
+                currentSubs.push_back(m_FfmpegDecoder.GetSubsQueue().front());
+                m_FfmpegDecoder.GetSubsQueue().pop();
+            }
+
+            if (!currentSubs.empty() && currentSubs.front().EndTime < audioTime)
+            {
+                currentSubs.pop_front();
+            }
+
+            if (m_ChangingSwapchain) continue;
+
+            auto context = m_DeviceResources->GetD3DDeviceContext();
+
+            if (!m_CurFrame.Buffer.empty())
+            {
+                m_TexturePlaneRenderer->SetImage(m_CurFrame.Buffer.data(), m_CurFrame.Width, m_CurFrame.Height);
+            }
+
+            float width = m_DesiredSize.Width;
+            float height = m_DesiredSize.Height;
+
+            if (m_ResizeNeeded && !m_CurFrame.Buffer.empty())
+            {
+                m_DeviceResources->SetLogicalSize({ width, height });
+                m_TexturePlaneRenderer->CreateWindowSizeDependentResources();
+
+                m_ResizeNeeded = false;
+            }
+
+            auto viewport = m_DeviceResources->GetScreenViewport();
+            float panelAspect = width / height;
+            float videoAspect = m_LastFrameSize.Width / m_LastFrameSize.Height;
+            if (panelAspect > videoAspect)
+            {
+                float widthCorrected = height * videoAspect;
+                viewport.TopLeftX = (width - widthCorrected) / 2;
+                viewport.Width = widthCorrected;
+                viewport.Height = height;
+            }
+            else
+            {
+                float heightCorrected = width / videoAspect;
+                viewport.TopLeftY = (height - heightCorrected) / 2;
+                viewport.Width = width;
+                viewport.Height = heightCorrected;
+            }
+
+            context->RSSetViewports(1, &viewport);
+
+            ID3D11RenderTargetView* const targets[1] = { m_DeviceResources->GetBackBufferRenderTargetView() };
+            if (!targets[0]) continue;
+            if (!m_CurFrame.Buffer.empty())
+            {
+                context->OMSetRenderTargets(1, targets, m_DeviceResources->GetDepthStencilView());
+
+                context->ClearRenderTargetView(m_DeviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Transparent);
+                context->ClearDepthStencilView(m_DeviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+
+                m_TexturePlaneRenderer->Render();
+
+                for (auto& sub : currentSubs)
+                {
+                    m_TextRenderer->Render(sub.Text, -10.0f, -10.0f);
+                }
+            }
+            m_DeviceResources->Present();
+        }
     }
 
     void PlayerService::OnLoaded()

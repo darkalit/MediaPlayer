@@ -2,6 +2,7 @@
 
 #include "PlayerService.g.h"
 #include "DirectX/TexturePlaneRenderer.h"
+#include "DirectX/TextRenderer.h"
 
 #include "winrt/MediaPlayer.h"
 #include "Media/FfmpegDecoder.h"
@@ -66,6 +67,7 @@ namespace winrt::MediaPlayer::implementation
 
     private:
         MediaMetadata GetMetadataInternal(hstring const& path);
+        void VideoRender();
 
         void OnLoaded();
         void OnPlaybackEnded();
@@ -90,6 +92,7 @@ namespace winrt::MediaPlayer::implementation
 
         std::shared_ptr<DeviceResources> m_DeviceResources;
         std::shared_ptr<TexturePlaneRenderer> m_TexturePlaneRenderer;
+        std::shared_ptr<TextRenderer> m_TextRenderer;
         com_ptr<ID3D11ShaderResourceView> m_ShaderResourceView;
         com_ptr<IMFDXGIDeviceManager> m_DeviceManager;
         com_ptr<IMFSourceReader> m_SourceReader;
