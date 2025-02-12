@@ -146,6 +146,33 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
             nullptr);
     }
 
+    const AVCodec* subtitlesCodec = nullptr;
+    m_SubtitlesStreamIndex = av_find_best_stream(m_FormatContext, AVMEDIA_TYPE_SUBTITLE, -1, -1, &subtitlesCodec, 0);
+
+    if (m_SubtitlesStreamIndex >= 0)
+    {
+        m_SubtitlesCodecContext = avcodec_alloc_context3(subtitlesCodec);
+        if (!m_SubtitlesCodecContext)
+        {
+            OutputDebugString(L"FfmpegDecoder::OpenFile Subtitles avcodec_alloc_context3");
+            return;
+        }
+
+        error = avcodec_parameters_to_context(m_SubtitlesCodecContext, m_FormatContext->streams[m_SubtitlesStreamIndex]->codecpar);
+        if (error != 0)
+        {
+            OutputDebugString(L"FfmpegDecoder::OpenFile Subtitles avcodec_parameters_to_context");
+            return;
+        }
+
+        error = avcodec_open2(m_SubtitlesCodecContext, subtitlesCodec, nullptr);
+        if (error != 0)
+        {
+            OutputDebugString(L"FfmpegDecoder::OpenFile Subtitles avcodec_open2");
+            return;
+        }
+    }
+
     auto frame = av_frame_alloc();
     defer{ av_frame_free(&frame); };
 
@@ -158,8 +185,56 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
     {
         defer{ av_packet_unref(packet); };
 
-        if (packet->stream_index != m_AudioStreamIndex)
+        if (packet->stream_index != m_AudioStreamIndex && packet->stream_index != m_SubtitlesStreamIndex)
         {
+            continue;
+        }
+
+        if (packet->stream_index == m_SubtitlesStreamIndex)
+        {
+            int gotSub = 0;
+            AVSubtitle subtitle;
+            error = avcodec_decode_subtitle2(m_SubtitlesCodecContext, &subtitle, &gotSub, packet);
+            if (error < 0)
+            {
+                OutputDebugString(L"FfmpegDecoder::OpenFile Subtitles avcodec_decode_subtitle2");
+                continue;
+            }
+            defer{ avsubtitle_free(&subtitle); };
+
+            if (gotSub)
+            {
+                SubtitleItem subItem = {};
+                for (unsigned int i = 0; i < subtitle.num_rects; ++i)
+                {
+                    AVSubtitleRect* rect = subtitle.rects[i];
+                    if (rect->text)
+                    {
+                        subItem.Text = Utils::StringToWString(rect->text);
+                    }
+                    else if (rect->ass)
+                    {
+                        ParseAssDialogue(subItem, rect->ass);
+                    }
+                }
+
+                if (subItem.StartTime == 0 || subItem.EndTime == 0)
+                {
+                    double subTimeBase = av_q2d(m_FormatContext->streams[m_SubtitlesStreamIndex]->time_base);
+                    subItem.StartTime = packet->pts * subTimeBase;
+
+                    if (subtitle.end_display_time > 0)
+                    {
+                        subItem.EndTime = subItem.StartTime + (subtitle.end_display_time / 1000.0);
+                    }
+                    else
+                    {
+                        subItem.EndTime = subItem.StartTime + packet->duration * subTimeBase;
+                    }
+                }
+
+                m_SubsQueue.push(subItem);
+            }
             continue;
         }
 
@@ -243,6 +318,11 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
 std::vector<uint8_t>& FfmpegDecoder::GetWavBuffer()
 {
     return m_WavBuffer;
+}
+
+std::queue<SubtitleItem>& FfmpegDecoder::GetSubsQueue()
+{
+    return m_SubsQueue;
 }
 
 VideoFrame FfmpegDecoder::GetNextFrame()
@@ -334,4 +414,44 @@ void FfmpegDecoder::Seek(uint64_t time)
 
     av_seek_frame(m_FormatContext, m_VideoStreamIndex, seekTarget, AVSEEK_FLAG_BACKWARD);
     avcodec_flush_buffers(m_VideoCodecContext);
+}
+
+void FfmpegDecoder::ParseAssDialogue(SubtitleItem& subItem, const std::string& dialogueEvent)
+{
+    std::istringstream stream(dialogueEvent);
+    std::string token;
+
+    // Proper dialogue event format:
+    // Marked, Layer*, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+    // But got:
+    // Layer, ???, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+
+    // Layer
+    std::getline(stream, token, ',');
+
+    // ???
+    std::getline(stream, token, ',');
+
+    // Style
+    std::getline(stream, token, ',');
+
+    // Name
+    std::getline(stream, token, ',');
+    subItem.Name = Utils::StringToWString(token);
+
+    // MarginL
+    std::getline(stream, token, ',');
+
+    // MarginR
+    std::getline(stream, token, ',');
+
+    // MarginV
+    std::getline(stream, token, ',');
+
+    // Effect
+    std::getline(stream, token, ',');
+
+    // Text
+    std::getline(stream, token);
+    subItem.Text = Utils::StringToWString(token);
 }

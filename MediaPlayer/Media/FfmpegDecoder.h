@@ -1,5 +1,7 @@
 #pragma once
 
+#include "queue"
+
 struct AVFormatContext;
 struct AVCodecContext;
 struct SwrContext;
@@ -36,6 +38,20 @@ struct VideoFrame
     double FrameTime;
 };
 
+enum class SubType
+{
+    TEXT,
+    ASS,
+};
+
+struct SubtitleItem
+{
+    double StartTime;
+    double EndTime;
+    winrt::hstring Name;
+    winrt::hstring Text;
+};
+
 class FfmpegDecoder
 {
 public:
@@ -44,20 +60,26 @@ public:
 
     void OpenFile(winrt::hstring const& filepath);
     std::vector<uint8_t>& GetWavBuffer();
+    std::queue<SubtitleItem>& GetSubsQueue();
     VideoFrame GetNextFrame();
     void Seek(uint64_t time); // in milliseconds
 
 private:
+    static void ParseAssDialogue(SubtitleItem& subItem, const std::string& dialogueEvent);
+
     AVFormatContext* m_FormatContext;
     AVCodecContext* m_AudioCodecContext;
     AVCodecContext* m_VideoCodecContext;
+    AVCodecContext* m_SubtitlesCodecContext;
     int m_AudioStreamIndex;
     int m_VideoStreamIndex;
+    int m_SubtitlesStreamIndex;
     SwrContext* m_SwrContext;
     SwsContext* m_SwsContext;
 
     bool m_FileOpened = false;
 
     std::vector<uint8_t> m_WavBuffer;
+    std::queue<SubtitleItem> m_SubsQueue;
 };
 
