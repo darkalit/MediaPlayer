@@ -1,5 +1,7 @@
 #pragma once
 
+#include <winrt/MediaPlayer.h>
+
 #include "queue"
 
 struct AVFormatContext;
@@ -52,6 +54,13 @@ struct SubtitleItem
     winrt::hstring Text;
 };
 
+//struct SubtitleStream
+//{
+//    int Index;
+//    winrt::hstring Language;
+//    winrt::hstring Title;
+//};
+
 class FfmpegDecoder
 {
 public:
@@ -59,12 +68,15 @@ public:
     ~FfmpegDecoder();
 
     void OpenFile(winrt::hstring const& filepath);
+    void OpenSubtitle(unsigned int subtitleIndex);
     std::vector<uint8_t>& GetWavBuffer();
+    std::vector<winrt::MediaPlayer::SubtitleStream>& GetSubtitleStreams();
     std::queue<SubtitleItem>& GetSubsQueue();
     VideoFrame GetNextFrame();
     void Seek(uint64_t time); // in milliseconds
 
 private:
+    void GetSubtitles(AVFormatContext* formatContext, const std::string& filepath);
     static void ParseAssDialogue(SubtitleItem& subItem, const std::string& dialogueEvent);
 
     AVFormatContext* m_FormatContext;
@@ -73,7 +85,7 @@ private:
     AVCodecContext* m_SubtitlesCodecContext;
     int m_AudioStreamIndex;
     int m_VideoStreamIndex;
-    int m_SubtitlesStreamIndex;
+    std::vector<winrt::MediaPlayer::SubtitleStream> m_SubtitleStreams;
     SwrContext* m_SwrContext;
     SwsContext* m_SwsContext;
 

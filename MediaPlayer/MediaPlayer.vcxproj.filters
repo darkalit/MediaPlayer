@@ -50,6 +50,9 @@
     <Midl Include="ViewModels\MenuBarControlViewModel.idl">
       <Filter>ViewModels</Filter>
     </Midl>
+    <Midl Include="Models\SubtitleStream.idl">
+      <Filter>Media</Filter>
+    </Midl>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />

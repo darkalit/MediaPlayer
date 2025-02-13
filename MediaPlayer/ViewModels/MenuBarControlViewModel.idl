@@ -1,6 +1,6 @@
 import "Framework/BindableBase.idl";
 import "Framework/DelegateCommand.idl";
-import "Models/MediaMetadata.idl";
+import "Models/SubtitleStream.idl";
 
 namespace MediaPlayer
 {
@@ -8,9 +8,11 @@ namespace MediaPlayer
     unsealed runtimeclass MenuBarControlViewModel : BindableBase
     {
         MenuBarControlViewModel();
+        IObservableVector<SubtitleStream> SubTracks{ get; };
         Microsoft.UI.Xaml.Input.ICommand CreateSnapshotFile{ get; };
         Microsoft.UI.Xaml.Input.ICommand ChangePlaybackMode{ get; };
         Microsoft.UI.Xaml.Input.ICommand ChangePlaybackSpeed{ get; };
+        Microsoft.UI.Xaml.Input.ICommand ChangeSubTrack{ get; };
         Microsoft.UI.Xaml.Input.ICommand Exit{ get; };
         Microsoft.UI.Xaml.Input.ICommand OpenFiles{ get; };
     }

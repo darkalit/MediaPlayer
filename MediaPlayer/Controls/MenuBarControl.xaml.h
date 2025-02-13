@@ -10,6 +10,10 @@ namespace winrt::MediaPlayer::implementation
         MenuBarControl();
         MediaPlayer::MenuBarControlViewModel ViewModel();
 
+        void OnSubTracksVectorChanged(
+            winrt::Windows::Foundation::Collections::IObservableVector<SubtitleStream> const& sender,
+            winrt::Windows::Foundation::Collections::IVectorChangedEventArgs const& args);
+
     private:
         MediaPlayer::MenuBarControlViewModel m_ViewModel = nullptr;
     };

@@ -28,6 +28,7 @@ namespace winrt::MediaPlayer::implementation
 
         void AddSource(hstring const& path, hstring const& displayName);
         void SetSource(hstring const& path);
+        void SetSubtitleIndex(int32_t index);
         bool HasSource();
         int32_t GetMediaIndexById(guid const& id);
 
@@ -60,6 +61,7 @@ namespace winrt::MediaPlayer::implementation
         MediaMetadata Metadata();
         void Metadata(MediaMetadata const& value);
         Windows::Foundation::Collections::IVector<MediaMetadata> Playlist();
+        Windows::Foundation::Collections::IObservableVector<SubtitleStream> SubTracks();
         Microsoft::UI::Xaml::Controls::SwapChainPanel SwapChainPanel();
         void SwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& value);
         Microsoft::UI::Dispatching::DispatcherQueue UIDispatcher();
@@ -88,6 +90,7 @@ namespace winrt::MediaPlayer::implementation
         Windows::Foundation::Size m_DesiredSize;
         Windows::Foundation::Size m_LastFrameSize;
         bool m_Seeked = false;
+        Windows::Foundation::Collections::IObservableVector<SubtitleStream> m_SubTracks = single_threaded_observable_vector<SubtitleStream>();
         std::thread m_VideoThread;
 
         std::shared_ptr<DeviceResources> m_DeviceResources;

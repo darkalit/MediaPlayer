@@ -172,6 +172,13 @@ namespace winrt::MediaPlayer::implementation
         MFCreateSourceReaderFromByteStream(byteStream.get(), nullptr, m_SourceReader.put());
         m_MediaEngineWrapper->SetSource(m_SourceReader.get());
 
+
+        m_SubTracks.Clear();
+        for (auto& s : m_FfmpegDecoder.GetSubtitleStreams())
+        {
+            m_SubTracks.Append(s);
+        }
+
         Position(0);
         State(PlayerServiceState::STOPPED);
 
@@ -187,6 +194,11 @@ namespace winrt::MediaPlayer::implementation
 
             m_VideoThread = std::thread(&PlayerService::VideoRender, this);
         }
+    }
+
+    void PlayerService::SetSubtitleIndex(int32_t index)
+    {
+        m_FfmpegDecoder.OpenSubtitle(index);
     }
 
     bool PlayerService::HasSource()
@@ -597,6 +609,11 @@ namespace winrt::MediaPlayer::implementation
     Collections::IVector<MediaMetadata> PlayerService::Playlist()
     {
         return m_Playlist;
+    }
+
+    Windows::Foundation::Collections::IObservableVector<SubtitleStream> PlayerService::SubTracks()
+    {
+        return m_SubTracks;
     }
 
     Microsoft::UI::Xaml::Controls::SwapChainPanel PlayerService::SwapChainPanel()

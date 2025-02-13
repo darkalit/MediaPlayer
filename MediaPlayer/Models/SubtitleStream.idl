@@ -1,0 +1,9 @@
+namespace MediaPlayer
+{
+    struct SubtitleStream
+    {
+        Int32 Index;
+        String Title;
+        String Language;
+    };
+}

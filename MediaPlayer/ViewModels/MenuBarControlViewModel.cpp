@@ -59,6 +59,15 @@ namespace winrt::MediaPlayer::implementation
             m_PlayerService.PlaybackSpeed(speed);
         });
 
+        m_ChangeSubTrackCommand = make<DelegateCommand>([&](IInspectable const& parameter)
+        {
+            if (!m_PlayerService.HasSource()) return;
+
+            auto index = unbox_value<int32_t>(parameter);
+
+            m_PlayerService.SetSubtitleIndex(index);
+        });
+
         m_ExitCommand = make<DelegateCommand>([&](auto&&)
         {
             m_PlayerService.Stop();
@@ -108,6 +117,11 @@ namespace winrt::MediaPlayer::implementation
         co_return co_await filePicker.PickMultipleFilesAsync();
     }
 
+    winrt::Windows::Foundation::Collections::IObservableVector<SubtitleStream> MenuBarControlViewModel::SubTracks()
+    {
+        return m_PlayerService.SubTracks();
+    }
+
     Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::CreateSnapshotFile()
     {
         return m_CreateSnapshotFileCommand;
@@ -122,6 +136,12 @@ namespace winrt::MediaPlayer::implementation
     {
         return m_ChangePlaybackSpeedCommand;
     }
+
+    Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::ChangeSubTrack()
+    {
+        return m_ChangeSubTrackCommand;
+    }
+
     Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::Exit()
     {
         return m_ExitCommand;

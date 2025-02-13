@@ -1,4 +1,5 @@
 import "Models/MediaMetadata.idl";
+import "Models/SubtitleStream.idl";
 import "Framework/BindableBase.idl";
 
 namespace MediaPlayer
@@ -28,6 +29,7 @@ namespace MediaPlayer
 
         void AddSource(String path, String displayName);
         void SetSource(String path);
+        void SetSubtitleIndex(Int32 index);
         Boolean HasSource();
         Int32 GetMediaIndexById(GUID id);
         void CreateSnapshot();
@@ -54,6 +56,7 @@ namespace MediaPlayer
         PlayerServiceState State { get; };
         MediaMetadata Metadata { get; };
         Windows.Foundation.Collections.IVector<MediaMetadata> Playlist { get; };
+        Windows.Foundation.Collections.IObservableVector<SubtitleStream> SubTracks { get; };
         Microsoft.UI.Xaml.Controls.SwapChainPanel SwapChainPanel;
         Microsoft.UI.Dispatching.DispatcherQueue UIDispatcher;
     }

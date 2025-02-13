@@ -13,10 +13,30 @@ namespace winrt::MediaPlayer::implementation
     {
         m_ViewModel = make<MediaPlayer::implementation::MenuBarControlViewModel>();
         DataContext(ViewModel());
+
+        ViewModel().SubTracks().VectorChanged({ this, &MenuBarControl::OnSubTracksVectorChanged });
     }
 
     MediaPlayer::MenuBarControlViewModel MenuBarControl::ViewModel()
     {
         return m_ViewModel;
+    }
+
+    void MenuBarControl::OnSubTracksVectorChanged(
+        winrt::Windows::Foundation::Collections::IObservableVector<SubtitleStream> const& sender,
+        winrt::Windows::Foundation::Collections::IVectorChangedEventArgs const& args)
+    {
+        MenuSubItem_SubTrack().Items().Clear();
+
+        for (auto const& s : ViewModel().SubTracks())
+        {
+            Controls::RadioMenuFlyoutItem radioItem;
+            radioItem.Text(L"[" + s.Title + L"] - [" + s.Language + L"]" );
+            radioItem.GroupName(L"SubTracksGroup");
+            radioItem.Command(ViewModel().ChangeSubTrack());
+            radioItem.CommandParameter(box_value(s.Index));
+
+            MenuSubItem_SubTrack().Items().Append(radioItem);
+        }
     }
 }
