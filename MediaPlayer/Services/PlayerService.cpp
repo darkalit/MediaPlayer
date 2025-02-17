@@ -203,6 +203,11 @@ namespace winrt::MediaPlayer::implementation
         m_FfmpegDecoder.OpenSubtitle(index);
     }
 
+    void PlayerService::SetSubtitleFromFile(hstring const& path)
+    {
+        m_FfmpegDecoder.OpenSubtitle(path);
+    }
+
     bool PlayerService::HasSource()
     {
         return !!m_SourceReader && m_MediaEngineWrapper && m_Playlist.Size() > 0 && CurrentMediaIndex() > -1;

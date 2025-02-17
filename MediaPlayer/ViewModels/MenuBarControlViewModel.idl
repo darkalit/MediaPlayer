@@ -15,5 +15,6 @@ namespace MediaPlayer
         Microsoft.UI.Xaml.Input.ICommand ChangeSubTrack{ get; };
         Microsoft.UI.Xaml.Input.ICommand Exit{ get; };
         Microsoft.UI.Xaml.Input.ICommand OpenFiles{ get; };
+        Microsoft.UI.Xaml.Input.ICommand OpenSubtitle{ get; };
     }
 }

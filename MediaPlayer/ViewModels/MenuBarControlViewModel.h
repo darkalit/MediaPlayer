@@ -10,7 +10,6 @@ namespace winrt::MediaPlayer::implementation
     {
         MenuBarControlViewModel();
 
-        Windows::Foundation::IAsyncOperation<Windows::Foundation::Collections::IVectorView<Windows::Storage::StorageFile>> OpenFilePickerAsync();
         winrt::Windows::Foundation::Collections::IObservableVector<SubtitleStream> SubTracks();
 
         Microsoft::UI::Xaml::Input::ICommand CreateSnapshotFile();
@@ -19,6 +18,7 @@ namespace winrt::MediaPlayer::implementation
         Microsoft::UI::Xaml::Input::ICommand ChangeSubTrack();
         Microsoft::UI::Xaml::Input::ICommand Exit();
         Microsoft::UI::Xaml::Input::ICommand OpenFiles();
+        Microsoft::UI::Xaml::Input::ICommand OpenSubtitle();
 
     private:
         MediaPlayer::PlayerService m_PlayerService;
@@ -28,6 +28,7 @@ namespace winrt::MediaPlayer::implementation
         MediaPlayer::DelegateCommand m_ChangeSubTrackCommand = nullptr;
         MediaPlayer::DelegateCommand m_ExitCommand = nullptr;
         MediaPlayer::DelegateCommand m_OpenFilesCommand = nullptr;
+        MediaPlayer::DelegateCommand m_OpenSubtitleCommand = nullptr;
     };
 }
 namespace winrt::MediaPlayer::factory_implementation

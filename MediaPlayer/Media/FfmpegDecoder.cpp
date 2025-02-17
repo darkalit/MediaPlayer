@@ -59,7 +59,13 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         return;
     }
 
-    GetSubtitles(nullptr, "");
+    if (m_SubtitleFormatContext)
+    {
+        avformat_close_input(&m_SubtitleFormatContext);
+        m_SubtitleFormatContext = nullptr;
+    }
+    
+    GetSubtitles(m_FormatContext);
 
     const AVCodec* audioCodec = nullptr;
     m_AudioStreamIndex = av_find_best_stream(m_FormatContext, AVMEDIA_TYPE_AUDIO, -1, -1, &audioCodec, 0);
@@ -250,30 +256,87 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
     }
 }
 
-void FfmpegDecoder::OpenSubtitle(unsigned int subtitleIndex)
+void FfmpegDecoder::OpenSubtitle(winrt::hstring const& filepath)
 {
     m_CurrentSubSteamIndex = -1;
-    std::queue<SubtitleItem>().swap(m_SubsQueue);
-    const AVCodec* subtitlesCodec = avcodec_find_decoder(m_FormatContext->streams[subtitleIndex]->codecpar->codec_id);;
+    if (m_SubtitleFormatContext)
+    {
+        avformat_close_input(&m_SubtitleFormatContext);
+        m_SubtitleFormatContext = nullptr;
+    }
+    int error = avformat_open_input(&m_SubtitleFormatContext, to_string(filepath).c_str(), nullptr, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenSubtitle avformat_open_input");
+        return;
+    }
+
+    error = avformat_find_stream_info(m_SubtitleFormatContext, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenSubtitle avformat_find_stream_info");
+        return;
+    }
+
+    m_CurrentSubSteamIndex = av_find_best_stream(m_SubtitleFormatContext, AVMEDIA_TYPE_SUBTITLE, -1, -1, nullptr, 0);
+    if (m_CurrentSubSteamIndex < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles av_find_best_stream");
+        return;
+    }
+
+    const AVCodec* subtitlesCodec = avcodec_find_decoder(m_SubtitleFormatContext->streams[m_CurrentSubSteamIndex]->codecpar->codec_id);;
 
     m_SubtitlesCodecContext = avcodec_alloc_context3(subtitlesCodec);
     if (!m_SubtitlesCodecContext)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Subtitles avcodec_alloc_context3");
+        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_alloc_context3");
         return;
     }
 
-    int error = avcodec_parameters_to_context(m_SubtitlesCodecContext, m_FormatContext->streams[subtitleIndex]->codecpar);
+    error = avcodec_parameters_to_context(m_SubtitlesCodecContext, m_SubtitleFormatContext->streams[m_CurrentSubSteamIndex]->codecpar);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Subtitles avcodec_parameters_to_context");
+        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_parameters_to_context");
         return;
     }
 
     error = avcodec_open2(m_SubtitlesCodecContext, subtitlesCodec, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Subtitles avcodec_open2");
+        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_open2");
+        return;
+    }
+}
+
+void FfmpegDecoder::OpenSubtitle(unsigned int subtitleIndex)
+{
+    m_CurrentSubSteamIndex = -1;
+    if (m_SubtitleFormatContext)
+    {
+        avformat_close_input(&m_SubtitleFormatContext);
+        m_SubtitleFormatContext = nullptr;
+    }
+    const AVCodec* subtitlesCodec = avcodec_find_decoder(m_FormatContext->streams[subtitleIndex]->codecpar->codec_id);;
+
+    m_SubtitlesCodecContext = avcodec_alloc_context3(subtitlesCodec);
+    if (!m_SubtitlesCodecContext)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_alloc_context3");
+        return;
+    }
+
+    int error = avcodec_parameters_to_context(m_SubtitlesCodecContext, m_FormatContext->streams[subtitleIndex]->codecpar);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_parameters_to_context");
+        return;
+    }
+
+    error = avcodec_open2(m_SubtitlesCodecContext, subtitlesCodec, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_open2");
         return;
     }
 
@@ -361,48 +424,27 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
             }
             else if (packet->stream_index == m_CurrentSubSteamIndex)
             {
-                int gotSub = 0;
-                AVSubtitle subtitle;
-                error = avcodec_decode_subtitle2(m_SubtitlesCodecContext, &subtitle, &gotSub, packet);
+                error = PushSubtitle(subs, m_FormatContext, packet);
                 if (error < 0)
                 {
-                    OutputDebugString(L"FfmpegDecoder::OpenFile Subtitles avcodec_decode_subtitle2");
+                    OutputDebugString(L"FfmpegDecoder::SetupDecoding Subtitles PushSubtitle");
                     continue;
                 }
-                defer{ avsubtitle_free(&subtitle); };
+            }
 
-                if (gotSub)
+            if (m_SubtitleFormatContext)
+            {
+                av_packet_unref(packet);
+                if (av_read_frame(m_SubtitleFormatContext, packet) < 0) continue;
+
+                if (packet->stream_index == m_CurrentSubSteamIndex)
                 {
-                    SubtitleItem subItem = {};
-                    for (unsigned int i = 0; i < subtitle.num_rects; ++i)
+                    error = PushSubtitle(subs, m_SubtitleFormatContext, packet);
+                    if (error < 0)
                     {
-                        AVSubtitleRect* rect = subtitle.rects[i];
-                        if (rect->text)
-                        {
-                            subItem.Text = to_hstring(rect->text);
-                        }
-                        else if (rect->ass)
-                        {
-                            ParseAssDialogue(subItem, rect->ass);
-                        }
+                        OutputDebugString(L"FfmpegDecoder::SetupDecoding Subtitles PushSubtitle");
+                        continue;
                     }
-
-                    if (subItem.StartTime == 0 || subItem.EndTime == 0)
-                    {
-                        double subTimeBase = av_q2d(m_FormatContext->streams[m_CurrentSubSteamIndex]->time_base);
-                        subItem.StartTime = packet->pts * subTimeBase;
-
-                        if (subtitle.end_display_time > 0)
-                        {
-                            subItem.EndTime = subItem.StartTime + (subtitle.end_display_time / 1000.0);
-                        }
-                        else
-                        {
-                            subItem.EndTime = subItem.StartTime + packet->duration * subTimeBase;
-                        }
-                    }
-
-                    subs.Push(subItem);
                 }
             }
         }
@@ -422,11 +464,6 @@ std::vector<uint8_t>& FfmpegDecoder::GetWavBuffer()
 std::vector<MediaPlayer::SubtitleStream>& FfmpegDecoder::GetSubtitleStreams()
 {
     return m_SubtitleStreams;
-}
-
-std::queue<SubtitleItem>& FfmpegDecoder::GetSubsQueue()
-{
-    return m_SubsQueue;
 }
 
 VideoFrame FfmpegDecoder::GetNextFrame()
@@ -520,14 +557,14 @@ void FfmpegDecoder::Seek(uint64_t time)
     avcodec_flush_buffers(m_VideoCodecContext);
 }
 
-void FfmpegDecoder::GetSubtitles(AVFormatContext* formatContext, const std::string& filepath)
+void FfmpegDecoder::GetSubtitles(AVFormatContext* formatContext)
 {
-    for (unsigned int i = 0; i < m_FormatContext->nb_streams; ++i)
+    for (unsigned int i = 0; i < formatContext->nb_streams; ++i)
     {
-        AVCodecParameters* codecParams = m_FormatContext->streams[i]->codecpar;
+        AVCodecParameters* codecParams = formatContext->streams[i]->codecpar;
         if (codecParams->codec_type == AVMEDIA_TYPE_SUBTITLE)
         {
-            AVStream* subtitleStream = m_FormatContext->streams[i];
+            AVStream* subtitleStream = formatContext->streams[i];
 
             MediaPlayer::SubtitleStream stream = {};
             stream.Index = i;
@@ -540,6 +577,53 @@ void FfmpegDecoder::GetSubtitles(AVFormatContext* formatContext, const std::stri
 
             m_SubtitleStreams.push_back(stream);
         }
+    }
+}
+
+int FfmpegDecoder::PushSubtitle(SharedQueue<SubtitleItem>& subs, AVFormatContext* formatContext, AVPacket* packet)
+{
+    int gotSub = 0;
+    AVSubtitle subtitle;
+    int error = avcodec_decode_subtitle2(m_SubtitlesCodecContext, &subtitle, &gotSub, packet);
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::PushSubtitle Subtitles avcodec_decode_subtitle2");
+        return error;
+    }
+    defer{ avsubtitle_free(&subtitle); };
+
+    if (gotSub)
+    {
+        SubtitleItem subItem = {};
+        for (unsigned int i = 0; i < subtitle.num_rects; ++i)
+        {
+            AVSubtitleRect* rect = subtitle.rects[i];
+            if (rect->text)
+            {
+                subItem.Text = to_hstring(rect->text);
+            }
+            else if (rect->ass)
+            {
+                ParseAssDialogue(subItem, rect->ass);
+            }
+        }
+
+        if (subItem.StartTime == 0 || subItem.EndTime == 0)
+        {
+            double subTimeBase = av_q2d(formatContext->streams[m_CurrentSubSteamIndex]->time_base);
+            subItem.StartTime = packet->pts * subTimeBase;
+
+            if (subtitle.end_display_time > 0)
+            {
+                subItem.EndTime = subItem.StartTime + (subtitle.end_display_time / 1000.0);
+            }
+            else
+            {
+                subItem.EndTime = subItem.StartTime + packet->duration * subTimeBase;
+            }
+        }
+
+        subs.Push(subItem);
     }
 }
 

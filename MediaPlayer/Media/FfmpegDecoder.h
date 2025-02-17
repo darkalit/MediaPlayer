@@ -8,6 +8,7 @@ struct AVFormatContext;
 struct AVCodecContext;
 struct SwrContext;
 struct SwsContext;
+struct AVPacket;
 
 struct WavHeader
 {
@@ -68,27 +69,29 @@ public:
     ~FfmpegDecoder();
 
     void OpenFile(winrt::hstring const& filepath);
+    void OpenSubtitle(winrt::hstring const& filepath);
     void OpenSubtitle(unsigned int subtitleIndex);
     void SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<SubtitleItem>& subs);
     void PauseDecoding(bool pause);
     std::vector<uint8_t>& GetWavBuffer();
     std::vector<winrt::MediaPlayer::SubtitleStream>& GetSubtitleStreams();
-    std::queue<SubtitleItem>& GetSubsQueue();
     VideoFrame GetNextFrame();
     void Seek(uint64_t time); // in milliseconds
 
 private:
-    void GetSubtitles(AVFormatContext* formatContext, const std::string& filepath);
+    void GetSubtitles(AVFormatContext* formatContext);
+    int PushSubtitle(SharedQueue<SubtitleItem>& subs, AVFormatContext* formatContext, AVPacket* packet);
     static void ParseAssDialogue(SubtitleItem& subItem, const std::string& dialogueEvent);
 
     AVFormatContext* m_FormatContext;
+    AVFormatContext* m_SubtitleFormatContext = nullptr;
     AVCodecContext* m_AudioCodecContext;
     AVCodecContext* m_VideoCodecContext;
     AVCodecContext* m_SubtitlesCodecContext;
     int m_AudioStreamIndex;
     int m_VideoStreamIndex;
     std::vector<winrt::MediaPlayer::SubtitleStream> m_SubtitleStreams;
-    unsigned int m_CurrentSubSteamIndex;
+    int m_CurrentSubSteamIndex;
     SwrContext* m_SwrContext;
     SwsContext* m_SwsContext;
 
@@ -98,6 +101,5 @@ private:
     std::thread m_DecodingThread;
 
     std::vector<uint8_t> m_WavBuffer;
-    std::queue<SubtitleItem> m_SubsQueue;
 };
 

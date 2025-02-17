@@ -30,6 +30,7 @@ namespace MediaPlayer
         void AddSource(String path, String displayName);
         void SetSource(String path);
         void SetSubtitleIndex(Int32 index);
+        void SetSubtitleFromFile(String path);
         Boolean HasSource();
         Int32 GetMediaIndexById(GUID id);
         void CreateSnapshot();

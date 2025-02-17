@@ -29,6 +29,7 @@ namespace winrt::MediaPlayer::implementation
         void AddSource(hstring const& path, hstring const& displayName);
         void SetSource(hstring const& path);
         void SetSubtitleIndex(int32_t index);
+        void SetSubtitleFromFile(hstring const& path);
         bool HasSource();
         int32_t GetMediaIndexById(guid const& id);
 

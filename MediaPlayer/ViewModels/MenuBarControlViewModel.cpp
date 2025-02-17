@@ -76,45 +76,50 @@ namespace winrt::MediaPlayer::implementation
 
         m_OpenFilesCommand = make<DelegateCommand>([&](auto&&) -> fire_and_forget
         {
-            auto files = co_await OpenFilePickerAsync();
+            FileOpenPicker filePicker{};
+            filePicker.as<IInitializeWithWindow>()->Initialize(App::GetMainWindow());
+            filePicker.SuggestedStartLocation(PickerLocationId::Desktop);
+            filePicker.FileTypeFilter().ReplaceAll({
+                L".3g2", L".3gp", L".3gp2", L".3gpp",
+                L".asf", L".wma", L".wmv",
+                L".aac", L".adts",
+                L".avi",
+                L".mp3",
+                L".m4a", L".m4v", L".mov", L".mp4",
+                L".sami", L".smi",
+                L".wav",
+                L".flac", L".oga",
+                L".ogg", L".ogv", L".opus",
+                L".mkv", L".mka", L".mk3d",
+                L".flv", L".swf", L".f4v",
+                L".webm",
+                L".ts", L".m2ts", L".mts",
+                L".rm", L".rmvb", L".ra", L".ram",
+                L".ac3", L".amr", L".ape", L".au",
+                L".dts", L".dvr-ms", L".vob", L".wtv",
+                L".mpg", L".mpeg", L".m2v",
+                L".dv", L".mxf", L".nut",
+                L".srt", L".ass", L".ssa", L".sub",
+                L".bmp", L".png", L".jpg", L".jpeg", L".gif"
+                });
+
+            auto files = co_await filePicker.PickMultipleFilesAsync();
 
             for (const auto& file : files)
             {
                 m_PlayerService.AddSource(file.Path(), file.DisplayName());
             }
         });
-    }
 
-    IAsyncOperation<Collections::IVectorView<StorageFile>> MenuBarControlViewModel::OpenFilePickerAsync()
-    {
-        FileOpenPicker filePicker{};
-        filePicker.as<IInitializeWithWindow>()->Initialize(App::GetMainWindow());
-        filePicker.SuggestedStartLocation(PickerLocationId::Desktop);
-        filePicker.FileTypeFilter().ReplaceAll({
-            L".3g2", L".3gp", L".3gp2", L".3gpp",
-            L".asf", L".wma", L".wmv",
-            L".aac", L".adts",
-            L".avi",
-            L".mp3",
-            L".m4a", L".m4v", L".mov", L".mp4",
-            L".sami", L".smi",
-            L".wav",
-            L".flac", L".oga",
-            L".ogg", L".ogv", L".opus",
-            L".mkv", L".mka", L".mk3d",
-            L".flv", L".swf", L".f4v",
-            L".webm",
-            L".ts", L".m2ts", L".mts",
-            L".rm", L".rmvb", L".ra", L".ram",
-            L".ac3", L".amr", L".ape", L".au",
-            L".dts", L".dvr-ms", L".vob", L".wtv",
-            L".mpg", L".mpeg", L".m2v",
-            L".dv", L".mxf", L".nut",
-            L".srt", L".ass", L".ssa", L".sub",
-            L".bmp", L".png", L".jpg", L".jpeg", L".gif"
+        m_OpenSubtitleCommand = make<DelegateCommand>([&](auto&&) -> fire_and_forget
+        {
+            FileOpenPicker filePicker{};
+            filePicker.as<IInitializeWithWindow>()->Initialize(App::GetMainWindow());
+            filePicker.SuggestedStartLocation(PickerLocationId::Desktop);
+            filePicker.FileTypeFilter().ReplaceAll({ L".srt", L".ass" });
+            auto file = co_await filePicker.PickSingleFileAsync();
+            m_PlayerService.SetSubtitleFromFile(file.Path());
         });
-
-        co_return co_await filePicker.PickMultipleFilesAsync();
     }
 
     winrt::Windows::Foundation::Collections::IObservableVector<SubtitleStream> MenuBarControlViewModel::SubTracks()
@@ -149,5 +154,10 @@ namespace winrt::MediaPlayer::implementation
     Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::OpenFiles()
     {
         return m_OpenFilesCommand;
+    }
+
+    Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::OpenSubtitle()
+    {
+        return m_OpenSubtitleCommand;
     }
 }
