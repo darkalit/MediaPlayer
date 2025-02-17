@@ -30,6 +30,12 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
     if (m_FileOpened && m_FormatContext)
     {
         avformat_close_input(&m_FormatContext);
+        m_FileOpened = false;
+    }
+
+    if (m_DecodingThread.joinable())
+    {
+        m_DecodingThread.join();
     }
 
     m_WavBuffer.clear();
@@ -246,8 +252,9 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
 
 void FfmpegDecoder::OpenSubtitle(unsigned int subtitleIndex)
 {
+    m_CurrentSubSteamIndex = -1;
     std::queue<SubtitleItem>().swap(m_SubsQueue);
-    const AVCodec* subtitlesCodec = nullptr;
+    const AVCodec* subtitlesCodec = avcodec_find_decoder(m_FormatContext->streams[subtitleIndex]->codecpar->codec_id);;
 
     m_SubtitlesCodecContext = avcodec_alloc_context3(subtitlesCodec);
     if (!m_SubtitlesCodecContext)
@@ -270,65 +277,141 @@ void FfmpegDecoder::OpenSubtitle(unsigned int subtitleIndex)
         return;
     }
 
-    auto frame = av_frame_alloc();
-    defer{ av_frame_free(&frame); };
+    m_CurrentSubSteamIndex = subtitleIndex;
+}
 
-    auto packet = av_packet_alloc();
-    defer{ av_packet_free(&packet); };
-
-    while (av_read_frame(m_FormatContext, packet) == 0)
+void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<SubtitleItem>& subs)
+{
+    if (m_DecodingThread.joinable())
     {
-        defer{ av_packet_unref(packet); };
-
-        if (packet->stream_index != subtitleIndex)
-        {
-            continue;
-        }
-
-        int gotSub = 0;
-        AVSubtitle subtitle;
-        error = avcodec_decode_subtitle2(m_SubtitlesCodecContext, &subtitle, &gotSub, packet);
-        if (error < 0)
-        {
-            OutputDebugString(L"FfmpegDecoder::OpenFile Subtitles avcodec_decode_subtitle2");
-            continue;
-        }
-        defer{ avsubtitle_free(&subtitle); };
-
-        if (gotSub)
-        {
-            SubtitleItem subItem = {};
-            for (unsigned int i = 0; i < subtitle.num_rects; ++i)
-            {
-                AVSubtitleRect* rect = subtitle.rects[i];
-                if (rect->text)
-                {
-                    subItem.Text = to_hstring(rect->text);
-                }
-                else if (rect->ass)
-                {
-                    ParseAssDialogue(subItem, rect->ass);
-                }
-            }
-
-            if (subItem.StartTime == 0 || subItem.EndTime == 0)
-            {
-                double subTimeBase = av_q2d(m_FormatContext->streams[subtitleIndex]->time_base);
-                subItem.StartTime = packet->pts * subTimeBase;
-
-                if (subtitle.end_display_time > 0)
-                {
-                    subItem.EndTime = subItem.StartTime + (subtitle.end_display_time / 1000.0);
-                }
-                else
-                {
-                    subItem.EndTime = subItem.StartTime + packet->duration * subTimeBase;
-                }
-            }
-
-            m_SubsQueue.push(subItem);
-        }
+        m_DecodingThread.join();
     }
+
+    m_DecodingThread = std::thread([&]()
+    {
+        auto frame = av_frame_alloc();
+        defer{ av_frame_free(&frame); };
+
+        auto packet = av_packet_alloc();
+        defer{ av_packet_free(&packet); };
+        int error = 0;
+
+        while(m_FileOpened)
+        {
+            if (m_DecodingPaused || frames.Size() > 5)
+            {
+                continue;
+            }
+
+            if (av_read_frame(m_FormatContext, packet) < 0) break;
+            defer{ av_packet_unref(packet); };
+
+            if (packet->stream_index == m_VideoStreamIndex)
+            {
+                error = avcodec_send_packet(m_VideoCodecContext, packet);
+                if (error != 0)
+                {
+                    OutputDebugString(L"FfmpegDecoder::GetNextFrame avcodec_send_packet");
+                    continue;
+                }
+
+                while (avcodec_receive_frame(m_VideoCodecContext, frame) == 0)
+                {
+                    if (error != 0)
+                    {
+                        OutputDebugString(L"FfmpegDecoder::GetNextFrame avcodec_receive_frame");
+                        continue;
+                    }
+
+                    uint8_t* data[4];
+                    int linesize[4];
+
+                    error = av_image_alloc(
+                        data,
+                        linesize,
+                        m_VideoCodecContext->width,
+                        m_VideoCodecContext->height,
+                        AV_PIX_FMT_RGBA,
+                        1);
+                    if (error < 0)
+                    {
+                        OutputDebugString(L"FfmpegDecoder::GetNextFrame av_image_alloc");
+                        continue;
+                    }
+                    defer{ av_freep(&data[0]); };
+
+                    sws_scale(
+                        m_SwsContext,
+                        frame->data,
+                        frame->linesize,
+                        0,
+                        m_VideoCodecContext->height,
+                        data,
+                        linesize);
+
+                    VideoFrame outFrame;
+                    outFrame.Width = m_VideoCodecContext->width;
+                    outFrame.Height = m_VideoCodecContext->height;
+                    outFrame.Buffer.assign(data[0], data[0] + linesize[0] * outFrame.Height);
+                    outFrame.RowPitch = linesize[0];
+                    //outFrame.FrameTime = av_rescale_q(frame->best_effort_timestamp, m_FormatContext->streams[m_VideoStreamIndex]->time_base, AV_TIME_BASE_Q);
+                    outFrame.FrameTime = static_cast<double>(frame->pts) * av_q2d(m_FormatContext->streams[m_VideoStreamIndex]->time_base);
+                    frames.Push(outFrame);
+                }
+            }
+            else if (packet->stream_index == m_CurrentSubSteamIndex)
+            {
+                int gotSub = 0;
+                AVSubtitle subtitle;
+                error = avcodec_decode_subtitle2(m_SubtitlesCodecContext, &subtitle, &gotSub, packet);
+                if (error < 0)
+                {
+                    OutputDebugString(L"FfmpegDecoder::OpenFile Subtitles avcodec_decode_subtitle2");
+                    continue;
+                }
+                defer{ avsubtitle_free(&subtitle); };
+
+                if (gotSub)
+                {
+                    SubtitleItem subItem = {};
+                    for (unsigned int i = 0; i < subtitle.num_rects; ++i)
+                    {
+                        AVSubtitleRect* rect = subtitle.rects[i];
+                        if (rect->text)
+                        {
+                            subItem.Text = to_hstring(rect->text);
+                        }
+                        else if (rect->ass)
+                        {
+                            ParseAssDialogue(subItem, rect->ass);
+                        }
+                    }
+
+                    if (subItem.StartTime == 0 || subItem.EndTime == 0)
+                    {
+                        double subTimeBase = av_q2d(m_FormatContext->streams[m_CurrentSubSteamIndex]->time_base);
+                        subItem.StartTime = packet->pts * subTimeBase;
+
+                        if (subtitle.end_display_time > 0)
+                        {
+                            subItem.EndTime = subItem.StartTime + (subtitle.end_display_time / 1000.0);
+                        }
+                        else
+                        {
+                            subItem.EndTime = subItem.StartTime + packet->duration * subTimeBase;
+                        }
+                    }
+
+                    subs.Push(subItem);
+                }
+            }
+        }
+    });
+}
+
+void FfmpegDecoder::PauseDecoding(bool pause)
+{
+    m_DecodingPaused = pause;
 }
 
 std::vector<uint8_t>& FfmpegDecoder::GetWavBuffer()

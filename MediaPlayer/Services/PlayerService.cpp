@@ -172,7 +172,6 @@ namespace winrt::MediaPlayer::implementation
         MFCreateSourceReaderFromByteStream(byteStream.get(), nullptr, m_SourceReader.put());
         m_MediaEngineWrapper->SetSource(m_SourceReader.get());
 
-
         m_SubTracks.Clear();
         for (auto& s : m_FfmpegDecoder.GetSubtitleStreams())
         {
@@ -181,6 +180,9 @@ namespace winrt::MediaPlayer::implementation
 
         Position(0);
         State(PlayerServiceState::STOPPED);
+
+        m_FfmpegDecoder.SetupDecoding(m_FrameQueue, m_SubtitleQueue);
+        m_FfmpegDecoder.PauseDecoding(true);
 
         if (SwapChainPanel())
         {
@@ -395,6 +397,7 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::Start()
     {
+        m_FfmpegDecoder.PauseDecoding(false);
         if (!HasSource()) return;
 
         try
@@ -409,6 +412,8 @@ namespace winrt::MediaPlayer::implementation
             if (!m_IsMFSupported || !(m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
             {
                 m_FfmpegDecoder.Seek(Position());
+                m_FrameQueue.Clear();
+                m_SubtitleQueue.Clear();
             }
             m_Seeked = true;
             m_MediaEngineWrapper->Start(position);
@@ -428,6 +433,7 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::Start(uint64_t timePos)
     {
+        m_FfmpegDecoder.PauseDecoding(false);
         if (!HasSource()) return;
 
         try
@@ -444,6 +450,8 @@ namespace winrt::MediaPlayer::implementation
             if (!m_IsMFSupported || !(m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
             {
                 m_FfmpegDecoder.Seek(timePos);
+                m_FrameQueue.Clear();
+                m_SubtitleQueue.Clear();
             }
             m_Seeked = true;
             m_MediaEngineWrapper->Start(position);
@@ -464,6 +472,7 @@ namespace winrt::MediaPlayer::implementation
     void PlayerService::Stop()
     {
         State(PlayerServiceState::STOPPED);
+        m_FfmpegDecoder.PauseDecoding(true);
         if (!HasSource()) return;
 
         try
@@ -480,6 +489,7 @@ namespace winrt::MediaPlayer::implementation
     void PlayerService::Pause()
     {
         State(PlayerServiceState::PAUSED);
+        m_FfmpegDecoder.PauseDecoding(true);
         if (!HasSource()) return;
 
         try
@@ -823,7 +833,7 @@ namespace winrt::MediaPlayer::implementation
             if (videoStartTime < 0)
             {
                 videoStartTime = audioTime - m_CurFrame.FrameTime;
-                m_CurFrame = m_FfmpegDecoder.GetNextFrame();
+                m_CurFrame = m_FrameQueue.Pop();
                 m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
             }
 
@@ -834,17 +844,16 @@ namespace winrt::MediaPlayer::implementation
                 constexpr double SYNC_THRESHOLD = 0.02;
                 if (syncOffset > SYNC_THRESHOLD || m_Seeked)
                 {
-                    m_CurFrame = m_FfmpegDecoder.GetNextFrame();
+                    m_CurFrame = m_FrameQueue.Pop();
                     m_Seeked = false;
                     m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
                 }
             }
 
-            if (!m_FfmpegDecoder.GetSubsQueue().empty() &&
-                m_FfmpegDecoder.GetSubsQueue().front().EndTime < audioTime + (m_FfmpegDecoder.GetSubsQueue().front().EndTime - m_FfmpegDecoder.GetSubsQueue().front().StartTime))
+            if (!m_SubtitleQueue.Empty() &&
+                m_SubtitleQueue.Front().EndTime < audioTime + (m_SubtitleQueue.Front().EndTime - m_SubtitleQueue.Front().StartTime))
             {
-                currentSubs.push_back(m_FfmpegDecoder.GetSubsQueue().front());
-                m_FfmpegDecoder.GetSubsQueue().pop();
+                currentSubs.push_back(m_SubtitleQueue.Pop());
             }
 
             if (!currentSubs.empty() && currentSubs.front().EndTime < audioTime)

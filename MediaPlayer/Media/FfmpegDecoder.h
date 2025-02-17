@@ -2,7 +2,7 @@
 
 #include <winrt/MediaPlayer.h>
 
-#include "queue"
+#include "Framework/SharedQueue.h"
 
 struct AVFormatContext;
 struct AVCodecContext;
@@ -69,6 +69,8 @@ public:
 
     void OpenFile(winrt::hstring const& filepath);
     void OpenSubtitle(unsigned int subtitleIndex);
+    void SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<SubtitleItem>& subs);
+    void PauseDecoding(bool pause);
     std::vector<uint8_t>& GetWavBuffer();
     std::vector<winrt::MediaPlayer::SubtitleStream>& GetSubtitleStreams();
     std::queue<SubtitleItem>& GetSubsQueue();
@@ -86,10 +88,14 @@ private:
     int m_AudioStreamIndex;
     int m_VideoStreamIndex;
     std::vector<winrt::MediaPlayer::SubtitleStream> m_SubtitleStreams;
+    unsigned int m_CurrentSubSteamIndex;
     SwrContext* m_SwrContext;
     SwsContext* m_SwsContext;
 
     bool m_FileOpened = false;
+    bool m_DecodingPaused = false;
+
+    std::thread m_DecodingThread;
 
     std::vector<uint8_t> m_WavBuffer;
     std::queue<SubtitleItem> m_SubsQueue;

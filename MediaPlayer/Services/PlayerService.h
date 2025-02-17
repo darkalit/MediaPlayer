@@ -84,6 +84,8 @@ namespace winrt::MediaPlayer::implementation
         int32_t m_CurrentMediaIndex = -1;
 
         VideoFrame m_CurFrame;
+        SharedQueue<VideoFrame> m_FrameQueue;
+        SharedQueue<SubtitleItem> m_SubtitleQueue;
         bool m_IsMFSupported = false;
         bool m_ResizeNeeded = false;
         bool m_ChangingSwapchain = false;
