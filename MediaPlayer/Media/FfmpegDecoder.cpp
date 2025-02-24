@@ -25,6 +25,11 @@ FfmpegDecoder::~FfmpegDecoder()
     avformat_free_context(m_FormatContext);
 }
 
+bool FfmpegDecoder::HasSource()
+{
+    return m_AudioStreamIndex != -1 || m_VideoStreamIndex != -1;
+}
+
 void FfmpegDecoder::OpenFile(hstring const& filepath)
 {
     if (m_FileOpened && m_FormatContext)
@@ -37,9 +42,6 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
     {
         m_DecodingThread.join();
     }
-
-    m_WavBuffer.clear();
-    m_WavBuffer.resize(0);
 
     m_SubtitleStreams.clear();
     m_SubtitleStreams.resize(0);
@@ -96,16 +98,14 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         return;
     }
 
-    AVChannelLayout outChLayout;
-    av_channel_layout_default(&outChLayout, 2);
-
-    AVSampleFormat outFormat = AV_SAMPLE_FMT_S16;
+    av_channel_layout_default(&m_ChannelLayout, 2);
+    m_SampleFormat = AV_SAMPLE_FMT_S16;
 
     error = swr_alloc_set_opts2(
         &m_SwrContext,
         // Output
-        &outChLayout,
-        outFormat,
+        &m_ChannelLayout,
+        m_SampleFormat,
         44100,
         // Input
         &m_AudioCodecContext->ch_layout,
@@ -162,91 +162,6 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
             nullptr,
             nullptr);
     }
-
-    auto frame = av_frame_alloc();
-    defer{ av_frame_free(&frame); };
-
-    auto packet = av_packet_alloc();
-    defer{ av_packet_free(&packet); };
-
-    std::vector<uint8_t> pcmData;
-
-    while (av_read_frame(m_FormatContext, packet) == 0)
-    {
-        defer{ av_packet_unref(packet); };
-
-        if (packet->stream_index != m_AudioStreamIndex)
-        {
-            continue;
-        }
-
-        error = avcodec_send_packet(m_AudioCodecContext, packet);
-        if (error != 0)
-        {
-            continue;
-        }
-
-        error = avcodec_receive_frame(m_AudioCodecContext, frame);
-        if (error != 0)
-        {
-            continue;
-        }
-
-        int outSamples = swr_get_out_samples(m_SwrContext, frame->nb_samples);
-
-        if (av_sample_fmt_is_planar(static_cast<AVSampleFormat>(frame->format)))
-        {
-            uint8_t** buffer = nullptr;
-            av_samples_alloc_array_and_samples(&buffer, nullptr, outChLayout.nb_channels, outSamples, outFormat, 0);
-            outSamples = swr_convert(
-                m_SwrContext,
-                buffer,
-                outSamples,
-                frame->extended_data,
-                frame->nb_samples);
-            //int dataSize = av_samples_get_buffer_size(nullptr, outChLayout.nb_channels, outSamples, outFormat, 0);
-            int dataSize = outSamples * outChLayout.nb_channels * 2;
-            pcmData.insert(pcmData.end(), buffer[0], buffer[0] + dataSize);
-
-            if (buffer)
-            {
-                av_free(buffer[0]);
-                av_free(buffer);
-            }
-        }
-        else
-        {
-            uint8_t* buffer = nullptr;
-            av_samples_alloc(&buffer, nullptr, outChLayout.nb_channels, outSamples, outFormat, 0);
-            outSamples = swr_convert(
-                m_SwrContext,
-                &buffer,
-                outSamples,
-                frame->data,
-                frame->nb_samples);
-            //int dataSize = av_samples_get_buffer_size(nullptr, outChLayout.nb_channels, outSamples, outFormat, 0);
-            int dataSize = outSamples * outChLayout.nb_channels * 2;
-            pcmData.insert(pcmData.end(), buffer, buffer + dataSize);
-
-            if (buffer)
-            {
-                av_free(buffer);
-            }
-        }
-    }
-
-    WavHeader header;
-    header.NumChannels = 2;
-    header.SampleRate = 44100;
-    header.BitsPerSample = 16;
-    header.BlockAlign = header.NumChannels * header.BitsPerSample / 8;
-    header.ByteRate = header.SampleRate * header.BlockAlign;
-    header.DataSize = static_cast<uint32_t>(pcmData.size());
-    header.ChunkSize = sizeof(header) - 8 + header.DataSize;
-
-    m_WavBuffer.resize(sizeof(WavHeader) + header.DataSize);
-    memcpy(m_WavBuffer.data(), &header, sizeof(WavHeader));
-    memcpy(m_WavBuffer.data() + sizeof(WavHeader), pcmData.data(), pcmData.size());
 
     error = av_seek_frame(m_FormatContext, -1, 0, AVSEEK_FLAG_BACKWARD);
     if (error != 0)
@@ -343,7 +258,7 @@ void FfmpegDecoder::OpenSubtitle(unsigned int subtitleIndex)
     m_CurrentSubSteamIndex = subtitleIndex;
 }
 
-void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<SubtitleItem>& subs)
+void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<SubtitleItem>& subs, SharedQueue<AudioSample>& audioSamples)
 {
     if (m_DecodingThread.joinable())
     {
@@ -361,13 +276,15 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
 
         while(m_FileOpened)
         {
-            if (m_DecodingPaused || frames.Size() > 5)
+            if (m_DecodingPaused || (audioSamples.Size() > 32))
             {
                 continue;
             }
 
             if (av_read_frame(m_FormatContext, packet) < 0) break;
             defer{ av_packet_unref(packet); };
+
+            m_CurrentTime = static_cast<uint64_t>(packet->pts * av_q2d(m_FormatContext->streams[0]->time_base) * 1000.0);
 
             if (packet->stream_index == m_VideoStreamIndex)
             {
@@ -380,12 +297,6 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
 
                 while (avcodec_receive_frame(m_VideoCodecContext, frame) == 0)
                 {
-                    if (error != 0)
-                    {
-                        OutputDebugString(L"FfmpegDecoder::GetNextFrame avcodec_receive_frame");
-                        continue;
-                    }
-
                     uint8_t* data[4];
                     int linesize[4];
 
@@ -418,9 +329,72 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                     outFrame.Buffer.assign(data[0], data[0] + linesize[0] * outFrame.Height);
                     outFrame.RowPitch = linesize[0];
                     //outFrame.FrameTime = av_rescale_q(frame->best_effort_timestamp, m_FormatContext->streams[m_VideoStreamIndex]->time_base, AV_TIME_BASE_Q);
-                    outFrame.FrameTime = static_cast<double>(frame->pts) * av_q2d(m_FormatContext->streams[m_VideoStreamIndex]->time_base);
+                    outFrame.StartTime = static_cast<double>(frame->pts) * av_q2d(m_FormatContext->streams[m_VideoStreamIndex]->time_base);
                     frames.Push(outFrame);
                 }
+            }
+            else if (packet->stream_index == m_AudioStreamIndex)
+            {
+                error = avcodec_send_packet(m_AudioCodecContext, packet);
+                if (error != 0)
+                {
+                    continue;
+                }
+
+                AudioSample sample;
+
+                while(avcodec_receive_frame(m_AudioCodecContext, frame) == 0)
+                {
+                    int outSamples = swr_get_out_samples(m_SwrContext, frame->nb_samples);
+
+                    //if (av_sample_fmt_is_planar(static_cast<AVSampleFormat>(frame->format)))
+                    //{
+                    //    uint8_t** buffer = nullptr;
+                    //    //uint8_t* buffer = nullptr;
+                    //    av_samples_alloc_array_and_samples(&buffer, nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 1 );
+                    //    //av_samples_alloc(&buffer, nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 1);
+                    //    outSamples = swr_convert(
+                    //        m_SwrContext,
+                    //        buffer,
+                    //        outSamples,
+                    //        frame->extended_data,
+                    //        frame->nb_samples);
+                    //    int dataSize = av_samples_get_buffer_size(nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 1);
+                    //    //int dataSize = outSamples * m_ChannelLayout.nb_channels * 2;
+
+                    //    sample.Buffer.insert(sample.Buffer.end(), buffer[0], buffer[0] + dataSize);
+
+                    //    if (buffer)
+                    //    {
+                    //        av_free(buffer[0]);
+                    //        av_free(buffer);
+                    //    }
+                    //}
+                    //else
+                    //{
+                    uint8_t* buffer = nullptr;
+                    av_samples_alloc(&buffer, nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 1);
+                    outSamples = swr_convert(
+                        m_SwrContext,
+                        &buffer,
+                        outSamples,
+                        frame->data,
+                        frame->nb_samples);
+                    int dataSize = av_samples_get_buffer_size(nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 0);
+                    //int dataSize = outSamples * m_ChannelLayout.nb_channels * 2;
+
+                    sample.Buffer.insert(sample.Buffer.end(), buffer, buffer + dataSize);
+
+                    if (buffer)
+                    {
+                        av_free(buffer);
+                    }
+                    //}
+                }
+                double timeBase = av_q2d(m_FormatContext->streams[m_AudioStreamIndex]->time_base);
+                sample.Duration = packet->duration * timeBase;
+                sample.StartTime = packet->pts * timeBase;
+                audioSamples.Push(sample);
             }
             else if (packet->stream_index == m_CurrentSubSteamIndex)
             {
@@ -456,88 +430,14 @@ void FfmpegDecoder::PauseDecoding(bool pause)
     m_DecodingPaused = pause;
 }
 
-std::vector<uint8_t>& FfmpegDecoder::GetWavBuffer()
+uint64_t FfmpegDecoder::GetPosition()
 {
-    return m_WavBuffer;
+    return m_CurrentTime;
 }
 
 std::vector<MediaPlayer::SubtitleStream>& FfmpegDecoder::GetSubtitleStreams()
 {
     return m_SubtitleStreams;
-}
-
-VideoFrame FfmpegDecoder::GetNextFrame()
-{
-    if (m_VideoStreamIndex < 0)
-    {
-        return {};
-    }
-            
-    auto frame = av_frame_alloc();
-    defer{ av_frame_free(&frame); };
-
-    auto packet = av_packet_alloc();
-    defer{ av_packet_free(&packet); };
-
-    while (av_read_frame(m_FormatContext, packet) == 0)
-    {
-        if (packet->stream_index == m_VideoStreamIndex)
-        {
-            break;
-        }
-
-        av_packet_unref(packet);
-    }
-    defer{ av_packet_unref(packet); };
-
-    int error = avcodec_send_packet(m_VideoCodecContext, packet);
-    if (error != 0)
-    {
-        OutputDebugString(L"FfmpegDecoder::GetNextFrame avcodec_send_packet");
-        return {};
-    }
-
-    error = avcodec_receive_frame(m_VideoCodecContext, frame);
-    if (error != 0)
-    {
-        OutputDebugString(L"FfmpegDecoder::GetNextFrame avcodec_receive_frame");
-        return {};
-    }
-
-    uint8_t* data[4];
-    int linesize[4];
-
-    error = av_image_alloc(
-        data,
-        linesize,
-        m_VideoCodecContext->width,
-        m_VideoCodecContext->height,
-        AV_PIX_FMT_RGBA,
-        1);
-    if (error < 0)
-    {
-        OutputDebugString(L"FfmpegDecoder::GetNextFrame av_image_alloc");
-        return {};
-    }
-    defer{ av_freep(&data[0]); };
-
-    sws_scale(
-        m_SwsContext,
-        frame->data,
-        frame->linesize,
-        0,
-        m_VideoCodecContext->height,
-        data,
-        linesize);
-
-    VideoFrame outFrame;
-    outFrame.Width = m_VideoCodecContext->width;
-    outFrame.Height = m_VideoCodecContext->height;
-    outFrame.Buffer.assign(data[0], data[0] + linesize[0] * outFrame.Height);
-    outFrame.RowPitch = linesize[0];
-    //outFrame.FrameTime = av_rescale_q(frame->best_effort_timestamp, m_FormatContext->streams[m_VideoStreamIndex]->time_base, AV_TIME_BASE_Q);
-    outFrame.FrameTime = static_cast<double>(frame->pts) * av_q2d(m_FormatContext->streams[m_VideoStreamIndex]->time_base);
-    return outFrame;
 }
 
 void FfmpegDecoder::Seek(uint64_t time)
@@ -547,14 +447,26 @@ void FfmpegDecoder::Seek(uint64_t time)
         return;
     }
 
-    const int64_t seekTarget = av_rescale_q(
-        time * 1000,
-        AV_TIME_BASE_Q,
-        m_FormatContext->streams[m_VideoStreamIndex]->time_base
-    );
+    std::vector streamIndexes = { m_VideoStreamIndex, m_AudioStreamIndex };
+    std::vector codecContexes = { m_VideoCodecContext, m_AudioCodecContext };
+    for (auto index : streamIndexes)
+    {
+        const int64_t seekTarget = av_rescale_q(
+            time * 1000,
+            AV_TIME_BASE_Q,
+            m_FormatContext->streams[index]->time_base
+        );
 
-    av_seek_frame(m_FormatContext, m_VideoStreamIndex, seekTarget, AVSEEK_FLAG_BACKWARD);
-    avcodec_flush_buffers(m_VideoCodecContext);
+        av_seek_frame(m_FormatContext, m_VideoStreamIndex, seekTarget, AVSEEK_FLAG_BACKWARD);
+    }
+
+    for (auto codecContext : codecContexes)
+    {
+        if (codecContext)
+        {
+            avcodec_flush_buffers(codecContext);
+        }
+    }
 }
 
 void FfmpegDecoder::GetSubtitles(AVFormatContext* formatContext)

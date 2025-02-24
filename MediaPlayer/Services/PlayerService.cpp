@@ -28,9 +28,6 @@
 #include "winrt/Windows.ApplicationModel.h"
 #include "winrt/Windows.Storage.h"
 
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
-
 using namespace winrt::Windows::Foundation;
 
 namespace winrt::MediaPlayer::implementation
@@ -53,6 +50,7 @@ namespace winrt::MediaPlayer::implementation
         {
             m_State = PlayerServiceState::CLOSED;
             m_VideoThread.join();
+            m_AudioThread.join();
 
             check_hresult(MFShutdown());
         }
@@ -152,6 +150,8 @@ namespace winrt::MediaPlayer::implementation
             Position(0);
             State(PlayerServiceState::STOPPED);
 
+            m_UseFfmpeg = false;
+
             return;
         }
 
@@ -160,18 +160,8 @@ namespace winrt::MediaPlayer::implementation
             return;
         }
 
+        m_UseFfmpeg = true;
         m_FfmpegDecoder.OpenFile(path);
-        auto& buffer = m_FfmpegDecoder.GetWavBuffer();
-
-        com_ptr<IStream> stream;
-        stream.attach(SHCreateMemStream(buffer.data(), buffer.size()));
-
-        com_ptr<IMFByteStream> byteStream;
-        check_hresult(MFCreateMFByteStreamOnStreamEx(stream.get(), byteStream.put()));
-
-        MFCreateSourceReaderFromByteStream(byteStream.get(), nullptr, m_SourceReader.put());
-        m_MediaEngineWrapper->SetSource(m_SourceReader.get());
-
         m_SubTracks.Clear();
         for (auto& s : m_FfmpegDecoder.GetSubtitleStreams())
         {
@@ -181,8 +171,8 @@ namespace winrt::MediaPlayer::implementation
         Position(0);
         State(PlayerServiceState::STOPPED);
 
-        m_FfmpegDecoder.SetupDecoding(m_FrameQueue, m_SubtitleQueue);
         m_FfmpegDecoder.PauseDecoding(true);
+        m_FfmpegDecoder.SetupDecoding(m_FrameQueue, m_SubtitleQueue, m_AudioSamplesQueue);
 
         if (SwapChainPanel())
         {
@@ -196,6 +186,13 @@ namespace winrt::MediaPlayer::implementation
 
             m_VideoThread = std::thread(&PlayerService::VideoRender, this);
         }
+
+        if (m_AudioThread.joinable())
+        {
+            m_AudioThread.join();
+        }
+
+        m_AudioThread = std::thread(&PlayerService::AudioRender, this);
     }
 
     void PlayerService::SetSubtitleIndex(int32_t index)
@@ -210,7 +207,12 @@ namespace winrt::MediaPlayer::implementation
 
     bool PlayerService::HasSource()
     {
-        return !!m_SourceReader && m_MediaEngineWrapper && m_Playlist.Size() > 0 && CurrentMediaIndex() > -1;
+        if (!m_UseFfmpeg)
+        {
+            return !!m_SourceReader && m_MediaEngineWrapper && m_Playlist.Size() > 0 && CurrentMediaIndex() > -1;
+        }
+
+        return m_FfmpegDecoder.HasSource();
     }
 
     int32_t PlayerService::GetMediaIndexById(guid const& id)
@@ -256,7 +258,7 @@ namespace winrt::MediaPlayer::implementation
         WICPixelFormatGUID format = GUID_WICPixelFormat32bppRGBA;
         check_hresult(frame->SetPixelFormat(&format));
 
-        if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
+        if (!m_UseFfmpeg)
         {
             m_MediaEngineWrapper->SetCurrentTime(Position() / 1000.0);
 
@@ -414,14 +416,19 @@ namespace winrt::MediaPlayer::implementation
             }
 
             double position = static_cast<double>(Position()) / 1000.0;
-            if (!m_IsMFSupported || !(m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
+            if (m_UseFfmpeg)
             {
                 m_FfmpegDecoder.Seek(Position());
+                m_XAudio2Player.Start();
                 m_FrameQueue.Clear();
+                m_AudioSamplesQueue.Clear();
                 m_SubtitleQueue.Clear();
             }
+            else
+            {
+                m_MediaEngineWrapper->Start(position);
+            }
             m_Seeked = true;
-            m_MediaEngineWrapper->Start(position);
             PlaybackSpeed(m_PlaybackSpeed);
         }
         catch (const hresult_error& e)
@@ -452,14 +459,19 @@ namespace winrt::MediaPlayer::implementation
             }
 
             double position = static_cast<double>(timePos) / 1000.0;
-            if (!m_IsMFSupported || !(m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
+            if (m_UseFfmpeg)
             {
                 m_FfmpegDecoder.Seek(timePos);
+                m_XAudio2Player.Start();
                 m_FrameQueue.Clear();
+                m_AudioSamplesQueue.Clear();
                 m_SubtitleQueue.Clear();
             }
+            else
+            {
+                m_MediaEngineWrapper->Start(position);
+            }
             m_Seeked = true;
-            m_MediaEngineWrapper->Start(position);
             PlaybackSpeed(m_PlaybackSpeed);
         }
         catch (const hresult_error& e)
@@ -483,7 +495,18 @@ namespace winrt::MediaPlayer::implementation
         try
         {
             m_Position = 0;
-            m_MediaEngineWrapper->Stop();
+
+            if (m_UseFfmpeg)
+            {
+                m_XAudio2Player.Stop();
+                m_FrameQueue.Clear();
+                m_AudioSamplesQueue.Clear();
+                m_SubtitleQueue.Clear();
+            }
+            else
+            {
+                m_MediaEngineWrapper->Stop();
+            }
         }
         catch (const hresult_error& e)
         {
@@ -499,7 +522,7 @@ namespace winrt::MediaPlayer::implementation
 
         try
         {
-            m_MediaEngineWrapper->Pause();
+            if (!m_UseFfmpeg) m_MediaEngineWrapper->Pause();
         }
         catch (const hresult_error& e)
         {
@@ -510,7 +533,7 @@ namespace winrt::MediaPlayer::implementation
     void PlayerService::ResizeVideo(float width, float height)
     {
         if (!m_MediaEngineWrapper) return;
-        if (m_IsMFSupported && (m_Mode == PlayerServiceMode::MEDIA_FOUNDATION || m_Mode == PlayerServiceMode::AUTO))
+        if (!m_UseFfmpeg)
         {
             m_MediaEngineWrapper->WindowUpdate(width, height);
             return;
@@ -522,7 +545,15 @@ namespace winrt::MediaPlayer::implementation
 
     uint64_t PlayerService::Position()
     {
-        m_Position = m_MediaEngineWrapper->GetCurrentTime() * 1000.0;
+        if (!m_UseFfmpeg)
+        {
+            m_Position = m_MediaEngineWrapper->GetCurrentTime() * 1000.0;   
+        }
+        else
+        {
+            m_Position = m_FfmpegDecoder.GetPosition();
+        }
+
         return m_Position;
     }
 
@@ -550,7 +581,8 @@ namespace winrt::MediaPlayer::implementation
         if (m_PlaybackSpeed != value)
         {
             m_PlaybackSpeed = value;
-            m_MediaEngineWrapper->SetPlaybackSpeed(value);
+
+            if (!m_UseFfmpeg) m_MediaEngineWrapper->SetPlaybackSpeed(value);
         }
     }
 
@@ -569,14 +601,19 @@ namespace winrt::MediaPlayer::implementation
 
     double PlayerService::Volume()
     {
-        return m_MediaEngineWrapper->GetVolume();
+        if (!m_UseFfmpeg)
+        {
+            return m_MediaEngineWrapper->GetVolume();
+        }
+
+        return 1.0;
     }
 
     void PlayerService::Volume(double value)
     {
-        if (m_MediaEngineWrapper->GetVolume() != value)
+        if (Volume() != value)
         {
-            m_MediaEngineWrapper->SetVolume(value);
+            if (!m_UseFfmpeg) m_MediaEngineWrapper->SetVolume(value);
         }        
     }
 
@@ -641,7 +678,7 @@ namespace winrt::MediaPlayer::implementation
         m_ChangingSwapchain = true;
         m_SwapChainPanel = value;
 
-        if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
+        if (!m_UseFfmpeg)
         {
             m_VideoSurfaceHandle = m_MediaEngineWrapper ? m_MediaEngineWrapper->GetSurfaceHandle() : nullptr;
         }
@@ -653,7 +690,7 @@ namespace winrt::MediaPlayer::implementation
             com_ptr<ISwapChainPanelNative2> panelNative;
             m_SwapChainPanel.as(panelNative);
 
-            if (m_IsMFSupported && (m_Mode == PlayerServiceMode::AUTO || m_Mode == PlayerServiceMode::MEDIA_FOUNDATION))
+            if (!m_UseFfmpeg)
             {
                 check_hresult(panelNative->SetSwapChainHandle(m_VideoSurfaceHandle));
                 auto size = m_SwapChainPanel.ActualSize();
@@ -829,39 +866,31 @@ namespace winrt::MediaPlayer::implementation
     {
         m_CurFrame = {};
         std::list<SubtitleItem> currentSubs;
-        double videoStartTime = -1.0;
 
         while (m_State != PlayerServiceState::CLOSED && m_State != PlayerServiceState::SOURCE_SWITCH)
         {
-            double audioTime = Position() / 1000.0;
-
-            if (videoStartTime < 0)
+            if (m_FrameQueue.Empty())
             {
-                videoStartTime = audioTime - m_CurFrame.FrameTime;
-                m_CurFrame = m_FrameQueue.Pop();
-                m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
+                continue;
             }
-
-            if (m_State != PlayerServiceState::PAUSED && !m_CurFrame.Buffer.empty())
+            
+            m_CurFrame = m_FrameQueue.Pop();
+            m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
+            
+            double diff = m_CurFrame.StartTime - m_CurAudioSample.StartTime;
+            auto timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
+            if (timestampDiff > 0)
             {
-                double frameTime = videoStartTime + m_CurFrame.FrameTime;
-                double syncOffset = audioTime - frameTime;
-                constexpr double SYNC_THRESHOLD = 0.02;
-                if (syncOffset > SYNC_THRESHOLD || m_Seeked)
-                {
-                    m_CurFrame = m_FrameQueue.Pop();
-                    m_Seeked = false;
-                    m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
-                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(timestampDiff));
             }
 
             if (!m_SubtitleQueue.Empty() &&
-                m_SubtitleQueue.Front().EndTime < audioTime + (m_SubtitleQueue.Front().EndTime - m_SubtitleQueue.Front().StartTime))
+                m_SubtitleQueue.Front().EndTime < m_CurAudioSample.StartTime + (m_SubtitleQueue.Front().EndTime - m_SubtitleQueue.Front().StartTime))
             {
                 currentSubs.push_back(m_SubtitleQueue.Pop());
             }
 
-            if (!currentSubs.empty() && currentSubs.front().EndTime < audioTime)
+            if (!currentSubs.empty() && currentSubs.front().EndTime < m_CurAudioSample.StartTime)
             {
                 currentSubs.pop_front();
             }
@@ -909,7 +938,6 @@ namespace winrt::MediaPlayer::implementation
             ID3D11RenderTargetView* const targets[1] = { m_DeviceResources->GetBackBufferRenderTargetView() };
             if (!targets[0]) continue;
             context->OMSetRenderTargets(1, targets, m_DeviceResources->GetDepthStencilView());
-
             context->ClearRenderTargetView(m_DeviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Transparent);
             context->ClearDepthStencilView(m_DeviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
@@ -924,6 +952,49 @@ namespace winrt::MediaPlayer::implementation
             }
 
             m_DeviceResources->Present();
+        }
+    }
+
+    void PlayerService::AudioRender()
+    {
+        m_CurAudioSample = {};
+
+        while (m_State != PlayerServiceState::CLOSED && m_State != PlayerServiceState::SOURCE_SWITCH)
+        {
+            if (m_AudioSamplesQueue.Empty()) continue;
+
+            double diff = m_CurAudioSample.StartTime - m_CurFrame.StartTime;
+            auto timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
+            if (timestampDiff > 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(timestampDiff));
+            }
+
+            if (m_AudioSamplesQueue.Size() < 24 || !m_XAudio2Player.IsSampleConsumed()) continue;
+
+            m_CurAudioSample = {};
+            m_CurAudioSample.Duration = 0;
+            for (int i = 0; i < 24; ++i)
+            {
+                if (m_AudioSamplesQueue.Empty())
+                {
+                    break;
+                }
+
+                auto sample = m_AudioSamplesQueue.Pop();
+                if (i == 0)
+                {
+                    m_CurAudioSample.StartTime = sample.StartTime;
+                }
+
+                m_CurAudioSample.Duration += sample.Duration;
+                m_CurAudioSample.Buffer.insert(m_CurAudioSample.Buffer.end(), sample.Buffer.begin(), sample.Buffer.end());
+            }
+
+            if (!m_CurAudioSample.Buffer.empty() && m_State != PlayerServiceState::PAUSED && m_State != PlayerServiceState::STOPPED)
+            {
+                m_XAudio2Player.SubmitSample(m_CurAudioSample);
+            }
         }
     }
 

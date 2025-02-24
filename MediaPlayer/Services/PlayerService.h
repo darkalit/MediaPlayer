@@ -7,6 +7,7 @@
 #include "winrt/MediaPlayer.h"
 #include "Media/FfmpegDecoder.h"
 #include "Media/MediaEngineWrapper.h"
+#include "Media/XAudio2Player.h"
 
 struct IMFMediaSource;
 struct IMFMediaSession;
@@ -71,6 +72,7 @@ namespace winrt::MediaPlayer::implementation
     private:
         MediaMetadata GetMetadataInternal(hstring const& path);
         void VideoRender();
+        void AudioRender();
 
         void OnLoaded();
         void OnPlaybackEnded();
@@ -85,9 +87,12 @@ namespace winrt::MediaPlayer::implementation
         int32_t m_CurrentMediaIndex = -1;
 
         VideoFrame m_CurFrame;
+        AudioSample m_CurAudioSample;
         SharedQueue<VideoFrame> m_FrameQueue;
         SharedQueue<SubtitleItem> m_SubtitleQueue;
+        SharedQueue<AudioSample> m_AudioSamplesQueue;
         bool m_IsMFSupported = false;
+        bool m_UseFfmpeg = false;
         bool m_ResizeNeeded = false;
         bool m_ChangingSwapchain = false;
         Windows::Foundation::Size m_DesiredSize;
@@ -95,6 +100,7 @@ namespace winrt::MediaPlayer::implementation
         bool m_Seeked = false;
         Windows::Foundation::Collections::IObservableVector<SubtitleStream> m_SubTracks = single_threaded_observable_vector<SubtitleStream>();
         std::thread m_VideoThread;
+        std::thread m_AudioThread;
 
         std::shared_ptr<DeviceResources> m_DeviceResources;
         std::shared_ptr<TexturePlaneRenderer> m_TexturePlaneRenderer;
@@ -107,6 +113,7 @@ namespace winrt::MediaPlayer::implementation
         Microsoft::UI::Dispatching::DispatcherQueue m_UIDispatcherQueue = nullptr;
 
         FfmpegDecoder m_FfmpegDecoder;
+        XAudio2Player m_XAudio2Player;
 
         HANDLE m_VideoSurfaceHandle;
     };

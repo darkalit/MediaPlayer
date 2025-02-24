@@ -118,6 +118,12 @@
     <ClCompile Include="DirectX\TextRenderer.cpp">
       <Filter>DirectX</Filter>
     </ClCompile>
+    <ClCompile Include="Media\XAudio2Player.cpp">
+      <Filter>Media</Filter>
+    </ClCompile>
+    <ClCompile Include="Media\XAudioStreamCallback.cpp">
+      <Filter>Media</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -181,6 +187,12 @@
     </ClInclude>
     <ClInclude Include="DirectX\TextRenderer.h">
       <Filter>DirectX</Filter>
+    </ClInclude>
+    <ClInclude Include="Media\XAudio2Player.h">
+      <Filter>Media</Filter>
+    </ClInclude>
+    <ClInclude Include="Media\XAudioStreamCallback.h">
+      <Filter>Media</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

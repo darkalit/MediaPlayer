@@ -191,6 +191,8 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <ClInclude Include="Media\MediaEngineWrapper.h" />
     <ClInclude Include="Media\MediaFoundationSourceWrapper.h" />
     <ClInclude Include="Media\MediaFoundationStreamWrapper.h" />
+    <ClInclude Include="Media\XAudio2Player.h" />
+    <ClInclude Include="Media\XAudioStreamCallback.h" />
     <ClInclude Include="Pages\MainPage.xaml.h">
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -246,6 +248,8 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <ClCompile Include="Media\MediaEngineWrapper.cpp" />
     <ClCompile Include="Media\MediaFoundationSourceWrapper.cpp" />
     <ClCompile Include="Media\MediaFoundationStreamWrapper.cpp" />
+    <ClCompile Include="Media\XAudio2Player.cpp" />
+    <ClCompile Include="Media\XAudioStreamCallback.cpp" />
     <ClCompile Include="Pages\MainPage.xaml.cpp">
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
