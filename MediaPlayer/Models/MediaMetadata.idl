@@ -12,19 +12,14 @@ namespace MediaPlayer
         UInt32 AudioBitrate; // bits per second
         UInt32 AudioSampleRate;
         UInt32 AudioSampleSize;
-        UInt32 AudioStreamId;
 
         UInt32 VideoBitrate; // bits per second
         UInt32 VideoWidth;
         UInt32 VideoHeight;
         UInt32 VideoFrameRate;
-        UInt32 VideoStreamId;
 
         String Author;
         String Title;
         String AlbumTitle;
-
-        Boolean AudioIsVariableBitrate;
-        Boolean VideoIsStereo;
     };
 }

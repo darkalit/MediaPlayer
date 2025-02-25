@@ -81,6 +81,7 @@ public:
     ~FfmpegDecoder();
 
     bool HasSource();
+    static winrt::MediaPlayer::MediaMetadata GetMetadata(winrt::hstring const& filepath);
     void OpenFile(winrt::hstring const& filepath);
     void OpenSubtitle(winrt::hstring const& filepath);
     void OpenSubtitle(unsigned int subtitleIndex);
