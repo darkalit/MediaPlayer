@@ -151,6 +151,7 @@ namespace winrt::MediaPlayer::implementation
             State(PlayerServiceState::STOPPED);
 
             m_UseFfmpeg = false;
+            SwapChainPanel(SwapChainPanel());
 
             return;
         }
@@ -161,6 +162,7 @@ namespace winrt::MediaPlayer::implementation
         }
 
         m_UseFfmpeg = true;
+        SwapChainPanel(SwapChainPanel());
         m_FfmpegDecoder.OpenFile(path);
         m_SubTracks.Clear();
         for (auto& s : m_FfmpegDecoder.GetSubtitleStreams())
