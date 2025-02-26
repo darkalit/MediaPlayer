@@ -115,5 +115,6 @@ private:
     bool m_DecodingPaused = false;
 
     std::thread m_DecodingThread;
+    std::mutex m_Mutex;
 };
 

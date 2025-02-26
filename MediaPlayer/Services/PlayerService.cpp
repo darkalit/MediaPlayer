@@ -49,8 +49,14 @@ namespace winrt::MediaPlayer::implementation
         try
         {
             m_State = PlayerServiceState::CLOSED;
-            m_VideoThread.join();
-            m_AudioThread.join();
+            if (m_VideoThread.joinable())
+            {
+                m_VideoThread.join();
+            }
+            if (m_AudioThread.joinable())
+            {
+                m_AudioThread.join();
+            }
 
             check_hresult(MFShutdown());
         }
@@ -406,7 +412,7 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::Start()
     {
-        m_FfmpegDecoder.PauseDecoding(false);
+        m_FfmpegDecoder.PauseDecoding(true);
         if (!HasSource()) return;
 
         try
@@ -420,17 +426,30 @@ namespace winrt::MediaPlayer::implementation
             double position = static_cast<double>(Position()) / 1000.0;
             if (m_UseFfmpeg)
             {
+                {
+                    std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
+                    m_Seeking = true;
+                }
+                m_SeekCV.notify_all();
+                
                 m_FfmpegDecoder.Seek(Position());
                 m_XAudio2Player.Start();
                 m_FrameQueue.Clear();
                 m_AudioSamplesQueue.Clear();
                 m_SubtitleQueue.Clear();
+
+                m_LastAudioSampleTime = std::chrono::steady_clock::now();
+
+                {
+                    std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
+                    m_Seeking = false;
+                }
+                m_SeekCV.notify_all();
             }
             else
             {
                 m_MediaEngineWrapper->Start(position);
             }
-            m_Seeked = true;
             PlaybackSpeed(m_PlaybackSpeed);
         }
         catch (const hresult_error& e)
@@ -439,6 +458,7 @@ namespace winrt::MediaPlayer::implementation
         }
 
         State(PlayerServiceState::PLAYING);
+        m_FfmpegDecoder.PauseDecoding(false);
 
         auto md = Metadata();
         md.IsSelected = true;
@@ -447,7 +467,7 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::Start(uint64_t timePos)
     {
-        m_FfmpegDecoder.PauseDecoding(false);
+        m_FfmpegDecoder.PauseDecoding(true);
         if (!HasSource()) return;
 
         try
@@ -463,17 +483,29 @@ namespace winrt::MediaPlayer::implementation
             double position = static_cast<double>(timePos) / 1000.0;
             if (m_UseFfmpeg)
             {
+                {
+                    std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
+                    m_Seeking = true;
+                }
+                m_SeekCV.notify_all();
+
                 m_FfmpegDecoder.Seek(timePos);
                 m_XAudio2Player.Start();
                 m_FrameQueue.Clear();
                 m_AudioSamplesQueue.Clear();
                 m_SubtitleQueue.Clear();
+
+                m_LastAudioSampleTime = std::chrono::steady_clock::now();
+                {
+                    std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
+                    m_Seeking = false;
+                }
+                m_SeekCV.notify_all();
             }
             else
             {
                 m_MediaEngineWrapper->Start(position);
             }
-            m_Seeked = true;
             PlaybackSpeed(m_PlaybackSpeed);
         }
         catch (const hresult_error& e)
@@ -482,6 +514,7 @@ namespace winrt::MediaPlayer::implementation
         }
 
         State(PlayerServiceState::PLAYING);
+        m_FfmpegDecoder.PauseDecoding(false);
 
         auto md = Metadata();
         md.IsSelected = true;
@@ -732,18 +765,29 @@ namespace winrt::MediaPlayer::implementation
 
         while (m_State != PlayerServiceState::CLOSED && m_State != PlayerServiceState::SOURCE_SWITCH)
         {
+            std::unique_lock lock(m_VideoMutex);
+            m_SeekCV.wait(lock, [this]() { return !m_Seeking; });
+
             if (m_FrameQueue.Empty())
             {
                 continue;
             }
-            
+
+            if (m_ChangingSwapchain) continue;
+
             m_CurFrame = m_FrameQueue.Pop();
             m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
-            
-            double diff = m_CurFrame.StartTime - m_CurAudioSample.StartTime;
+            auto deltaTime = std::chrono::steady_clock::now() - m_LastAudioSampleTime;
+            auto frameStartTime = m_CurAudioSample.StartTime + std::chrono::duration_cast<std::chrono::milliseconds>(deltaTime).count() / 1000.0;
+
+            double diff = m_CurFrame.StartTime - frameStartTime;
             auto timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
-            if (timestampDiff > 0)
+            
+            if (timestampDiff > 0 && m_LastAudioSampleTime.time_since_epoch().count() != 0)
             {
+                OutputDebugString(L"VideoRender: Sleeping for ");
+                OutputDebugString(to_hstring(timestampDiff).c_str());
+                OutputDebugString(L"ms\n");
                 std::this_thread::sleep_for(std::chrono::milliseconds(timestampDiff));
             }
 
@@ -757,8 +801,6 @@ namespace winrt::MediaPlayer::implementation
             {
                 currentSubs.pop_front();
             }
-
-            if (m_ChangingSwapchain) continue;
 
             auto context = m_DeviceResources->GetD3DDeviceContext();
 
@@ -824,20 +866,22 @@ namespace winrt::MediaPlayer::implementation
 
         while (m_State != PlayerServiceState::CLOSED && m_State != PlayerServiceState::SOURCE_SWITCH)
         {
+            std::unique_lock lock(m_AudioMutex);
+            m_SeekCV.wait(lock, [this]() { return !m_Seeking; });
             if (m_AudioSamplesQueue.Empty()) continue;
 
-            double diff = m_CurAudioSample.StartTime - m_CurFrame.StartTime;
-            auto timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
-            if (timestampDiff > 0)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(timestampDiff));
-            }
+            //double diff = m_CurAudioSample.StartTime - m_CurFrame.StartTime;
+            //auto timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
+            //if (timestampDiff > 0)
+            //{
+            //    //std::this_thread::sleep_for(std::chrono::milliseconds(timestampDiff));
+            //}
 
-            if (m_AudioSamplesQueue.Size() < 24 || !m_XAudio2Player.IsSampleConsumed()) continue;
+            if (m_AudioSamplesQueue.Size() < 12 || !m_XAudio2Player.IsSampleConsumed()) continue;
 
             m_CurAudioSample = {};
             m_CurAudioSample.Duration = 0;
-            for (int i = 0; i < 24; ++i)
+            for (int i = 0; i < 12; ++i)
             {
                 if (m_AudioSamplesQueue.Empty())
                 {
@@ -853,6 +897,7 @@ namespace winrt::MediaPlayer::implementation
                 m_CurAudioSample.Duration += sample.Duration;
                 m_CurAudioSample.Buffer.insert(m_CurAudioSample.Buffer.end(), sample.Buffer.begin(), sample.Buffer.end());
             }
+            m_LastAudioSampleTime = std::chrono::steady_clock::now();
 
             if (!m_CurAudioSample.Buffer.empty() && m_State != PlayerServiceState::PAUSED && m_State != PlayerServiceState::STOPPED)
             {

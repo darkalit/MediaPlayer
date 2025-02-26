@@ -19,12 +19,16 @@ void XAudio2Player::SubmitSample(AudioSample& sample)
     if (!m_SourceVoice || sample.Buffer.empty())
     {
         return;
-    }        
+    }
+
+    auto audioData = new uint8_t[sample.Buffer.size()];
+    std::copy(sample.Buffer.begin(), sample.Buffer.end(), audioData);
 
     XAUDIO2_BUFFER buffer = {
         .Flags = XAUDIO2_END_OF_STREAM,
         .AudioBytes = static_cast<UINT32>(sample.Buffer.size()),
-        .pAudioData = sample.Buffer.data(),
+        .pAudioData = audioData,
+        .pContext = audioData,
     };
 
     m_Callback->WaitForFreeBuffer();

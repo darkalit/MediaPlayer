@@ -95,12 +95,16 @@ namespace winrt::MediaPlayer::implementation
         bool m_UseFfmpeg = false;
         bool m_ResizeNeeded = false;
         bool m_ChangingSwapchain = false;
+        bool m_Seeking = false;
         Windows::Foundation::Size m_DesiredSize;
         Windows::Foundation::Size m_LastFrameSize;
-        bool m_Seeked = false;
         Windows::Foundation::Collections::IObservableVector<SubtitleStream> m_SubTracks = single_threaded_observable_vector<SubtitleStream>();
         std::thread m_VideoThread;
         std::thread m_AudioThread;
+        std::mutex m_VideoMutex;
+        std::mutex m_AudioMutex;
+        std::condition_variable m_SeekCV;
+        std::chrono::time_point<std::chrono::steady_clock> m_LastAudioSampleTime;
 
         std::shared_ptr<DeviceResources> m_DeviceResources;
         std::shared_ptr<TexturePlaneRenderer> m_TexturePlaneRenderer;

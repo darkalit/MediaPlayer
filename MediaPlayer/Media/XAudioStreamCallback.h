@@ -19,6 +19,6 @@ public:
 private:
     std::mutex m_Mutex;
     std::condition_variable m_CV;
-    UINT32 m_BuffersPlayed = 0;
+    int m_BuffersPlayed = 1;
 };
 

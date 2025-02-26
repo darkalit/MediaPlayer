@@ -20,6 +20,15 @@ FfmpegDecoder::FfmpegDecoder()
 
 FfmpegDecoder::~FfmpegDecoder()
 {
+    if (m_FileOpened && m_FormatContext)
+    {
+        avformat_close_input(&m_FormatContext);
+        m_FileOpened = false;
+    }
+    if (m_DecodingThread.joinable())
+    {
+        m_DecodingThread.join();
+    }
     avcodec_free_context(&m_AudioCodecContext);
     avcodec_free_context(&m_VideoCodecContext);
     avformat_free_context(m_FormatContext);
@@ -336,10 +345,11 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
 
         while(m_FileOpened)
         {
-            if (m_DecodingPaused || (audioSamples.Size() > 32))
+            if (m_DecodingPaused || (audioSamples.Size() > 16))
             {
                 continue;
             }
+            std::lock_guard lock(m_Mutex);
 
             if (av_read_frame(m_FormatContext, packet) < 0) break;
             defer{ av_packet_unref(packet); };
@@ -388,7 +398,6 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                     outFrame.Height = m_VideoCodecContext->height;
                     outFrame.Buffer.assign(data[0], data[0] + linesize[0] * outFrame.Height);
                     outFrame.RowPitch = linesize[0];
-                    //outFrame.FrameTime = av_rescale_q(frame->best_effort_timestamp, m_FormatContext->streams[m_VideoStreamIndex]->time_base, AV_TIME_BASE_Q);
                     outFrame.StartTime = static_cast<double>(frame->pts) * av_q2d(m_FormatContext->streams[m_VideoStreamIndex]->time_base);
                     frames.Push(outFrame);
                 }
@@ -406,32 +415,6 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                 while(avcodec_receive_frame(m_AudioCodecContext, frame) == 0)
                 {
                     int outSamples = swr_get_out_samples(m_SwrContext, frame->nb_samples);
-
-                    //if (av_sample_fmt_is_planar(static_cast<AVSampleFormat>(frame->format)))
-                    //{
-                    //    uint8_t** buffer = nullptr;
-                    //    //uint8_t* buffer = nullptr;
-                    //    av_samples_alloc_array_and_samples(&buffer, nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 1 );
-                    //    //av_samples_alloc(&buffer, nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 1);
-                    //    outSamples = swr_convert(
-                    //        m_SwrContext,
-                    //        buffer,
-                    //        outSamples,
-                    //        frame->extended_data,
-                    //        frame->nb_samples);
-                    //    int dataSize = av_samples_get_buffer_size(nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 1);
-                    //    //int dataSize = outSamples * m_ChannelLayout.nb_channels * 2;
-
-                    //    sample.Buffer.insert(sample.Buffer.end(), buffer[0], buffer[0] + dataSize);
-
-                    //    if (buffer)
-                    //    {
-                    //        av_free(buffer[0]);
-                    //        av_free(buffer);
-                    //    }
-                    //}
-                    //else
-                    //{
                     uint8_t* buffer = nullptr;
                     av_samples_alloc(&buffer, nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 1);
                     outSamples = swr_convert(
@@ -449,7 +432,6 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                     {
                         av_free(buffer);
                     }
-                    //}
                 }
                 double timeBase = av_q2d(m_FormatContext->streams[m_AudioStreamIndex]->time_base);
                 sample.Duration = packet->duration * timeBase;
@@ -502,10 +484,7 @@ std::vector<MediaPlayer::SubtitleStream>& FfmpegDecoder::GetSubtitleStreams()
 
 void FfmpegDecoder::Seek(uint64_t time)
 {
-    if (m_VideoStreamIndex < 0)
-    {
-        return;
-    }
+    std::lock_guard lock(m_Mutex);
 
     std::vector streamIndexes = { m_VideoStreamIndex, m_AudioStreamIndex };
     std::vector codecContexes = { m_VideoCodecContext, m_AudioCodecContext };
