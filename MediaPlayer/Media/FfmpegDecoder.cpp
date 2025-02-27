@@ -10,6 +10,7 @@ extern "C" {
 }
 
 #include "Utils.h"
+#include "MediaConfig.h"
 
 using namespace winrt;
 
@@ -167,7 +168,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         return;
     }
 
-    av_channel_layout_default(&m_ChannelLayout, 2);
+    av_channel_layout_default(&m_ChannelLayout, MediaConfig::AudioChannels);
     m_SampleFormat = AV_SAMPLE_FMT_S16;
 
     error = swr_alloc_set_opts2(
@@ -175,7 +176,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         // Output
         &m_ChannelLayout,
         m_SampleFormat,
-        44100,
+        MediaConfig::AudioSampleRate,
         // Input
         &m_AudioCodecContext->ch_layout,
         m_AudioCodecContext->sample_fmt,

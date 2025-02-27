@@ -614,7 +614,14 @@ namespace winrt::MediaPlayer::implementation
         {
             m_PlaybackSpeed = value;
 
-            if (!m_UseFfmpeg) m_MediaEngineWrapper->SetPlaybackSpeed(value);
+            if (!m_UseFfmpeg)
+            {
+                m_MediaEngineWrapper->SetPlaybackSpeed(value);
+            }
+            else
+            {
+                m_XAudio2Player.SetRate(value);
+            }
         }
     }
 
@@ -637,15 +644,24 @@ namespace winrt::MediaPlayer::implementation
         {
             return m_MediaEngineWrapper->GetVolume();
         }
-
-        return 1.0;
+        else
+        {
+            return m_XAudio2Player.GetVolume();
+        }
     }
 
     void PlayerService::Volume(double value)
     {
         if (Volume() != value)
         {
-            if (!m_UseFfmpeg) m_MediaEngineWrapper->SetVolume(value);
+            if (!m_UseFfmpeg)
+            {
+                m_MediaEngineWrapper->SetVolume(value);
+            }
+            else
+            {
+                m_XAudio2Player.SetVolume(value);
+            }
         }        
     }
 
