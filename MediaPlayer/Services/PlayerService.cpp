@@ -438,8 +438,6 @@ namespace winrt::MediaPlayer::implementation
                 m_AudioSamplesQueue.Clear();
                 m_SubtitleQueue.Clear();
 
-                m_LastAudioSampleTime = std::chrono::steady_clock::now();
-
                 {
                     std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
                     m_Seeking = false;
@@ -495,7 +493,6 @@ namespace winrt::MediaPlayer::implementation
                 m_AudioSamplesQueue.Clear();
                 m_SubtitleQueue.Clear();
 
-                m_LastAudioSampleTime = std::chrono::steady_clock::now();
                 {
                     std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
                     m_Seeking = false;
@@ -782,7 +779,13 @@ namespace winrt::MediaPlayer::implementation
 
             double diff = m_CurFrame.StartTime - frameStartTime;
             auto timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
-            
+            if (timestampDiff > 200)
+            {
+                deltaTime = std::chrono::duration<long long, std::nano>(0);
+                frameStartTime = m_CurFrame.StartTime;
+                diff = 0;
+                timestampDiff = 0;
+            }
             if (timestampDiff > 0 && m_LastAudioSampleTime.time_since_epoch().count() != 0)
             {
                 OutputDebugString(L"VideoRender: Sleeping for ");
@@ -792,12 +795,12 @@ namespace winrt::MediaPlayer::implementation
             }
 
             if (!m_SubtitleQueue.Empty() &&
-                m_SubtitleQueue.Front().EndTime < m_CurAudioSample.StartTime + (m_SubtitleQueue.Front().EndTime - m_SubtitleQueue.Front().StartTime))
+                m_SubtitleQueue.Front().EndTime < frameStartTime + (m_SubtitleQueue.Front().EndTime - m_SubtitleQueue.Front().StartTime))
             {
                 currentSubs.push_back(m_SubtitleQueue.Pop());
             }
 
-            if (!currentSubs.empty() && currentSubs.front().EndTime < m_CurAudioSample.StartTime)
+            if (!currentSubs.empty() && currentSubs.front().EndTime < frameStartTime)
             {
                 currentSubs.pop_front();
             }
