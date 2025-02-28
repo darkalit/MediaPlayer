@@ -19,7 +19,7 @@ void XAudioStreamCallback::OnBufferStart(void* pBufferContext)
 
 void XAudioStreamCallback::OnBufferEnd(void* pBufferContext)
 {
-    delete[] static_cast<uint8_t*>(pBufferContext);
+    delete[] static_cast<float*>(pBufferContext);
     {
         std::lock_guard lock(m_Mutex);
         ++m_BuffersPlayed;

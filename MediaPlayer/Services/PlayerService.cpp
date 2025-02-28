@@ -794,8 +794,8 @@ namespace winrt::MediaPlayer::implementation
             auto frameStartTime = m_CurAudioSample.StartTime + std::chrono::duration_cast<std::chrono::milliseconds>(deltaTime).count() / 1000.0;
 
             double diff = m_CurFrame.StartTime - frameStartTime;
-            auto timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
-            if (timestampDiff > 200)
+            long long timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
+            if (timestampDiff > 800)
             {
                 deltaTime = std::chrono::duration<long long, std::nano>(0);
                 frameStartTime = m_CurFrame.StartTime;
@@ -887,20 +887,20 @@ namespace winrt::MediaPlayer::implementation
         {
             std::unique_lock lock(m_AudioMutex);
             m_SeekCV.wait(lock, [this]() { return !m_Seeking; });
-            if (m_AudioSamplesQueue.Empty()) continue;
 
-            //double diff = m_CurAudioSample.StartTime - m_CurFrame.StartTime;
-            //auto timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
-            //if (timestampDiff > 0)
-            //{
-            //    //std::this_thread::sleep_for(std::chrono::milliseconds(timestampDiff));
-            //}
+            int maxSamples = 14;
+            if (m_AudioSamplesQueue.Size() < maxSamples) continue;
 
-            if (m_AudioSamplesQueue.Size() < 12 || !m_XAudio2Player.IsSampleConsumed()) continue;
+            double diff = m_CurAudioSample.StartTime - m_CurFrame.StartTime;
+            auto timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
+            if (timestampDiff > 0)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(timestampDiff));
+            }
 
             m_CurAudioSample = {};
             m_CurAudioSample.Duration = 0;
-            for (int i = 0; i < 12; ++i)
+            for (int i = 0; i < maxSamples; ++i)
             {
                 if (m_AudioSamplesQueue.Empty())
                 {

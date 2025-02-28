@@ -27,7 +27,7 @@ void XAudio2Player::Start()
     check_hresult(m_XAudio2->CreateMasteringVoice(&m_MasterVoice));
 
     WAVEFORMATEX wfx = {
-        .wFormatTag = WAVE_FORMAT_PCM,
+        .wFormatTag = WAVE_FORMAT_IEEE_FLOAT,
         .nChannels = MediaConfig::AudioChannels,
         .nSamplesPerSec = MediaConfig::AudioSampleRate,
         .wBitsPerSample = MediaConfig::AudioBitsPerSample,
@@ -44,6 +44,7 @@ void XAudio2Player::Start()
 void XAudio2Player::Stop()
 {
     m_Running = false;
+    m_SoundTouch.flush();
 
     if (m_SourceVoice)
     {
@@ -78,18 +79,15 @@ void XAudio2Player::SubmitSample(AudioSample& sample)
         return;
     }
 
-    if (m_Rate != 1.0f)
-    {
-        ProcessSample(sample);
-    }
+    ProcessSample(sample);
 
-    auto audioData = new uint8_t[sample.Buffer.size()];
+    auto audioData = new float[sample.Buffer.size()];
     std::copy(sample.Buffer.begin(), sample.Buffer.end(), audioData);
 
     XAUDIO2_BUFFER buffer = {
         .Flags = XAUDIO2_END_OF_STREAM,
-        .AudioBytes = static_cast<UINT32>(sample.Buffer.size()),
-        .pAudioData = audioData,
+        .AudioBytes = static_cast<UINT32>(sample.Buffer.size() * sizeof(float)),
+        .pAudioData = reinterpret_cast<BYTE*>(audioData),
         .pContext = audioData,
     };
 
@@ -100,7 +98,7 @@ void XAudio2Player::SubmitSample(AudioSample& sample)
 void XAudio2Player::SetRate(float rate)
 {
     m_Rate = rate;
-    m_SoundTouch.setRate(rate);
+    m_SoundTouch.setTempo(rate);
 }
 
 void XAudio2Player::SetVolume(float volume)
@@ -135,17 +133,25 @@ bool XAudio2Player::IsSampleConsumed()
 
 void XAudio2Player::ProcessSample(AudioSample& sample)
 {
-    m_SoundTouch.putSamples(reinterpret_cast<int16_t*>(sample.Buffer.data()), sample.Buffer.size() / 2);
+    m_SoundTouch.putSamples(sample.Buffer.data(), sample.Buffer.size() / MediaConfig::AudioChannels);
 
-    double ratio = m_SoundTouch.getInputOutputSampleRatio();
     AudioSample outSample;
-    outSample.Buffer = std::vector<uint8_t>(sample.Buffer.size() * ratio);
-    outSample.Duration = sample.Duration * ratio;
+    outSample.Buffer;
+    outSample.Duration = sample.Duration;
     outSample.StartTime = sample.StartTime;
 
-    auto outputSize = m_SoundTouch.receiveSamples(reinterpret_cast<int16_t*>(outSample.Buffer.data()), outSample.Buffer.size() / 2);
+    constexpr int BUFFER_CHUNK = 1024;
+    std::vector<float> tempBuffer(BUFFER_CHUNK * MediaConfig::AudioChannels);
 
-    m_SoundTouch.flush();
+    do
+    {
+        int count = m_SoundTouch.receiveSamples(tempBuffer.data(), BUFFER_CHUNK);
+        if (count > 0)
+        {
+            outSample.Buffer.insert(outSample.Buffer.end(), tempBuffer.begin(), tempBuffer.begin() + (count * MediaConfig::AudioChannels));
+        }
+        else break;
+    } while (true);
 
     sample = outSample;
 }

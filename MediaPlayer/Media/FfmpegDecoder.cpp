@@ -169,7 +169,6 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
     }
 
     av_channel_layout_default(&m_ChannelLayout, MediaConfig::AudioChannels);
-    m_SampleFormat = AV_SAMPLE_FMT_S16;
 
     error = swr_alloc_set_opts2(
         &m_SwrContext,
@@ -346,7 +345,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
 
         while(m_FileOpened)
         {
-            if (m_DecodingPaused || (audioSamples.Size() > 16))
+            if (m_DecodingPaused || (audioSamples.Size() > 18))
             {
                 continue;
             }
@@ -354,8 +353,6 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
 
             if (av_read_frame(m_FormatContext, packet) < 0) break;
             defer{ av_packet_unref(packet); };
-
-            m_CurrentTime = static_cast<uint64_t>(packet->pts * av_q2d(m_FormatContext->streams[0]->time_base) * 1000.0);
 
             if (packet->stream_index == m_VideoStreamIndex)
             {
@@ -400,6 +397,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                     outFrame.Buffer.assign(data[0], data[0] + linesize[0] * outFrame.Height);
                     outFrame.RowPitch = linesize[0];
                     outFrame.StartTime = static_cast<double>(frame->pts) * av_q2d(m_FormatContext->streams[m_VideoStreamIndex]->time_base);
+                    
                     frames.Push(outFrame);
                 }
             }
@@ -426,8 +424,9 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                         frame->nb_samples);
                     int dataSize = av_samples_get_buffer_size(nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 0);
                     //int dataSize = outSamples * m_ChannelLayout.nb_channels * 2;
+                    float* floatBuffer = reinterpret_cast<float*>(buffer);
 
-                    sample.Buffer.insert(sample.Buffer.end(), buffer, buffer + dataSize);
+                    sample.Buffer.insert(sample.Buffer.end(), floatBuffer, floatBuffer + dataSize / sizeof(float));
 
                     if (buffer)
                     {
@@ -437,6 +436,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                 double timeBase = av_q2d(m_FormatContext->streams[m_AudioStreamIndex]->time_base);
                 sample.Duration = packet->duration * timeBase;
                 sample.StartTime = packet->pts * timeBase;
+                m_CurrentTime = static_cast<uint64_t>(packet->pts * av_q2d(m_FormatContext->streams[m_AudioStreamIndex]->time_base) * 1000.0);
                 audioSamples.Push(sample);
             }
             else if (packet->stream_index == m_CurrentSubSteamIndex)

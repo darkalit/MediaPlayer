@@ -62,7 +62,7 @@ struct SubtitleItem
 
 struct AudioSample
 {
-    std::vector<uint8_t> Buffer;
+    std::vector<float> Buffer;
     double Duration;
     double StartTime;
 };
@@ -102,7 +102,7 @@ private:
     AVCodecContext* m_VideoCodecContext = nullptr;
     AVCodecContext* m_SubtitlesCodecContext = nullptr;
     AVChannelLayout m_ChannelLayout;
-    AVSampleFormat m_SampleFormat;
+    AVSampleFormat m_SampleFormat = AV_SAMPLE_FMT_FLT;
     int m_AudioStreamIndex = -1;
     int m_VideoStreamIndex = -1;
     std::vector<winrt::MediaPlayer::SubtitleStream> m_SubtitleStreams;
