@@ -28,10 +28,18 @@ namespace winrt::MediaPlayer::implementation
     {
         MenuSubItem_SubTrack().Items().Clear();
 
+        Controls::RadioMenuFlyoutItem radioItem;
+        radioItem.Text(L"None");
+        radioItem.GroupName(L"SubTracksGroup");
+        radioItem.Command(ViewModel().ChangeSubTrack());
+        radioItem.CommandParameter(box_value(-1));
+
+        MenuSubItem_SubTrack().Items().Append(radioItem);
+
         for (auto const& s : ViewModel().SubTracks())
         {
             Controls::RadioMenuFlyoutItem radioItem;
-            radioItem.Text(L"[" + s.Title + L"] - [" + s.Language + L"]" );
+            radioItem.Text(s.Title + L" - [" + s.Language + L"]" );
             radioItem.GroupName(L"SubTracksGroup");
             radioItem.Command(ViewModel().ChangeSubTrack());
             radioItem.CommandParameter(box_value(s.Index));

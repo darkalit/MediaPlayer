@@ -16,7 +16,7 @@ namespace MediaPlayer
         UInt32 VideoBitrate; // bits per second
         UInt32 VideoWidth;
         UInt32 VideoHeight;
-        UInt32 VideoFrameRate;
+        Double VideoFrameRate;
 
         String Author;
         String Title;

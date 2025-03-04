@@ -15,6 +15,7 @@ public:
     void OnVoiceError(void* pBufferContext, HRESULT Error) override;
 
     void WaitForFreeBuffer();
+    void Reset();
 
 private:
     std::mutex m_Mutex;

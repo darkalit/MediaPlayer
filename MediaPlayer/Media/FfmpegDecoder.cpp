@@ -14,7 +14,8 @@ extern "C" {
 
 using namespace winrt;
 
-FfmpegDecoder::FfmpegDecoder()
+FfmpegDecoder::FfmpegDecoder(std::function<void()> onPlaybackEndedCB)
+    : m_OnPlaybackEndedCB(onPlaybackEndedCB)
 {
     m_FormatContext = avformat_alloc_context();
 }
@@ -232,12 +233,12 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
             nullptr);
     }
 
-    error = av_seek_frame(m_FormatContext, -1, 0, AVSEEK_FLAG_BACKWARD);
-    if (error != 0)
-    {
-        OutputDebugString(L"FfmpegDecoder::OpenFile av_seek_frame");
-        return;
-    }
+    //error = av_seek_frame(m_FormatContext, -1, 0, AVSEEK_FLAG_BACKWARD);
+    //if (error != 0)
+    //{
+    //    OutputDebugString(L"FfmpegDecoder::OpenFile av_seek_frame");
+    //    return;
+    //}
 }
 
 void FfmpegDecoder::OpenSubtitle(winrt::hstring const& filepath)
@@ -295,6 +296,12 @@ void FfmpegDecoder::OpenSubtitle(winrt::hstring const& filepath)
 
 void FfmpegDecoder::OpenSubtitle(unsigned int subtitleIndex)
 {
+    if (subtitleIndex == -1)
+    {
+        m_CurrentSubSteamIndex = subtitleIndex;
+        return;
+    }
+
     m_CurrentSubSteamIndex = -1;
     if (m_SubtitleFormatContext)
     {
@@ -343,7 +350,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
         defer{ av_packet_free(&packet); };
         int error = 0;
 
-        while(m_FileOpened)
+        while (m_FileOpened)
         {
             if (m_DecodingPaused || (audioSamples.Size() > 18))
             {
@@ -351,7 +358,15 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
             }
             std::lock_guard lock(m_Mutex);
 
-            if (av_read_frame(m_FormatContext, packet) < 0) break;
+            int ret = av_read_frame(m_FormatContext, packet);
+            if (ret == AVERROR(EAGAIN))
+            {
+                continue;
+            }
+            if (ret < 0)
+            {
+                break;
+            }
             defer{ av_packet_unref(packet); };
 
             if (packet->stream_index == m_VideoStreamIndex)
@@ -465,6 +480,8 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                 }
             }
         }
+
+        m_OnPlaybackEndedCB();
     });
 }
 

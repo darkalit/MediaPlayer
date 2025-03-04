@@ -7,7 +7,6 @@ using namespace winrt;
 
 XAudio2Player::XAudio2Player()
 {
-    m_Callback = new XAudioStreamCallback();
     m_SoundTouch.setSampleRate(MediaConfig::AudioSampleRate);
     m_SoundTouch.setChannels(MediaConfig::AudioChannels);
     m_SoundTouch.setRate(1.0);
@@ -16,7 +15,6 @@ XAudio2Player::XAudio2Player()
 XAudio2Player::~XAudio2Player()
 {
     Stop();
-    delete m_Callback;
 }
 
 void XAudio2Player::Start()
@@ -37,7 +35,7 @@ void XAudio2Player::Start()
     wfx.nBlockAlign = wfx.nChannels * wfx.wBitsPerSample / 8;
     wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
 
-    check_hresult(m_XAudio2->CreateSourceVoice(&m_SourceVoice, &wfx, 0, 2.0f, m_Callback));
+    check_hresult(m_XAudio2->CreateSourceVoice(&m_SourceVoice, &wfx, 0, 2.0f, &m_Callback));
     m_SourceVoice->Start(0);
 }
 
@@ -65,11 +63,7 @@ void XAudio2Player::Stop()
         m_XAudio2 = nullptr;
     }
 
-    if (m_Callback)
-    {
-        delete m_Callback;
-        m_Callback = nullptr;
-    }
+    m_Callback.Reset();
 }
 
 void XAudio2Player::SubmitSample(AudioSample& sample)
@@ -91,7 +85,7 @@ void XAudio2Player::SubmitSample(AudioSample& sample)
         .pContext = audioData,
     };
 
-    m_Callback->WaitForFreeBuffer();
+    m_Callback.WaitForFreeBuffer();
     m_SourceVoice->SubmitSourceBuffer(&buffer);
 }
 

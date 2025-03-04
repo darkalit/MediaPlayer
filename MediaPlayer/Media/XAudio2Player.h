@@ -29,7 +29,7 @@ private:
     IXAudio2* m_XAudio2 = nullptr;
     IXAudio2MasteringVoice* m_MasterVoice = nullptr;
     IXAudio2SourceVoice* m_SourceVoice = nullptr;
-    XAudioStreamCallback* m_Callback = nullptr;
+    XAudioStreamCallback m_Callback;
 
     float m_Rate = 1.0f;
     soundtouch::SoundTouch m_SoundTouch;

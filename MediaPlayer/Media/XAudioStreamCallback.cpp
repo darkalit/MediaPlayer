@@ -41,3 +41,12 @@ void XAudioStreamCallback::WaitForFreeBuffer()
     m_CV.wait(lock, [this](){ return m_BuffersPlayed > 0; });
     --m_BuffersPlayed;
 }
+
+void XAudioStreamCallback::Reset()
+{
+    {
+        std::lock_guard lock(m_Mutex);
+        m_BuffersPlayed = 2;
+    }
+    m_CV.notify_one();
+}

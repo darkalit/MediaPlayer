@@ -33,6 +33,7 @@ using namespace winrt::Windows::Foundation;
 namespace winrt::MediaPlayer::implementation
 {
     PlayerService::PlayerService()
+        : m_FfmpegDecoder(std::bind(&PlayerService::OnPlaybackEnded, this))
     {
         try
         {
@@ -177,7 +178,6 @@ namespace winrt::MediaPlayer::implementation
         }
 
         Position(0);
-        State(PlayerServiceState::STOPPED);
 
         m_FfmpegDecoder.PauseDecoding(true);
         m_FfmpegDecoder.SetupDecoding(m_FrameQueue, m_SubtitleQueue, m_AudioSamplesQueue);
@@ -201,10 +201,16 @@ namespace winrt::MediaPlayer::implementation
         }
 
         m_AudioThread = std::thread(&PlayerService::AudioRender, this);
+
+        State(PlayerServiceState::STOPPED);
     }
 
     void PlayerService::SetSubtitleIndex(int32_t index)
     {
+        if (index == -1)
+        {
+            m_SubtitleQueue.Clear();
+        }
         m_FfmpegDecoder.OpenSubtitle(index);
     }
 
@@ -344,7 +350,7 @@ namespace winrt::MediaPlayer::implementation
         CurrentMediaIndex(CurrentMediaIndex() + 1);
         CurrentMediaIndex(CurrentMediaIndex() % m_Playlist.Size());
         SetSource(Metadata().Path);
-        Start();
+        Start(0);
     }
 
     void PlayerService::Prev()
@@ -358,7 +364,7 @@ namespace winrt::MediaPlayer::implementation
         }
         CurrentMediaIndex(CurrentMediaIndex() - 1);
         SetSource(Metadata().Path);
-        Start();
+        Start(0);
     }
 
     void PlayerService::StartByIndex(int32_t index)
@@ -422,7 +428,7 @@ namespace winrt::MediaPlayer::implementation
                 Stop();
                 return;
             }
-
+            
             double position = static_cast<double>(Position()) / 1000.0;
             if (m_UseFfmpeg)
             {
@@ -530,10 +536,22 @@ namespace winrt::MediaPlayer::implementation
 
             if (m_UseFfmpeg)
             {
+                //{
+                //    std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
+                //    m_Seeking = true;
+                //}
+                //m_SeekCV.notify_all();
+
                 m_XAudio2Player.Stop();
                 m_FrameQueue.Clear();
                 m_AudioSamplesQueue.Clear();
                 m_SubtitleQueue.Clear();
+
+                //{
+                //    std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
+                //    m_Seeking = false;
+                //}
+                //m_SeekCV.notify_all();
             }
             else
             {
@@ -886,17 +904,12 @@ namespace winrt::MediaPlayer::implementation
         while (m_State != PlayerServiceState::CLOSED && m_State != PlayerServiceState::SOURCE_SWITCH)
         {
             std::unique_lock lock(m_AudioMutex);
-            m_SeekCV.wait(lock, [this]() { return !m_Seeking; });
+            m_SeekCV.wait(lock, [this]() {
+                return !m_Seeking;
+            });
 
-            int maxSamples = 14;
+            int maxSamples = 16;
             if (m_AudioSamplesQueue.Size() < maxSamples) continue;
-
-            double diff = m_CurAudioSample.StartTime - m_CurFrame.StartTime;
-            auto timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
-            if (timestampDiff > 0)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(timestampDiff));
-            }
 
             m_CurAudioSample = {};
             m_CurAudioSample.Duration = 0;
@@ -921,6 +934,7 @@ namespace winrt::MediaPlayer::implementation
             if (!m_CurAudioSample.Buffer.empty() && m_State != PlayerServiceState::PAUSED && m_State != PlayerServiceState::STOPPED)
             {
                 m_XAudio2Player.SubmitSample(m_CurAudioSample);
+                m_CurAudioSample = {};
             }
         }
     }

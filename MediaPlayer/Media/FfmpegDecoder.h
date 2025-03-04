@@ -2,6 +2,8 @@
 
 #include <winrt/MediaPlayer.h>
 
+#include "functional"
+
 extern "C" {
 #include "libavutil/channel_layout.h"
 #include "libavutil/samplefmt.h"
@@ -77,7 +79,7 @@ struct AudioSample
 class FfmpegDecoder
 {
 public:
-    FfmpegDecoder();
+    FfmpegDecoder(std::function<void()> onPlaybackEndedCB);
     ~FfmpegDecoder();
 
     bool HasSource();
@@ -95,6 +97,8 @@ private:
     void GetSubtitles(AVFormatContext* formatContext);
     int PushSubtitle(SharedQueue<SubtitleItem>& subs, AVFormatContext* formatContext, AVPacket* packet);
     static void ParseAssDialogue(SubtitleItem& subItem, const std::string& dialogueEvent);
+
+    std::function<void()> m_OnPlaybackEndedCB;
 
     AVFormatContext* m_FormatContext = nullptr;
     AVFormatContext* m_SubtitleFormatContext = nullptr;
