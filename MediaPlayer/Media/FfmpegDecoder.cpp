@@ -22,14 +22,16 @@ FfmpegDecoder::FfmpegDecoder(std::function<void()> onPlaybackEndedCB)
 
 FfmpegDecoder::~FfmpegDecoder()
 {
-    if (m_FileOpened && m_FormatContext)
-    {
-        avformat_close_input(&m_FormatContext);
-        m_FileOpened = false;
-    }
+    m_FileOpened = false;
+
     if (m_DecodingThread.joinable())
     {
         m_DecodingThread.join();
+    }
+
+    if (m_FormatContext)
+    {
+        avformat_close_input(&m_FormatContext);
     }
     avcodec_free_context(&m_AudioCodecContext);
     avcodec_free_context(&m_VideoCodecContext);
@@ -105,13 +107,17 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
 {
     if (m_FileOpened && m_FormatContext)
     {
-        avformat_close_input(&m_FormatContext);
         m_FileOpened = false;
     }
 
     if (m_DecodingThread.joinable())
     {
         m_DecodingThread.join();
+    }
+
+    if (m_FormatContext)
+    {
+        avformat_close_input(&m_FormatContext);
     }
 
     m_SubtitleStreams.clear();
@@ -343,6 +349,8 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
 
     m_DecodingThread = std::thread([&]()
     {
+        OutputDebugString(L"New decode thread\n");
+
         auto frame = av_frame_alloc();
         defer{ av_frame_free(&frame); };
 
@@ -362,6 +370,10 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
             if (ret == AVERROR(EAGAIN))
             {
                 continue;
+            }
+            if (ret == AVERROR_EOF)
+            {
+                m_OnPlaybackEndedCB();
             }
             if (ret < 0)
             {
@@ -411,8 +423,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                     outFrame.Height = m_VideoCodecContext->height;
                     outFrame.Buffer.assign(data[0], data[0] + linesize[0] * outFrame.Height);
                     outFrame.RowPitch = linesize[0];
-                    outFrame.StartTime = static_cast<double>(frame->pts) * av_q2d(m_FormatContext->streams[m_VideoStreamIndex]->time_base);
-                    
+                    outFrame.StartTime = static_cast<double>(frame->best_effort_timestamp) * av_q2d(m_FormatContext->streams[m_VideoStreamIndex]->time_base);
                     frames.Push(outFrame);
                 }
             }
@@ -451,7 +462,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                 double timeBase = av_q2d(m_FormatContext->streams[m_AudioStreamIndex]->time_base);
                 sample.Duration = packet->duration * timeBase;
                 sample.StartTime = packet->pts * timeBase;
-                m_CurrentTime = static_cast<uint64_t>(packet->pts * av_q2d(m_FormatContext->streams[m_AudioStreamIndex]->time_base) * 1000.0);
+                m_CurrentTime = static_cast<uint64_t>(packet->pts * timeBase * 1000.0);
                 audioSamples.Push(sample);
             }
             else if (packet->stream_index == m_CurrentSubSteamIndex)
@@ -480,8 +491,6 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                 }
             }
         }
-
-        m_OnPlaybackEndedCB();
     });
 }
 

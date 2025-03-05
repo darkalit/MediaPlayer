@@ -537,11 +537,12 @@ namespace winrt::MediaPlayer::implementation
             if (m_UseFfmpeg)
             {
                 //{
-                //    std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
+                    std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
                 //    m_Seeking = true;
                 //}
                 //m_SeekCV.notify_all();
 
+                m_FfmpegDecoder.Seek(0);
                 m_XAudio2Player.Stop();
                 m_FrameQueue.Clear();
                 m_AudioSamplesQueue.Clear();
@@ -793,6 +794,7 @@ namespace winrt::MediaPlayer::implementation
     {
         m_CurFrame = {};
         std::list<SubtitleItem> currentSubs;
+        m_LastAudioSampleTime = std::chrono::steady_clock::now();
 
         while (m_State != PlayerServiceState::CLOSED && m_State != PlayerServiceState::SOURCE_SWITCH)
         {
@@ -813,6 +815,21 @@ namespace winrt::MediaPlayer::implementation
 
             double diff = m_CurFrame.StartTime - frameStartTime;
             long long timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
+
+            OutputDebugString(L"VideoRender: timestamp diff = ");
+            OutputDebugString(to_hstring(timestampDiff).c_str());
+            OutputDebugString(L"ms, delta = ");
+            OutputDebugString(to_hstring(deltaTime.count()).c_str());
+            OutputDebugString(L"ns, frame start time = ");
+            OutputDebugString(to_hstring(frameStartTime).c_str());
+            OutputDebugString(L"s, current frame start time = ");
+            OutputDebugString(to_hstring(m_CurFrame.StartTime).c_str());
+            OutputDebugString(L"s, current audio sample start time = ");
+            OutputDebugString(to_hstring(m_CurAudioSample.StartTime).c_str());
+            OutputDebugString(L"s, diff = ");
+            OutputDebugString(to_hstring(diff).c_str());
+            OutputDebugString(L"\n");
+
             if (timestampDiff > 800)
             {
                 deltaTime = std::chrono::duration<long long, std::nano>(0);
@@ -822,9 +839,6 @@ namespace winrt::MediaPlayer::implementation
             }
             if (timestampDiff > 0 && m_LastAudioSampleTime.time_since_epoch().count() != 0)
             {
-                OutputDebugString(L"VideoRender: Sleeping for ");
-                OutputDebugString(to_hstring(timestampDiff).c_str());
-                OutputDebugString(L"ms\n");
                 std::this_thread::sleep_for(std::chrono::milliseconds(timestampDiff));
             }
 
@@ -948,6 +962,7 @@ namespace winrt::MediaPlayer::implementation
     {
         m_UIDispatcherQueue.TryEnqueue([&]()
         {
+            OutputDebugString(L"END\n");
             Next();
         });
     }
