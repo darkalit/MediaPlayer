@@ -254,11 +254,21 @@ namespace winrt::MediaPlayer::implementation
         com_ptr<IWICStream> stream;
         check_hresult(wicFactory->CreateStream(stream.put()));
 
-        Windows::Storage::StorageFolder folder = Windows::ApplicationModel::Package::Current().InstalledLocation();
+        hstring directory;
+        std::wstring pathStr = Metadata().Path.c_str();
+        size_t sepPos = pathStr.find_last_of(L"\\/");
+        if (sepPos != std::wstring::npos)
+        {
+            directory = pathStr.substr(0, sepPos);
+        }
+        else
+        {
+            directory = Metadata().Path;
+        }
 
         hstring pos = to_hstring(round(static_cast<double>(Position()) / 10.0) / 100.0);
         hstring time = to_hstring(clock::now().time_since_epoch().count());
-        hstring path = folder.Path() + L"\\snapshot_" + Metadata().Title + L"_" + pos + L"_" + time + L".png";
+        hstring path = directory + L"\\snapshot_" + Metadata().Title + L"_" + pos + L"_" + time + L".png";
 
         check_hresult(stream->InitializeFromFilename(path.c_str(), GENERIC_WRITE));
         check_hresult(encoder->Initialize(stream.get(), WICBitmapEncoderNoCache));
@@ -340,6 +350,16 @@ namespace winrt::MediaPlayer::implementation
 
         check_hresult(frame->Commit());
         check_hresult(encoder->Commit());
+    }
+
+    void PlayerService::RecordSegment(uint64_t start, uint64_t end)
+    {
+        if (start > end || end > Metadata().Duration)
+        {
+            return;
+        }
+
+        FfmpegDecoder::RecordSegment(Metadata().Path, start, end);
     }
 
     void PlayerService::Next()

@@ -35,6 +35,7 @@ namespace winrt::MediaPlayer::implementation
         int32_t GetMediaIndexById(guid const& id);
 
         void CreateSnapshot();
+        void RecordSegment(uint64_t start, uint64_t end);
         void Next();
         void Prev();
         void StartByIndex(int32_t index);

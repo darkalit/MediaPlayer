@@ -535,6 +535,143 @@ void FfmpegDecoder::Seek(uint64_t time)
     }
 }
 
+void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start, uint64_t end)
+{
+    AVFormatContext* inContext = nullptr;
+    int error = avformat_open_input(&inContext, to_string(filepath).c_str(), nullptr, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::RecordSegment avformat_open_input");
+        return;
+    }
+    defer{ avformat_close_input(&inContext); };
+
+    error = avformat_find_stream_info(inContext, nullptr);
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::RecordSegment avformat_find_stream_info");
+        return;
+    }
+
+    int videoStreamId = av_find_best_stream(inContext, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+    int audioStreamId = av_find_best_stream(inContext, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+
+    int64_t startPts = start / 1000.0f * AV_TIME_BASE;
+    error = av_seek_frame(inContext, -1, startPts, AVSEEK_FLAG_BACKWARD);
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::RecordSegment av_seek_frame");
+        return;
+    }
+    avformat_flush(inContext);
+
+    std::string outFilename = to_string(filepath) + "_" + std::to_string(start / 1000.0f) + "-" + std::to_string(end / 1000.0f) + ".mp4";
+    AVFormatContext* outContext = nullptr;
+    error = avformat_alloc_output_context2(&outContext, nullptr, nullptr, outFilename.c_str());
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::RecordSegment avformat_alloc_output_context2");
+        return;
+    }
+    defer{ avformat_free_context(outContext); };
+
+    std::vector<int> streamMapping(inContext->nb_streams);
+
+    for (int i = 0, streamIndex = 0; i < inContext->nb_streams; ++i)
+    {
+        AVStream* inStream = inContext->streams[i];
+        if (inStream->codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
+            inStream->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
+        {
+            streamMapping[i] = -1;
+            continue;
+        }
+
+        streamMapping[i] = streamIndex++;
+
+        AVStream* outStream = avformat_new_stream(outContext, nullptr);
+        if (!outStream)
+        {
+            OutputDebugString(L"FfmpegDecoder::RecordSegment avformat_new_stream");
+            return;
+        }
+
+        error = avcodec_parameters_copy(outStream->codecpar, inStream->codecpar);
+        if (error < 0)
+        {
+            OutputDebugString(L"FfmpegDecoder::RecordSegment avcodec_parameters_copy");
+            return;
+        }
+
+        outStream->time_base = inStream->time_base;
+    }
+
+    if (!(outContext->oformat->flags & AVFMT_NOFILE))
+    {
+        error = avio_open(&outContext->pb, outFilename.c_str(), AVIO_FLAG_WRITE);
+        if (error < 0)
+        {
+            OutputDebugString(L"FfmpegDecoder::RecordSegment avio_open");
+            return;
+        }
+    }
+    defer{
+        if (!(outContext->oformat->flags & AVFMT_NOFILE))
+            avio_closep(&outContext->pb);
+    };
+
+    error = avformat_write_header(outContext, nullptr);
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::RecordSegment avformat_write_header");
+        return;
+    }
+    defer{ av_write_trailer(outContext); };
+
+    int64_t endPts = end / 1000.0f * AV_TIME_BASE;
+    AVPacket packet;
+    std::unordered_map<int, int64_t> firstPtsMap;
+    while (av_read_frame(inContext, &packet) >= 0)
+    {
+        defer{ av_packet_unref(&packet); };
+        int inStreamIndex = packet.stream_index;
+        if (inStreamIndex < 0 || inStreamIndex >= streamMapping.size() || streamMapping[inStreamIndex] < 0)
+        {
+            continue;
+        }
+
+        AVStream* inStream = inContext->streams[inStreamIndex];
+        AVStream* outStream = outContext->streams[streamMapping[inStreamIndex]];
+
+        int64_t packetTime = av_rescale_q(packet.pts, inStream->time_base, AVRational{ 1, AV_TIME_BASE });
+        if (packetTime < startPts || packetTime > endPts)
+        {
+            continue;
+        }
+
+        if (firstPtsMap.find(inStreamIndex) == firstPtsMap.end())
+        {
+            firstPtsMap[inStreamIndex] = packet.pts;
+        }
+        int64_t offset = firstPtsMap[inStreamIndex];
+
+        packet.pts -= offset;
+        packet.dts -= offset;
+
+        packet.pts = av_rescale_q_rnd(packet.pts, inStream->time_base, outStream->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+        packet.dts = av_rescale_q_rnd(packet.dts, inStream->time_base, outStream->time_base, (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+        packet.duration = av_rescale_q(packet.duration, inStream->time_base, outStream->time_base);
+        packet.pos = -1;
+        packet.stream_index = streamMapping[inStreamIndex];
+
+        if (av_interleaved_write_frame(outContext, &packet) < 0)
+        {
+            OutputDebugString(L"FfmpegDecoder::RecordSegment av_interleaved_write_frame");
+            break;
+        }
+    }
+}
+
 void FfmpegDecoder::GetSubtitles(AVFormatContext* formatContext)
 {
     for (unsigned int i = 0; i < formatContext->nb_streams; ++i)
