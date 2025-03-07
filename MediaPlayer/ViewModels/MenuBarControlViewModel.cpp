@@ -120,6 +120,19 @@ namespace winrt::MediaPlayer::implementation
             auto file = co_await filePicker.PickSingleFileAsync();
             m_PlayerService.SetSubtitleFromFile(file.Path());
         });
+
+        m_OpenRecorderWindowCommand = make<DelegateCommand>([&](auto&&)
+        {
+            if (!m_RecorderWindow)
+            {
+                m_RecorderWindow = make<implementation::RecorderWindow>();
+                m_RecorderWindow.Closed([this](auto&&, auto&&) {
+                    m_RecorderWindow = nullptr;
+                });
+            }
+
+            m_RecorderWindow.Activate();
+        });
     }
 
     winrt::Windows::Foundation::Collections::IObservableVector<SubtitleStream> MenuBarControlViewModel::SubTracks()
@@ -159,5 +172,10 @@ namespace winrt::MediaPlayer::implementation
     Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::OpenSubtitle()
     {
         return m_OpenSubtitleCommand;
+    }
+
+    Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::OpenRecorderWindow()
+    {
+        return m_OpenRecorderWindowCommand;
     }
 }

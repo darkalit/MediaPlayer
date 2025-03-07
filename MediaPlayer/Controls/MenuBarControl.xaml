@@ -32,6 +32,7 @@
         </MenuBarItem>
         <MenuBarItem Title="Video">
             <MenuFlyoutItem Command="{x:Bind ViewModel.CreateSnapshotFile}" Text="Create snapshot file"/>
+            <MenuFlyoutItem Command="{x:Bind ViewModel.OpenRecorderWindow}" Text="Record segment"/>
         </MenuBarItem>
         <MenuBarItem Title="Subtitle">
             <MenuFlyoutItem Icon="OpenFile" Text="From file..." Command="{x:Bind ViewModel.OpenSubtitle}"/>

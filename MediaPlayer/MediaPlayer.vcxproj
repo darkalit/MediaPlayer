@@ -200,6 +200,9 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     </ClInclude>
     <ClInclude Include="Pages\PlaylistPage.xaml.h">
       <DependentUpon>Pages\PlaylistPage.xaml</DependentUpon>
+    </ClInclude>
+    <ClInclude Include="Pages\RecorderWindow.xaml.h">
+      <DependentUpon>Pages\RecorderWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClInclude>
     <ClInclude Include="pch.h" />
@@ -215,6 +218,7 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <ClInclude Include="ViewModels\MainPageViewModel.h" />
     <ClInclude Include="ViewModels\MenuBarControlViewModel.h" />
     <ClInclude Include="ViewModels\PlaylistViewModel.h" />
+    <ClInclude Include="ViewModels\RecorderViewModel.h" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml" />
@@ -225,7 +229,8 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <Page Include="Pages\MainPage.xaml">
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Pages\PlaylistPage.xaml">
+    <Page Include="Pages\PlaylistPage.xaml" />
+    <Page Include="Pages\RecorderWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
@@ -257,6 +262,9 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     </ClCompile>
     <ClCompile Include="Pages\PlaylistPage.xaml.cpp">
       <DependentUpon>Pages\PlaylistPage.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="Pages\RecorderWindow.xaml.cpp">
+      <DependentUpon>Pages\RecorderWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClCompile>
     <ClCompile Include="pch.cpp">
@@ -275,6 +283,7 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <ClCompile Include="ViewModels\MainPageViewModel.cpp" />
     <ClCompile Include="ViewModels\MenuBarControlViewModel.cpp" />
     <ClCompile Include="ViewModels\PlaylistViewModel.cpp" />
+    <ClCompile Include="ViewModels\RecorderViewModel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="Controls\MenuBarControl.idl">
@@ -295,16 +304,18 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Midl>
-    <Midl Include="Pages\PlaylistPage.idl">
-      <DependentUpon>Pages\PlaylistPage.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Midl>
     <Midl Include="Converters\DurationToStringConverter.idl" />
     <Midl Include="Models\MediaMetadata.idl" />
+    <Midl Include="Pages\PlaylistPage.idl" />
+    <Midl Include="Pages\RecorderWindow.idl">
+      <DependentUpon>Pages\RecorderWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
     <Midl Include="Services\PlayerService.idl" />
     <Midl Include="ViewModels\MenuBarControlViewModel.idl" />
     <Midl Include="ViewModels\MainPageViewModel.idl" />
     <Midl Include="ViewModels\PlaylistViewModel.idl" />
+    <Midl Include="ViewModels\RecorderViewModel.idl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\LeftSkipIcon.png" />

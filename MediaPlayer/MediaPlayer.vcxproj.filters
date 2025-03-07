@@ -8,11 +8,14 @@
     <Page Include="Pages\MainPage.xaml">
       <Filter>Pages</Filter>
     </Page>
+    <Page Include="Controls\MenuBarControl.xaml">
+      <Filter>Controls</Filter>
+    </Page>
     <Page Include="Pages\PlaylistPage.xaml">
       <Filter>Pages</Filter>
     </Page>
-    <Page Include="Controls\MenuBarControl.xaml">
-      <Filter>Controls</Filter>
+    <Page Include="Pages\RecorderWindow.xaml">
+      <Filter>Pages</Filter>
     </Page>
   </ItemGroup>
   <ItemGroup>
@@ -52,6 +55,12 @@
     </Midl>
     <Midl Include="Models\SubtitleStream.idl">
       <Filter>Media</Filter>
+    </Midl>
+    <Midl Include="Pages\PlaylistPage.idl">
+      <Filter>Pages</Filter>
+    </Midl>
+    <Midl Include="ViewModels\RecorderViewModel.idl">
+      <Filter>ViewModels</Filter>
     </Midl>
   </ItemGroup>
   <ItemGroup>
@@ -123,6 +132,9 @@
     </ClCompile>
     <ClCompile Include="Media\XAudioStreamCallback.cpp">
       <Filter>Media</Filter>
+    </ClCompile>
+    <ClCompile Include="ViewModels\RecorderViewModel.cpp">
+      <Filter>ViewModels</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -196,6 +208,9 @@
     </ClInclude>
     <ClInclude Include="Media\MediaConfig.h">
       <Filter>Media</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewModels\RecorderViewModel.h">
+      <Filter>ViewModels</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

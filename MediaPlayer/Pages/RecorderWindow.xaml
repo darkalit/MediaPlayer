@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="MediaPlayer.RecorderWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:MediaPlayer"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="RecorderWindow">
+
+    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <TextBlock
+            Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+            Foreground="Red"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <NumberBox
+                SpinButtonPlacementMode="Compact"
+                Value="{x:Bind ViewModel.HoursStart, Mode=TwoWay}"
+                Minimum="0"/>
+            <NumberBox
+                SpinButtonPlacementMode="Compact"
+                Value="{x:Bind ViewModel.MinutesStart, Mode=TwoWay}"
+                Minimum="0"
+                Maximum="59"/>
+            <NumberBox
+                SpinButtonPlacementMode="Compact"
+                Value="{x:Bind ViewModel.SecondsStart, Mode=TwoWay}"
+                Minimum="0"
+                Maximum="59"/>
+
+            <Button
+                Content="Record"
+                Command="{x:Bind ViewModel.Record}"/>
+
+            <NumberBox
+                SpinButtonPlacementMode="Compact"
+                Value="{x:Bind ViewModel.HoursEnd, Mode=TwoWay}"
+                Minimum="0"/>
+            <NumberBox
+                SpinButtonPlacementMode="Compact"
+                Value="{x:Bind ViewModel.MinutesEnd, Mode=TwoWay}"
+                Minimum="0"
+                Maximum="59"/>
+            <NumberBox
+                SpinButtonPlacementMode="Compact"
+                Value="{x:Bind ViewModel.SecondsEnd, Mode=TwoWay}"
+                Minimum="0"
+                Maximum="59"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

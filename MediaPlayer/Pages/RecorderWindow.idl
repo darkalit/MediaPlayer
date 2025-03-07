@@ -1,0 +1,11 @@
+import "ViewModels/RecorderViewModel.idl";
+
+namespace MediaPlayer
+{
+    [default_interface]
+    runtimeclass RecorderWindow : Microsoft.UI.Xaml.Window
+    {
+        RecorderWindow();
+        RecorderViewModel ViewModel{ get; };
+    }
+}

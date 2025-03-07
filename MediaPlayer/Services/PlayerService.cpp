@@ -354,7 +354,7 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::RecordSegment(uint64_t start, uint64_t end)
     {
-        if (start > end || end > Metadata().Duration)
+        if (!HasSource() || start > end || end > Metadata().Duration)
         {
             return;
         }

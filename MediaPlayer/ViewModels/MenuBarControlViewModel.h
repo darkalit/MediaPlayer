@@ -3,6 +3,7 @@
 #include "Framework/BindableBase.h"
 #include "Framework/DelegateCommand.h"
 #include "Services/PlayerService.h"
+#include "Pages/RecorderWindow.xaml.h"
 
 namespace winrt::MediaPlayer::implementation
 {
@@ -19,6 +20,7 @@ namespace winrt::MediaPlayer::implementation
         Microsoft::UI::Xaml::Input::ICommand Exit();
         Microsoft::UI::Xaml::Input::ICommand OpenFiles();
         Microsoft::UI::Xaml::Input::ICommand OpenSubtitle();
+        Microsoft::UI::Xaml::Input::ICommand OpenRecorderWindow();
 
     private:
         MediaPlayer::PlayerService m_PlayerService;
@@ -29,6 +31,9 @@ namespace winrt::MediaPlayer::implementation
         MediaPlayer::DelegateCommand m_ExitCommand = nullptr;
         MediaPlayer::DelegateCommand m_OpenFilesCommand = nullptr;
         MediaPlayer::DelegateCommand m_OpenSubtitleCommand = nullptr;
+        MediaPlayer::DelegateCommand m_OpenRecorderWindowCommand = nullptr;
+
+        MediaPlayer::RecorderWindow m_RecorderWindow = nullptr;
     };
 }
 namespace winrt::MediaPlayer::factory_implementation
