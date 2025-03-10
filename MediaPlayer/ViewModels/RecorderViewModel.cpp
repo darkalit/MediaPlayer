@@ -14,11 +14,10 @@ namespace winrt::MediaPlayer::implementation
     RecorderViewModel::RecorderViewModel()
         : m_PlayerService(App::GetPlayerService())
     {
-
-        m_RecordSegmentCommand = make<DelegateCommand>([&](auto&&)
+        m_RecordSegmentCommand = make<DelegateCommand>([this](auto&&)
         {
-            uint64_t millisStart = ((HoursStart() * 60 + MinutesStart()) * 60 + SecondsStart()) * 1000;
-            uint64_t millisEnd = ((HoursEnd() * 60 + MinutesEnd()) * 60 + SecondsEnd()) * 1000;
+            uint64_t millisStart = ((m_HoursStart * 60 + m_MinutesStart) * 60 + m_SecondsStart) * 1000;
+            uint64_t millisEnd = ((m_HoursEnd * 60 + m_MinutesEnd) * 60 + m_SecondsEnd) * 1000;
 
             if (millisStart == millisEnd)
             {

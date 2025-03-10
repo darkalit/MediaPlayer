@@ -9,7 +9,7 @@
     mc:Ignorable="d"
     Title="RecorderWindow">
 
-    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <StackPanel x:Name="RootControl" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
         <TextBlock
             Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
             Foreground="Red"/>
