@@ -76,6 +76,11 @@ namespace winrt::MediaPlayer::implementation
         });
     }
 
+    hstring MainPageViewModel::Path()
+    {
+        return m_PlayerService.Metadata().Path;
+    }
+
     hstring MainPageViewModel::Title()
     {
         auto title = m_PlayerService.Metadata().Title;

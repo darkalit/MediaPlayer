@@ -16,7 +16,7 @@
         <KeyboardAccelerator Key="Right" Invoked="Right_Invoked"/>
     </Page.KeyboardAccelerators>
 
-    <Grid>
+    <Grid x:Name="LayoutRoot">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -34,6 +34,13 @@
                            VerticalAlignment="Center"
                            Margin="10,0,0,0"
                            Grid.Column="0"/>
+                <Popup x:Name="PreviewPopup" IsLightDismissEnabled="False">
+                    <Border Background="Black" CornerRadius="4" Padding="5">
+                        <StackPanel>
+                            <TextBlock x:Name="PreviewTimeText"  Text="WWW"/>
+                        </StackPanel>
+                    </Border>
+                </Popup>
                 <Slider x:Name="Slider_Timeline"
                         Minimum="0.0"
                         Maximum="{x:Bind ViewModel.DurationValue, Mode=OneWay}"
@@ -41,6 +48,9 @@
                         IsEnabled="{x:Bind ViewModel.ControlsEnabled, Mode=OneWay}"
                         PointerPressed="Slider_Timeline_PointerPressed"
                         PointerReleased="Slider_Timeline_PointerReleased"
+                        PointerEntered="Slider_Timeline_PointerEntered"
+                        PointerMoved="Slider_Timeline_PointerMoved"
+                        PointerExited="Slider_Timeline_PointerExited"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Center"
                         Margin="10,0,10,0"

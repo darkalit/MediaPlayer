@@ -93,6 +93,7 @@ public:
     std::vector<winrt::MediaPlayer::SubtitleStream>& GetSubtitleStreams();
     void Seek(uint64_t time); // in milliseconds
     static void RecordSegment(winrt::hstring const& filepath, uint64_t start, uint64_t end);
+    static VideoFrame GetFrame(winrt::hstring const& filepath, uint64_t pos);
 
 private:
     void GetSubtitles(AVFormatContext* formatContext);

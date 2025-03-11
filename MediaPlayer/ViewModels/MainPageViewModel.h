@@ -10,6 +10,7 @@ namespace winrt::MediaPlayer::implementation
     {
         MainPageViewModel();
 
+        hstring Path();
         hstring Title();
         hstring AuthorAlbum();
         hstring VolumeText();

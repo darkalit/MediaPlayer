@@ -672,6 +672,137 @@ void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start
     }
 }
 
+VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos)
+{
+    AVFormatContext* context = nullptr;
+    int error = avformat_open_input(&context, to_string(filepath).c_str(), nullptr, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::GetFrame avformat_open_input");
+        return {};
+    }
+    defer{ avformat_close_input(&context); };
+
+    error = avformat_find_stream_info(context, nullptr);
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::GetFrame avformat_find_stream_info");
+        return {};
+    }
+
+    int videoStreamId = av_find_best_stream(context, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+
+    int64_t startPts = pos / 1000.0f * AV_TIME_BASE;
+    error = av_seek_frame(context, -1, startPts, AVSEEK_FLAG_BACKWARD);
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::GetFrame av_seek_frame");
+        return {};
+    }
+    avformat_flush(context);
+
+    auto codecPar = context->streams[videoStreamId]->codecpar;
+    auto codec = avcodec_find_decoder(codecPar->codec_id);
+    if (!codec)
+    {
+        OutputDebugString(L"FfmpegDecoder::GetFrame avcodec_find_decoder");
+        return {};
+    }
+
+    auto codecContext = avcodec_alloc_context3(codec);
+    if (!codecContext)
+    {
+        OutputDebugString(L"FfmpegDecoder::GetFrame avcodec_alloc_context3");
+        return {};
+    }
+    defer{ avcodec_free_context(&codecContext); };
+
+    auto frame = av_frame_alloc();
+    defer{ av_frame_free(&frame); };
+
+    auto packet = av_packet_alloc();
+    defer{ av_packet_free(&packet); };
+
+    bool gotFrame = false;
+    while (av_read_frame(context, packet) >= 0)
+    {
+        defer{ av_packet_unref(packet); };
+        if (packet->stream_index != videoStreamId) continue;
+
+        error = avcodec_send_packet(codecContext, packet);
+        if (error < 0) continue;
+
+        error = avcodec_receive_frame(codecContext, frame);
+        if (error < 0) continue;
+
+        gotFrame = true;
+        break;
+    }
+
+    if (!gotFrame)
+    {
+        return {};
+    }
+
+    int targetHeight = 480;
+    int targetWidth = codecContext->width * targetHeight / codecContext->height;
+
+    auto swsContext = sws_getContext(
+        codecContext->width,
+        codecContext->height,
+        codecContext->pix_fmt,
+        targetWidth,
+        targetHeight,
+        AV_PIX_FMT_RGBA, SWS_BILINEAR,
+        nullptr,
+        nullptr,
+        nullptr);
+
+    if (!swsContext)
+    {
+        OutputDebugString(L"FfmpegDecoder::GetFrame sws_getContext");
+        return {};
+    }
+
+    auto dstFrame = av_frame_alloc();
+    defer{ av_frame_free(&dstFrame); };
+
+    uint8_t* data[4];
+    int linesize[4];
+
+    error = av_image_alloc(
+        data,
+        linesize,
+        targetWidth,
+        targetHeight,
+        AV_PIX_FMT_RGBA,
+        1);
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::GetFrame av_image_alloc");
+        return {};
+    }
+    defer{ av_freep(&data[0]); };
+
+    sws_scale(
+        swsContext,
+        frame->data,
+        frame->linesize,
+        0,
+        codecContext->height,
+        data,
+        linesize);
+
+    VideoFrame outFrame;
+    outFrame.Width = targetWidth;
+    outFrame.Height = targetWidth;
+    outFrame.Buffer.assign(data[0], data[0] + linesize[0] * outFrame.Height);
+    outFrame.RowPitch = linesize[0];
+    outFrame.StartTime = 0;
+
+    return outFrame;
+}
+
 void FfmpegDecoder::GetSubtitles(AVFormatContext* formatContext)
 {
     for (unsigned int i = 0; i < formatContext->nb_streams; ++i)

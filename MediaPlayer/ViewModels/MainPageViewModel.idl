@@ -9,6 +9,7 @@ namespace MediaPlayer
     unsealed runtimeclass MainPageViewModel : BindableBase
     {
         MainPageViewModel();
+        String Path{ get; };
         String Title{ get; };
         String AuthorAlbum{ get; };
         String VolumeText{ get; };

@@ -4,7 +4,13 @@
 #include "MainPage.g.cpp"
 #endif
 
+#include <stdlib.h>
+
+#include "winrt/Microsoft.UI.Input.h"
+
 #include "App.xaml.h"
+#include "Utils.h"
+#include "Media/FfmpegDecoder.h"
 
 using namespace winrt;
 using namespace Microsoft::UI;
@@ -85,6 +91,37 @@ namespace winrt::MediaPlayer::implementation
     void MainPage::Slider_Timeline_PointerPressed(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
     {
         ViewModel().Pause().Execute(IInspectable());
+    }
+
+    void MainPage::Slider_Timeline_PointerEntered(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const&)
+    {
+        PreviewPopup().IsOpen(true);
+    }
+
+    void MainPage::Slider_Timeline_PointerMoved(Windows::Foundation::IInspectable const& sender, PointerRoutedEventArgs const& e)
+    {
+        auto slider = sender.as<Controls::Slider>();
+        Point point = e.GetCurrentPoint(slider).Position();
+
+        double relativePosition = point.X / slider.ActualWidth();
+        double sliderValue = slider.Minimum() + (slider.Maximum() - slider.Minimum()) * relativePosition;
+
+        PreviewTimeText().Text(Utils::DurationToString(sliderValue * 1000.0f));
+
+        auto transform = slider.TransformToVisual(LayoutRoot());
+        auto screenPoint = transform.TransformPoint(point);
+
+        double offsetX = screenPoint.X - PreviewPopup().ActualWidth() / 2;
+
+        PreviewPopup().HorizontalOffset(offsetX);
+        PreviewPopup().VerticalOffset(point.Y - PreviewPopup().ActualHeight() - 5);
+
+        FfmpegDecoder::GetFrame(ViewModel().Path(), sliderValue * 1000.0f);
+    }
+
+    void MainPage::Slider_Timeline_PointerExited(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const& e)
+    {
+        PreviewPopup().IsOpen(false);
     }
 
     MediaPlayer::MainPageViewModel MainPage::ViewModel()
