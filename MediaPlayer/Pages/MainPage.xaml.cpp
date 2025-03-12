@@ -7,6 +7,9 @@
 #include <stdlib.h>
 
 #include "winrt/Microsoft.UI.Input.h"
+#include "winrt/Windows.Storage.Streams.h"
+#include "winrt/Windows.Graphics.Imaging.h"
+#include "winrt/Windows.UI.Xaml.Media.Imaging.h"
 
 #include "App.xaml.h"
 #include "Utils.h"
@@ -98,25 +101,62 @@ namespace winrt::MediaPlayer::implementation
         PreviewPopup().IsOpen(true);
     }
 
-    void MainPage::Slider_Timeline_PointerMoved(Windows::Foundation::IInspectable const& sender, PointerRoutedEventArgs const& e)
+    fire_and_forget MainPage::Slider_Timeline_PointerMoved(Windows::Foundation::IInspectable const& sender, PointerRoutedEventArgs const& e)
     {
+        static double lastSliderValue = 0.0;
+        int imageHeight = 120;
+
         auto slider = sender.as<Controls::Slider>();
         Point point = e.GetCurrentPoint(slider).Position();
 
         double relativePosition = point.X / slider.ActualWidth();
         double sliderValue = slider.Minimum() + (slider.Maximum() - slider.Minimum()) * relativePosition;
 
-        PreviewTimeText().Text(Utils::DurationToString(sliderValue * 1000.0f));
+        PreviewTimeText().Text(Utils::DurationToString(sliderValue * 1000));
 
         auto transform = slider.TransformToVisual(LayoutRoot());
         auto screenPoint = transform.TransformPoint(point);
 
-        double offsetX = screenPoint.X - PreviewPopup().ActualWidth() / 2;
+        double offsetX = screenPoint.X - PreviewPopup().ActualWidth();
 
         PreviewPopup().HorizontalOffset(offsetX);
-        PreviewPopup().VerticalOffset(point.Y - PreviewPopup().ActualHeight() - 5);
+        PreviewPopup().VerticalOffset(point.Y - PreviewPopup().ActualHeight() - imageHeight - 10);
 
-        FfmpegDecoder::GetFrame(ViewModel().Path(), sliderValue * 1000.0f);
+        if (abs(sliderValue - lastSliderValue) < 1.0)
+        {
+            co_return;
+        }
+        lastSliderValue = sliderValue;
+
+        auto frame = FfmpegDecoder::GetFrame(ViewModel().Path(), sliderValue * 1000, imageHeight);
+
+        if (frame.Buffer.empty())
+        {
+            OutputDebugString(L"MainPage::Slider_Timeline_PointerMoved GetFrame");
+            co_return;
+        }
+
+        auto memoryStream = Windows::Storage::Streams::InMemoryRandomAccessStream();
+        auto encoder = co_await Windows::Graphics::Imaging::BitmapEncoder::CreateAsync(
+            Windows::Graphics::Imaging::BitmapEncoder::PngEncoderId(), memoryStream
+        );
+
+        encoder.SetPixelData(
+            Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8,
+            Windows::Graphics::Imaging::BitmapAlphaMode::Premultiplied,
+            frame.Width,
+            frame.Height,
+            96.0,
+            96.0,
+            array_view<const uint8_t>(frame.Buffer.data(), frame.Buffer.data() + frame.Buffer.size())
+        );
+        co_await encoder.FlushAsync();
+        memoryStream.Seek(0);
+
+        auto bitmap = Media::Imaging::WriteableBitmap(frame.Width, frame.Height);
+        bitmap.SetSource(memoryStream);
+
+        PreviewImage().Source(bitmap);
     }
 
     void MainPage::Slider_Timeline_PointerExited(Windows::Foundation::IInspectable const&, PointerRoutedEventArgs const& e)

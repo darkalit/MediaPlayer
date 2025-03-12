@@ -672,7 +672,7 @@ void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start
     }
 }
 
-VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos)
+VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos, int height)
 {
     AVFormatContext* context = nullptr;
     int error = avformat_open_input(&context, to_string(filepath).c_str(), nullptr, nullptr);
@@ -717,6 +717,20 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos)
     }
     defer{ avcodec_free_context(&codecContext); };
 
+    error = avcodec_parameters_to_context(codecContext, codecPar);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::GetFrame avcodec_parameters_to_context");
+        return {};
+    }
+
+    error = avcodec_open2(codecContext, codec, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::GetFrame avcodec_open2");
+        return {};
+    }
+
     auto frame = av_frame_alloc();
     defer{ av_frame_free(&frame); };
 
@@ -730,6 +744,18 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos)
         if (packet->stream_index != videoStreamId) continue;
 
         error = avcodec_send_packet(codecContext, packet);
+        if (error == AVERROR(EAGAIN))
+        {
+            OutputDebugString(L"AVERROR(EAGAIN)");
+        }
+        if (error == AVERROR_EOF)
+        {
+            OutputDebugString(L"AVERROR_EOF");
+        }
+        if (error == AVERROR(EINVAL))
+        {
+            OutputDebugString(L"AVERROR(EINVAL)");
+        }
         if (error < 0) continue;
 
         error = avcodec_receive_frame(codecContext, frame);
@@ -744,7 +770,7 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos)
         return {};
     }
 
-    int targetHeight = 480;
+    int targetHeight = max(height, 0);
     int targetWidth = codecContext->width * targetHeight / codecContext->height;
 
     auto swsContext = sws_getContext(
@@ -753,7 +779,7 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos)
         codecContext->pix_fmt,
         targetWidth,
         targetHeight,
-        AV_PIX_FMT_RGBA, SWS_BILINEAR,
+        AV_PIX_FMT_BGRA, SWS_BILINEAR,
         nullptr,
         nullptr,
         nullptr);
@@ -775,7 +801,7 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos)
         linesize,
         targetWidth,
         targetHeight,
-        AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_BGRA,
         1);
     if (error < 0)
     {
@@ -795,7 +821,7 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos)
 
     VideoFrame outFrame;
     outFrame.Width = targetWidth;
-    outFrame.Height = targetWidth;
+    outFrame.Height = targetHeight;
     outFrame.Buffer.assign(data[0], data[0] + linesize[0] * outFrame.Height);
     outFrame.RowPitch = linesize[0];
     outFrame.StartTime = 0;

@@ -18,13 +18,13 @@ namespace winrt::MediaPlayer::implementation
         void Slider_Timeline_PointerReleased(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const&);
         void Slider_Timeline_PointerPressed(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const&);
         void Slider_Timeline_PointerEntered(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const&);
-        void Slider_Timeline_PointerMoved(Windows::Foundation::IInspectable const& sender, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e);
+        fire_and_forget Slider_Timeline_PointerMoved(Windows::Foundation::IInspectable const& sender, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const& e);
         void Slider_Timeline_PointerExited(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::Input::PointerRoutedEventArgs const&);
 
         MediaPlayer::MainPageViewModel ViewModel();
 
     private:
-        MediaPlayer::MainPageViewModel m_ViewModel = nullptr;        
+        MediaPlayer::MainPageViewModel m_ViewModel = nullptr;
     };
 }
 

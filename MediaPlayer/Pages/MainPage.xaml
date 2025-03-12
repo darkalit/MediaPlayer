@@ -37,7 +37,8 @@
                 <Popup x:Name="PreviewPopup" IsLightDismissEnabled="False">
                     <Border Background="Black" CornerRadius="4" Padding="5">
                         <StackPanel>
-                            <TextBlock x:Name="PreviewTimeText"  Text="WWW"/>
+                            <Image x:Name="PreviewImage"/>
+                            <TextBlock x:Name="PreviewTimeText" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                 </Popup>
