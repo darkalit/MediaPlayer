@@ -28,5 +28,6 @@ namespace MediaPlayer
         Microsoft.UI.Xaml.Input.ICommand Pause{ get; };
         Microsoft.UI.Xaml.Input.ICommand Next{ get; };
         Microsoft.UI.Xaml.Input.ICommand Prev{ get; };
+        Microsoft.UI.Xaml.Input.ICommand PiPMode{ get; };
     }
 }

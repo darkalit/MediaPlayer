@@ -20,6 +20,9 @@ namespace winrt::MediaPlayer::implementation
         static MediaPlayer::PlayerService GetPlayerService();
         static std::shared_ptr<DeviceResources> GetDeviceResources();
         static HWND GetMainWindow();
+        static MediaPlayer::PiPWindow OpenPiPWindow();
+        static Microsoft::UI::Xaml::Window OpenMainWindow();
+        static void HideWindow(Microsoft::UI::Xaml::Window const& window, bool hide);
 
         template <typename T>
         static void Navigate();
@@ -29,6 +32,7 @@ namespace winrt::MediaPlayer::implementation
 
     private:
         static Microsoft::UI::Xaml::Window s_Window;
+        static MediaPlayer::PiPWindow s_PiPWindow;
         static std::shared_ptr<DeviceResources> s_DeviceResources;
     };
 

@@ -198,6 +198,10 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClInclude>
+    <ClInclude Include="Pages\PiPWindow.xaml.h">
+      <DependentUpon>Pages\PiPWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="Pages\PlaylistPage.xaml.h">
       <DependentUpon>Pages\PlaylistPage.xaml</DependentUpon>
     </ClInclude>
@@ -217,6 +221,7 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <ClInclude Include="Utils.h" />
     <ClInclude Include="ViewModels\MainPageViewModel.h" />
     <ClInclude Include="ViewModels\MenuBarControlViewModel.h" />
+    <ClInclude Include="ViewModels\PiPWindowViewModel.h" />
     <ClInclude Include="ViewModels\PlaylistViewModel.h" />
     <ClInclude Include="ViewModels\RecorderViewModel.h" />
   </ItemGroup>
@@ -227,6 +232,9 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     </Page>
     <Page Include="MainWindow.xaml" />
     <Page Include="Pages\MainPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Pages\PiPWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Pages\PlaylistPage.xaml" />
@@ -260,6 +268,10 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClCompile>
+    <ClCompile Include="Pages\PiPWindow.xaml.cpp">
+      <DependentUpon>Pages\PiPWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="Pages\PlaylistPage.xaml.cpp">
       <DependentUpon>Pages\PlaylistPage.xaml</DependentUpon>
     </ClCompile>
@@ -282,6 +294,7 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="ViewModels\MainPageViewModel.cpp" />
     <ClCompile Include="ViewModels\MenuBarControlViewModel.cpp" />
+    <ClCompile Include="ViewModels\PiPWindowViewModel.cpp" />
     <ClCompile Include="ViewModels\PlaylistViewModel.cpp" />
     <ClCompile Include="ViewModels\RecorderViewModel.cpp" />
   </ItemGroup>
@@ -306,6 +319,10 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     </Midl>
     <Midl Include="Converters\DurationToStringConverter.idl" />
     <Midl Include="Models\MediaMetadata.idl" />
+    <Midl Include="Pages\PiPWindow.idl">
+      <DependentUpon>Pages\PiPWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
     <Midl Include="Pages\PlaylistPage.idl" />
     <Midl Include="Pages\RecorderWindow.idl">
       <DependentUpon>Pages\RecorderWindow.xaml</DependentUpon>
@@ -314,6 +331,7 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <Midl Include="Services\PlayerService.idl" />
     <Midl Include="ViewModels\MenuBarControlViewModel.idl" />
     <Midl Include="ViewModels\MainPageViewModel.idl" />
+    <Midl Include="ViewModels\PiPWindowViewModel.idl" />
     <Midl Include="ViewModels\PlaylistViewModel.idl" />
     <Midl Include="ViewModels\RecorderViewModel.idl" />
   </ItemGroup>

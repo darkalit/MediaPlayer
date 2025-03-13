@@ -1,0 +1,12 @@
+import "ViewModels/PiPWindowViewModel.idl";
+
+namespace MediaPlayer
+{
+    [default_interface]
+    runtimeclass PiPWindow : Microsoft.UI.Xaml.Window
+    {
+        PiPWindow();
+
+        PiPWindowViewModel ViewModel{ get; };
+    }
+}

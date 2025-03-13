@@ -1,0 +1,16 @@
+import "Framework/BindableBase.idl";
+import "Framework/DelegateCommand.idl";
+import "Models/MediaMetadata.idl";
+
+namespace MediaPlayer
+{
+    [default_interface]
+    unsealed runtimeclass PiPWindowViewModel : BindableBase
+    {
+        PiPWindowViewModel();
+
+        String PlayPauseIconSource{ get; };
+
+        Microsoft.UI.Xaml.Input.ICommand DefaultMode{ get; };
+    }
+}

@@ -33,6 +33,7 @@ namespace winrt::MediaPlayer::implementation
         winrt::Microsoft::UI::Xaml::Input::ICommand Pause();
         winrt::Microsoft::UI::Xaml::Input::ICommand Next();
         winrt::Microsoft::UI::Xaml::Input::ICommand Prev();
+        winrt::Microsoft::UI::Xaml::Input::ICommand PiPMode();
 
     private:
         void ElapsedTimeHandler(Microsoft::UI::Dispatching::DispatcherQueueTimer const& sender, Windows::Foundation::IInspectable const& args);
@@ -51,6 +52,7 @@ namespace winrt::MediaPlayer::implementation
         MediaPlayer::DelegateCommand m_PauseCommand = nullptr;
         MediaPlayer::DelegateCommand m_NextCommand = nullptr;
         MediaPlayer::DelegateCommand m_PrevCommand = nullptr;
+        MediaPlayer::DelegateCommand m_PiPModeCommand = nullptr;
     };
 }
 namespace winrt::MediaPlayer::factory_implementation

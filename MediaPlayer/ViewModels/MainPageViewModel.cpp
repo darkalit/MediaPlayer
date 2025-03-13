@@ -74,6 +74,11 @@ namespace winrt::MediaPlayer::implementation
         {
             m_PlayerService.Prev();
         });
+
+        m_PiPModeCommand = make<DelegateCommand>([&](auto&&)
+        {
+           App::OpenPiPWindow();
+        });
     }
 
     hstring MainPageViewModel::Path()
@@ -215,6 +220,11 @@ namespace winrt::MediaPlayer::implementation
     Microsoft::UI::Xaml::Input::ICommand MainPageViewModel::Prev()
     {
         return m_PrevCommand;
+    }
+
+    Microsoft::UI::Xaml::Input::ICommand MainPageViewModel::PiPMode()
+    {
+        return m_PiPModeCommand;
     }
 
     void MainPageViewModel::ElapsedTimeHandler(Microsoft::UI::Dispatching::DispatcherQueueTimer const& sender, Windows::Foundation::IInspectable const& args)

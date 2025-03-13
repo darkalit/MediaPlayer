@@ -3,6 +3,8 @@
 
 #include "microsoft.ui.xaml.window.h"
 
+#include "Pages/PiPWindow.xaml.h"
+
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
 using namespace Microsoft::UI::Xaml::Controls;
@@ -10,6 +12,7 @@ using namespace Microsoft::UI::Xaml::Controls;
 namespace winrt::MediaPlayer::implementation
 {
     Window App::s_Window = nullptr;
+    MediaPlayer::PiPWindow App::s_PiPWindow = nullptr;
     std::shared_ptr<DeviceResources> App::s_DeviceResources = nullptr;
 
     App::App()
@@ -56,5 +59,39 @@ namespace winrt::MediaPlayer::implementation
         HWND hwnd = 0;
         windowNative->get_WindowHandle(&hwnd);
         return hwnd;
+    }
+
+    MediaPlayer::PiPWindow App::OpenPiPWindow()
+    {
+        if (!s_PiPWindow)
+        {
+            s_PiPWindow = make<implementation::PiPWindow>();
+            s_PiPWindow.Closed([&](auto&&, auto&&)
+            {
+                s_PiPWindow = nullptr;
+            });
+        }
+
+        s_PiPWindow.Activate();
+        HideWindow(s_Window, true);
+
+        return s_PiPWindow;
+    }
+
+    Microsoft::UI::Xaml::Window App::OpenMainWindow()
+    {
+        HideWindow(s_Window, false);
+        s_PiPWindow.Close();
+        return s_Window;
+    }
+
+    void App::HideWindow(Microsoft::UI::Xaml::Window const& window, bool hide)
+    {
+        auto windowNative = window.try_as<IWindowNative>();
+
+        HWND hwnd;
+        windowNative->get_WindowHandle(&hwnd);
+
+        ShowWindow(hwnd, hide ? SW_HIDE : SW_SHOW);
     }
 }
