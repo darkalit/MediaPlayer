@@ -26,4 +26,15 @@ namespace winrt::MediaPlayer::implementation
     {
         return m_ViewModel;
     }
+
+    void PiPWindow::OnLoad(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
+    {
+        ViewModel().SetSwapChain().Execute(SwapChainPanel_Video());
+        ViewModel().ResizeVideo().Execute(box_value(SwapChainPanel_Video().ActualSize()));
+    }
+
+    void PiPWindow::SwapChainPanel_Video_SizeChanged(Windows::Foundation::IInspectable const& sender, SizeChangedEventArgs const& e)
+    {
+        ViewModel().ResizeVideo().Execute(box_value(SwapChainPanel_Video().ActualSize()));
+    }
 }

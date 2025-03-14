@@ -11,6 +11,9 @@ namespace winrt::MediaPlayer::implementation
 
         MediaPlayer::PiPWindowViewModel ViewModel();
 
+        void OnLoad(Windows::Foundation::IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
+        void SwapChainPanel_Video_SizeChanged(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::SizeChangedEventArgs const& e);
+
     private:
         MediaPlayer::PiPWindowViewModel m_ViewModel = nullptr;
     };

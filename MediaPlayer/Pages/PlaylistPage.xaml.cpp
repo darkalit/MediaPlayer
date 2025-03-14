@@ -26,6 +26,7 @@ namespace winrt::MediaPlayer::implementation
     void PlaylistPage::OnLoad(Windows::Foundation::IInspectable const&, RoutedEventArgs const&)
     {
         m_ViewModel.SetSwapChain().Execute(SwapChainPanel_Video());
+        ViewModel().ResizeVideo().Execute(box_value(SwapChainPanel_Video().ActualSize()));
 
         Slider_Timeline().AddHandler(
             UIElement::PointerPressedEvent(),

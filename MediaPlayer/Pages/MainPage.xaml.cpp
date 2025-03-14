@@ -35,6 +35,7 @@ namespace winrt::MediaPlayer::implementation
         this->Focus(FocusState::Programmatic);
 
         ViewModel().SetSwapChain().Execute(SwapChainPanel_Video());
+        ViewModel().ResizeVideo().Execute(box_value(SwapChainPanel_Video().ActualSize()));
 
         Slider_Timeline().AddHandler(
             UIElement::PointerPressedEvent(),

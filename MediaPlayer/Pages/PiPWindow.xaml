@@ -9,23 +9,35 @@
     mc:Ignorable="d"
     Title="PiPWindow">
 
-    <Grid x:Name="LayoutRoot">
+    <Grid Loaded="OnLoad" x:Name="LayoutRoot">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <SwapChainPanel x:Name="SwapChainPanel_Video" Grid.Row="0"/>
-        <StackPanel Orientation="Horizontal" Spacing="10"  HorizontalAlignment="Center" Grid.Column="1">
-            <Button Content="Back" Command="{x:Bind ViewModel.DefaultMode}"/>
-            <Button>
-                <Button.Content>
-                    <Image>
-                        <Image.Source>
-                            <BitmapImage UriSource="{x:Bind ViewModel.PlayPauseIconSource, Mode=OneWay}" DecodePixelWidth="32"/>
-                        </Image.Source>
-                    </Image>
-                </Button.Content>
-            </Button>
-        </StackPanel>
+        <SwapChainPanel x:Name="SwapChainPanel_Video" SizeChanged="SwapChainPanel_Video_SizeChanged" Grid.Row="0"/>
+        <RelativePanel Grid.Row="1">
+            <StackPanel Orientation="Horizontal" Margin="10,10,10,10" RelativePanel.AlignLeftWithPanel="True">
+                <Button Command="{x:Bind ViewModel.DefaultMode}">
+                    <Button.Content>
+                        <Image>
+                            <Image.Source>
+                                <BitmapImage x:Name="BitmapImage_PipMode" UriSource="ms-appx:///Assets/PipModeIcon.png" DecodePixelWidth="24"/>
+                            </Image.Source>
+                        </Image>
+                    </Button.Content>
+                </Button>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="10,10,10,10" RelativePanel.AlignHorizontalCenterWithPanel="True">
+                <Button Command="{x:Bind ViewModel.PlayPause}" IsEnabled="{x:Bind ViewModel.ControlsEnabled}">
+                    <Button.Content>
+                        <Image>
+                            <Image.Source>
+                                <BitmapImage UriSource="{x:Bind ViewModel.PlayPauseIconSource, Mode=OneWay}" DecodePixelWidth="24"/>
+                            </Image.Source>
+                        </Image>
+                    </Button.Content>
+                </Button>
+            </StackPanel>
+        </RelativePanel>
     </Grid>
 </Window>

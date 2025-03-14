@@ -9,8 +9,12 @@ namespace MediaPlayer
     {
         PiPWindowViewModel();
 
-        String PlayPauseIconSource{ get; };
+        String PlayPauseIconSource;
+        Boolean ControlsEnabled{ get; };
 
+        Microsoft.UI.Xaml.Input.ICommand PlayPause{ get; };
+        Microsoft.UI.Xaml.Input.ICommand ResizeVideo{ get; };
+        Microsoft.UI.Xaml.Input.ICommand SetSwapChain{ get; };
         Microsoft.UI.Xaml.Input.ICommand DefaultMode{ get; };
     }
 }

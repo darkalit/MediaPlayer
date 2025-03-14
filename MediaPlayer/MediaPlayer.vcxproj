@@ -339,6 +339,7 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <Image Include="Assets\LeftSkipIcon.png" />
     <Image Include="Assets\LockScreenLogo.scale-200.png" />
     <Image Include="Assets\PauseIcon.png" />
+    <Image Include="Assets\PipModeIcon.png" />
     <Image Include="Assets\PlayIcon.png" />
     <Image Include="Assets\RightSkipIcon.png" />
     <Image Include="Assets\SplashScreen.scale-200.png" />

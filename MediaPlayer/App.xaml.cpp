@@ -69,6 +69,7 @@ namespace winrt::MediaPlayer::implementation
             s_PiPWindow.Closed([&](auto&&, auto&&)
             {
                 s_PiPWindow = nullptr;
+                HideWindow(s_Window, false);
             });
         }
 
