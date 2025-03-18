@@ -119,15 +119,21 @@
     </Link>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)Assets\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)Assets\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)Assets\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
@@ -152,15 +158,21 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     </Link>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)Assets\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)Assets\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)"
-xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
+xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)Assets\"
+xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup Condition="'$(WindowsPackageType)'!='None' and Exists('Package.appxmanifest')">
@@ -192,6 +204,7 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <ClInclude Include="Media\MediaEngineWrapper.h" />
     <ClInclude Include="Media\MediaFoundationSourceWrapper.h" />
     <ClInclude Include="Media\MediaFoundationStreamWrapper.h" />
+    <ClInclude Include="Media\MediaUrlGetter.h" />
     <ClInclude Include="Media\XAudio2Player.h" />
     <ClInclude Include="Media\XAudioStreamCallback.h" />
     <ClInclude Include="Pages\MainPage.xaml.h">
@@ -262,6 +275,7 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <ClCompile Include="Media\MediaEngineWrapper.cpp" />
     <ClCompile Include="Media\MediaFoundationSourceWrapper.cpp" />
     <ClCompile Include="Media\MediaFoundationStreamWrapper.cpp" />
+    <ClCompile Include="Media\MediaUrlGetter.cpp" />
     <ClCompile Include="Media\XAudio2Player.cpp" />
     <ClCompile Include="Media\XAudioStreamCallback.cpp" />
     <ClCompile Include="Pages\MainPage.xaml.cpp">
@@ -358,6 +372,8 @@ xcopy /y /d "$(ProjectDir)External\ffmpeg\bin\*.dll" "$(OutDir)AppX\"</Command>
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\yt-dlp.exe" />
+    <None Include="C:\Users\Danyil\Desktop\dlp\yt-dlp.exe" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

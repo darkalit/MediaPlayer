@@ -7,6 +7,7 @@
 extern "C" {
 #include "libavutil/channel_layout.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/avutil.h"
 }
 
 #include "Framework/SharedQueue.h"
@@ -16,28 +17,6 @@ struct AVCodecContext;
 struct SwrContext;
 struct SwsContext;
 struct AVPacket;
-
-struct WavHeader
-{
-    // RIFF chunk descriptor
-    uint8_t Riff[4] = { 'R', 'I', 'F', 'F' };
-    uint32_t ChunkSize;
-    uint8_t Wave[4] = { 'W', 'A', 'V', 'E' };
-
-    // fmt sub-chunk
-    uint8_t Fmt[4] = { 'f', 'm', 't', ' ' };
-    uint32_t FmtSize = 16;
-    uint16_t AudioFormat = 1;
-    uint16_t NumChannels;
-    uint32_t SampleRate;
-    uint32_t ByteRate;
-    uint16_t BlockAlign;
-    uint16_t BitsPerSample;
-
-    // data sub-chunk
-    uint8_t Data[4] = { 'd', 'a', 't', 'a' };
-    uint32_t DataSize;
-};
 
 struct VideoFrame
 {
@@ -84,6 +63,7 @@ public:
 
     bool HasSource();
     static winrt::MediaPlayer::MediaMetadata GetMetadata(winrt::hstring const& filepath);
+    void OpenByStreams(winrt::hstring const& video, winrt::hstring const& audio);
     void OpenFile(winrt::hstring const& filepath);
     void OpenSubtitle(winrt::hstring const& filepath);
     void OpenSubtitle(unsigned int subtitleIndex);
@@ -96,13 +76,16 @@ public:
     static VideoFrame GetFrame(winrt::hstring const& filepath, uint64_t pos, int height = 240);
 
 private:
+    void Free();
     void GetSubtitles(AVFormatContext* formatContext);
     int PushSubtitle(SharedQueue<SubtitleItem>& subs, AVFormatContext* formatContext, AVPacket* packet);
     static void ParseAssDialogue(SubtitleItem& subItem, const std::string& dialogueEvent);
 
     std::function<void()> m_OnPlaybackEndedCB;
 
-    AVFormatContext* m_FormatContext = nullptr;
+    std::vector<AVFormatContext*> m_Contexts = {};
+
+    //AVFormatContext* m_FormatContext = nullptr;
     AVFormatContext* m_SubtitleFormatContext = nullptr;
     AVCodecContext* m_AudioCodecContext = nullptr;
     AVCodecContext* m_VideoCodecContext = nullptr;

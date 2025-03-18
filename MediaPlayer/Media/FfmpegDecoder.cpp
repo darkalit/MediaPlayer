@@ -17,25 +17,12 @@ using namespace winrt;
 FfmpegDecoder::FfmpegDecoder(std::function<void()> onPlaybackEndedCB)
     : m_OnPlaybackEndedCB(onPlaybackEndedCB)
 {
-    m_FormatContext = avformat_alloc_context();
+    //m_FormatContext = avformat_alloc_context();
 }
 
 FfmpegDecoder::~FfmpegDecoder()
 {
-    m_FileOpened = false;
-
-    if (m_DecodingThread.joinable())
-    {
-        m_DecodingThread.join();
-    }
-
-    if (m_FormatContext)
-    {
-        avformat_close_input(&m_FormatContext);
-    }
-    avcodec_free_context(&m_AudioCodecContext);
-    avcodec_free_context(&m_VideoCodecContext);
-    avformat_free_context(m_FormatContext);
+    Free();
 }
 
 bool FfmpegDecoder::HasSource()
@@ -103,27 +90,150 @@ MediaPlayer::MediaMetadata FfmpegDecoder::GetMetadata(hstring const& filepath)
     return metadata;
 }
 
+void FfmpegDecoder::OpenByStreams(winrt::hstring const& video, winrt::hstring const& audio)
+{
+    Free();
+
+    AVFormatContext* videoContext = nullptr;
+    AVFormatContext* audioContext = nullptr;
+
+    int error = avformat_open_input(&videoContext, to_string(video).c_str(), nullptr, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenByStreams VIDEO avformat_open_input");
+        return;
+    }
+
+    error = avformat_find_stream_info(videoContext, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenByStreams VIDEO avformat_find_stream_info");
+        return;
+    }
+
+    error = avformat_open_input(&audioContext, to_string(audio).c_str(), nullptr, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO avformat_open_input");
+        return;
+    }
+
+    error = avformat_find_stream_info(audioContext, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO avformat_find_stream_info");
+        return;
+    }
+
+    defer{ m_FileOpened = true; };
+
+    const AVCodec* audioCodec = nullptr;
+    m_AudioStreamIndex = av_find_best_stream(audioContext, AVMEDIA_TYPE_AUDIO, -1, -1, &audioCodec, 0);
+    if (m_AudioStreamIndex < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO av_find_best_stream");
+        return;
+    }
+
+    m_AudioCodecContext = avcodec_alloc_context3(audioCodec);
+    if (!m_AudioCodecContext)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO avcodec_alloc_context3");
+        return;
+    }
+
+    error = avcodec_parameters_to_context(m_AudioCodecContext, audioContext->streams[m_AudioStreamIndex]->codecpar);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO avcodec_parameters_to_context");
+        return;
+    }
+
+    error = avcodec_open2(m_AudioCodecContext, audioCodec, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO avcodec_open2");
+        return;
+    }
+
+    av_channel_layout_default(&m_ChannelLayout, MediaConfig::AudioChannels);
+
+    error = swr_alloc_set_opts2(
+        &m_SwrContext,
+        // Output
+        &m_ChannelLayout,
+        m_SampleFormat,
+        MediaConfig::AudioSampleRate,
+        // Input
+        &m_AudioCodecContext->ch_layout,
+        m_AudioCodecContext->sample_fmt,
+        m_AudioCodecContext->sample_rate,
+        0, nullptr);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO swr_alloc_set_opts2");
+        return;
+    }
+
+    error = swr_init(m_SwrContext);
+    if (error != 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO swr_init");
+        return;
+    }
+
+    const AVCodec* videoCodec = nullptr;
+    m_VideoStreamIndex = av_find_best_stream(videoContext, AVMEDIA_TYPE_VIDEO, -1, -1, &videoCodec, 0);
+
+    if (m_VideoStreamIndex >= 0)
+    {
+        m_VideoCodecContext = avcodec_alloc_context3(videoCodec);
+        if (!m_VideoCodecContext)
+        {
+            OutputDebugString(L"FfmpegDecoder::OpenByStreams VIDEO avcodec_alloc_context3");
+            return;
+        }
+
+        error = avcodec_parameters_to_context(m_VideoCodecContext, videoContext->streams[m_VideoStreamIndex]->codecpar);
+        if (error != 0)
+        {
+            OutputDebugString(L"FfmpegDecoder::OpenByStreams VIDEO avcodec_parameters_to_context");
+            return;
+        }
+
+        error = avcodec_open2(m_VideoCodecContext, videoCodec, nullptr);
+        if (error != 0)
+        {
+            OutputDebugString(L"FfmpegDecoder::OpenByStreams VIDEO avcodec_open2");
+            return;
+        }   
+            
+        m_SwsContext = sws_getContext(
+            m_VideoCodecContext->width,
+            m_VideoCodecContext->height,
+            m_VideoCodecContext->pix_fmt,
+            m_VideoCodecContext->width,
+            m_VideoCodecContext->height,
+            AV_PIX_FMT_RGBA, SWS_BILINEAR,
+            nullptr,
+            nullptr,
+            nullptr);
+    }
+
+    m_Contexts.push_back(audioContext);
+    m_Contexts.push_back(videoContext);
+}
+
 void FfmpegDecoder::OpenFile(hstring const& filepath)
 {
-    if (m_FileOpened && m_FormatContext)
-    {
-        m_FileOpened = false;
-    }
-
-    if (m_DecodingThread.joinable())
-    {
-        m_DecodingThread.join();
-    }
-
-    if (m_FormatContext)
-    {
-        avformat_close_input(&m_FormatContext);
-    }
+    Free();
 
     m_SubtitleStreams.clear();
     m_SubtitleStreams.resize(0);
 
-    int error = avformat_open_input(&m_FormatContext, to_string(filepath).c_str(), nullptr, nullptr);
+    AVFormatContext* context = avformat_alloc_context();
+
+    int error = avformat_open_input(&context, to_string(filepath).c_str(), nullptr, nullptr);
     if (error != 0)
     {
         OutputDebugString(L"FfmpegDecoder::OpenFile avformat_open_input");
@@ -131,7 +241,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
     }
     defer{ m_FileOpened = true; };
 
-    error = avformat_find_stream_info(m_FormatContext, nullptr);
+    error = avformat_find_stream_info(context, nullptr);
     if (error != 0)
     {
         OutputDebugString(L"FfmpegDecoder::OpenFile avformat_find_stream_info");
@@ -144,10 +254,10 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         m_SubtitleFormatContext = nullptr;
     }
     
-    GetSubtitles(m_FormatContext);
+    GetSubtitles(context);
 
     const AVCodec* audioCodec = nullptr;
-    m_AudioStreamIndex = av_find_best_stream(m_FormatContext, AVMEDIA_TYPE_AUDIO, -1, -1, &audioCodec, 0);
+    m_AudioStreamIndex = av_find_best_stream(context, AVMEDIA_TYPE_AUDIO, -1, -1, &audioCodec, 0);
     if (m_AudioStreamIndex < 0)
     {
         OutputDebugString(L"FfmpegDecoder::OpenFile Audio av_find_best_stream");
@@ -161,7 +271,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         return;
     }
 
-    error = avcodec_parameters_to_context(m_AudioCodecContext, m_FormatContext->streams[m_AudioStreamIndex]->codecpar);
+    error = avcodec_parameters_to_context(m_AudioCodecContext, context->streams[m_AudioStreamIndex]->codecpar);
     if (error != 0)
     {
         OutputDebugString(L"FfmpegDecoder::OpenFile Audio avcodec_parameters_to_context");
@@ -202,7 +312,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
     }
 
     const AVCodec* videoCodec = nullptr;
-    m_VideoStreamIndex = av_find_best_stream(m_FormatContext, AVMEDIA_TYPE_VIDEO, -1, -1, &videoCodec, 0);
+    m_VideoStreamIndex = av_find_best_stream(context, AVMEDIA_TYPE_VIDEO, -1, -1, &videoCodec, 0);
 
     if (m_VideoStreamIndex >= 0)
     {
@@ -213,7 +323,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
             return;
         }
 
-        error = avcodec_parameters_to_context(m_VideoCodecContext, m_FormatContext->streams[m_VideoStreamIndex]->codecpar);
+        error = avcodec_parameters_to_context(m_VideoCodecContext, context->streams[m_VideoStreamIndex]->codecpar);
         if (error != 0)
         {
             OutputDebugString(L"FfmpegDecoder::OpenFile Video avcodec_parameters_to_context");
@@ -238,6 +348,8 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
             nullptr,
             nullptr);
     }
+
+    m_Contexts.push_back(context);
 
     //error = av_seek_frame(m_FormatContext, -1, 0, AVSEEK_FLAG_BACKWARD);
     //if (error != 0)
@@ -308,13 +420,25 @@ void FfmpegDecoder::OpenSubtitle(unsigned int subtitleIndex)
         return;
     }
 
+    AVFormatContext* context = nullptr;
+    for (auto& ctx : m_Contexts)
+    {
+        if (subtitleIndex >= ctx->nb_streams) continue;
+
+        if (ctx->streams[subtitleIndex]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
+        {
+            context = ctx;
+            break;
+        }
+    }
+
     m_CurrentSubSteamIndex = -1;
     if (m_SubtitleFormatContext)
     {
         avformat_close_input(&m_SubtitleFormatContext);
         m_SubtitleFormatContext = nullptr;
     }
-    const AVCodec* subtitlesCodec = avcodec_find_decoder(m_FormatContext->streams[subtitleIndex]->codecpar->codec_id);;
+    const AVCodec* subtitlesCodec = avcodec_find_decoder(context->streams[subtitleIndex]->codecpar->codec_id);;
 
     m_SubtitlesCodecContext = avcodec_alloc_context3(subtitlesCodec);
     if (!m_SubtitlesCodecContext)
@@ -323,7 +447,7 @@ void FfmpegDecoder::OpenSubtitle(unsigned int subtitleIndex)
         return;
     }
 
-    int error = avcodec_parameters_to_context(m_SubtitlesCodecContext, m_FormatContext->streams[subtitleIndex]->codecpar);
+    int error = avcodec_parameters_to_context(m_SubtitlesCodecContext, context->streams[subtitleIndex]->codecpar);
     if (error != 0)
     {
         OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_parameters_to_context");
@@ -366,127 +490,131 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
             }
             std::lock_guard lock(m_Mutex);
 
-            int ret = av_read_frame(m_FormatContext, packet);
-            if (ret == AVERROR(EAGAIN))
+            for (auto& context : m_Contexts)
             {
-                continue;
-            }
-            if (ret == AVERROR_EOF)
-            {
-                m_OnPlaybackEndedCB();
-            }
-            if (ret < 0)
-            {
-                break;
-            }
-            defer{ av_packet_unref(packet); };
 
-            if (packet->stream_index == m_VideoStreamIndex)
-            {
-                error = avcodec_send_packet(m_VideoCodecContext, packet);
-                if (error != 0)
+                int ret = av_read_frame(context, packet);
+                if (ret == AVERROR(EAGAIN))
                 {
-                    OutputDebugString(L"FfmpegDecoder::GetNextFrame avcodec_send_packet");
                     continue;
                 }
-
-                while (avcodec_receive_frame(m_VideoCodecContext, frame) == 0)
+                if (ret == AVERROR_EOF)
                 {
-                    uint8_t* data[4];
-                    int linesize[4];
+                    m_OnPlaybackEndedCB();
+                }
+                if (ret < 0)
+                {
+                    break;
+                }
+                defer{ av_packet_unref(packet); };
 
-                    error = av_image_alloc(
-                        data,
-                        linesize,
-                        m_VideoCodecContext->width,
-                        m_VideoCodecContext->height,
-                        AV_PIX_FMT_RGBA,
-                        1);
-                    if (error < 0)
+                if (packet->stream_index == m_VideoStreamIndex && context->streams[m_VideoStreamIndex]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+                {
+                    error = avcodec_send_packet(m_VideoCodecContext, packet);
+                    if (error != 0)
                     {
-                        OutputDebugString(L"FfmpegDecoder::GetNextFrame av_image_alloc");
+                        OutputDebugString(L"FfmpegDecoder::GetNextFrame avcodec_send_packet");
                         continue;
                     }
-                    defer{ av_freep(&data[0]); };
 
-                    sws_scale(
-                        m_SwsContext,
-                        frame->data,
-                        frame->linesize,
-                        0,
-                        m_VideoCodecContext->height,
-                        data,
-                        linesize);
-
-                    VideoFrame outFrame;
-                    outFrame.Width = m_VideoCodecContext->width;
-                    outFrame.Height = m_VideoCodecContext->height;
-                    outFrame.Buffer.assign(data[0], data[0] + linesize[0] * outFrame.Height);
-                    outFrame.RowPitch = linesize[0];
-                    outFrame.StartTime = static_cast<double>(frame->best_effort_timestamp) * av_q2d(m_FormatContext->streams[m_VideoStreamIndex]->time_base);
-                    frames.Push(outFrame);
-                }
-            }
-            else if (packet->stream_index == m_AudioStreamIndex)
-            {
-                error = avcodec_send_packet(m_AudioCodecContext, packet);
-                if (error != 0)
-                {
-                    continue;
-                }
-
-                AudioSample sample;
-
-                while(avcodec_receive_frame(m_AudioCodecContext, frame) == 0)
-                {
-                    int outSamples = swr_get_out_samples(m_SwrContext, frame->nb_samples);
-                    uint8_t* buffer = nullptr;
-                    av_samples_alloc(&buffer, nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 1);
-                    outSamples = swr_convert(
-                        m_SwrContext,
-                        &buffer,
-                        outSamples,
-                        frame->data,
-                        frame->nb_samples);
-                    int dataSize = av_samples_get_buffer_size(nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 0);
-                    //int dataSize = outSamples * m_ChannelLayout.nb_channels * 2;
-                    float* floatBuffer = reinterpret_cast<float*>(buffer);
-
-                    sample.Buffer.insert(sample.Buffer.end(), floatBuffer, floatBuffer + dataSize / sizeof(float));
-
-                    if (buffer)
+                    while (avcodec_receive_frame(m_VideoCodecContext, frame) == 0)
                     {
-                        av_free(buffer);
+                        uint8_t* data[4];
+                        int linesize[4];
+
+                        error = av_image_alloc(
+                            data,
+                            linesize,
+                            m_VideoCodecContext->width,
+                            m_VideoCodecContext->height,
+                            AV_PIX_FMT_RGBA,
+                            1);
+                        if (error < 0)
+                        {
+                            OutputDebugString(L"FfmpegDecoder::GetNextFrame av_image_alloc");
+                            continue;
+                        }
+                        defer{ av_freep(&data[0]); };
+
+                        sws_scale(
+                            m_SwsContext,
+                            frame->data,
+                            frame->linesize,
+                            0,
+                            m_VideoCodecContext->height,
+                            data,
+                            linesize);
+
+                        VideoFrame outFrame;
+                        outFrame.Width = m_VideoCodecContext->width;
+                        outFrame.Height = m_VideoCodecContext->height;
+                        outFrame.Buffer.assign(data[0], data[0] + linesize[0] * outFrame.Height);
+                        outFrame.RowPitch = linesize[0];
+                        outFrame.StartTime = static_cast<double>(frame->best_effort_timestamp) * av_q2d(context->streams[m_VideoStreamIndex]->time_base);
+                        frames.Push(outFrame);
                     }
                 }
-                double timeBase = av_q2d(m_FormatContext->streams[m_AudioStreamIndex]->time_base);
-                sample.Duration = packet->duration * timeBase;
-                sample.StartTime = packet->pts * timeBase;
-                m_CurrentTime = static_cast<uint64_t>(packet->pts * timeBase * 1000.0);
-                audioSamples.Push(sample);
-            }
-            else if (packet->stream_index == m_CurrentSubSteamIndex)
-            {
-                error = PushSubtitle(subs, m_FormatContext, packet);
-                if (error < 0)
+                else if (packet->stream_index == m_AudioStreamIndex && context->streams[m_AudioStreamIndex]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
                 {
-                    OutputDebugString(L"FfmpegDecoder::SetupDecoding Subtitles PushSubtitle");
-                    continue;
+                    error = avcodec_send_packet(m_AudioCodecContext, packet);
+                    if (error != 0)
+                    {
+                        continue;
+                    }
+
+                    AudioSample sample;
+
+                    while (avcodec_receive_frame(m_AudioCodecContext, frame) == 0)
+                    {
+                        int outSamples = swr_get_out_samples(m_SwrContext, frame->nb_samples);
+                        uint8_t* buffer = nullptr;
+                        av_samples_alloc(&buffer, nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 1);
+                        outSamples = swr_convert(
+                            m_SwrContext,
+                            &buffer,
+                            outSamples,
+                            frame->data,
+                            frame->nb_samples);
+                        int dataSize = av_samples_get_buffer_size(nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 0);
+                        //int dataSize = outSamples * m_ChannelLayout.nb_channels * 2;
+                        float* floatBuffer = reinterpret_cast<float*>(buffer);
+
+                        sample.Buffer.insert(sample.Buffer.end(), floatBuffer, floatBuffer + dataSize / sizeof(float));
+
+                        if (buffer)
+                        {
+                            av_free(buffer);
+                        }
+                    }
+                    double timeBase = av_q2d(context->streams[m_AudioStreamIndex]->time_base);
+                    sample.Duration = packet->duration * timeBase;
+                    sample.StartTime = packet->pts * timeBase;
+                    m_CurrentTime = static_cast<uint64_t>(packet->pts * timeBase * 1000.0);
+                    audioSamples.Push(sample);
                 }
-            }
-
-            if (m_SubtitleFormatContext)
-            {
-                av_packet_unref(packet);
-                if (av_read_frame(m_SubtitleFormatContext, packet) < 0) continue;
-
-                if (packet->stream_index == m_CurrentSubSteamIndex)
+                else if (packet->stream_index == m_CurrentSubSteamIndex && context->streams[m_CurrentSubSteamIndex]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
                 {
-                    error = PushSubtitle(subs, m_SubtitleFormatContext, packet);
+                    error = PushSubtitle(subs, context, packet);
                     if (error < 0)
                     {
                         OutputDebugString(L"FfmpegDecoder::SetupDecoding Subtitles PushSubtitle");
                         continue;
+                    }
+                }
+
+                if (m_SubtitleFormatContext)
+                {
+                    av_packet_unref(packet);
+                    if (av_read_frame(m_SubtitleFormatContext, packet) < 0) continue;
+
+                    if (packet->stream_index == m_CurrentSubSteamIndex)
+                    {
+                        error = PushSubtitle(subs, m_SubtitleFormatContext, packet);
+                        if (error < 0)
+                        {
+                            OutputDebugString(L"FfmpegDecoder::SetupDecoding Subtitles PushSubtitle");
+                            continue;
+                        }
                     }
                 }
             }
@@ -513,17 +641,27 @@ void FfmpegDecoder::Seek(uint64_t time)
 {
     std::lock_guard lock(m_Mutex);
 
-    std::vector streamIndexes = { m_VideoStreamIndex, m_AudioStreamIndex };
+    std::vector streamTypes = { AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO };
     std::vector codecContexes = { m_VideoCodecContext, m_AudioCodecContext };
-    for (auto index : streamIndexes)
+    for (auto& context : m_Contexts)
     {
-        const int64_t seekTarget = av_rescale_q(
-            time * 1000,
-            AV_TIME_BASE_Q,
-            m_FormatContext->streams[index]->time_base
-        );
+        for (auto type : streamTypes)
+        {
+            const AVCodec* codec = nullptr;
+            int index = av_find_best_stream(context, type, -1, -1, &codec, 0);
+            if (index < 0)
+            {
+                continue;
+            }
 
-        av_seek_frame(m_FormatContext, m_VideoStreamIndex, seekTarget, AVSEEK_FLAG_BACKWARD);
+            const int64_t seekTarget = av_rescale_q(
+                time * 1000,
+                AV_TIME_BASE_Q,
+                context->streams[index]->time_base
+            );
+
+            av_seek_frame(context, index, seekTarget, AVSEEK_FLAG_BACKWARD);
+        }
     }
 
     for (auto codecContext : codecContexes)
@@ -827,6 +965,44 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos,
     outFrame.StartTime = 0;
 
     return outFrame;
+}
+
+void FfmpegDecoder::Free()
+{
+    m_FileOpened = false;
+
+    if (m_DecodingThread.joinable())
+    {
+        m_DecodingThread.join();
+    }
+
+    //if (m_FormatContext)
+    //{
+    //    avformat_close_input(&m_FormatContext);
+    //    avformat_free_context(m_FormatContext);
+    //}
+
+    for (auto& context : m_Contexts)
+    {
+        avformat_close_input(&context);
+        avformat_free_context(context);
+    }
+    m_Contexts.clear();
+
+    if (m_AudioCodecContext)
+    {
+        avcodec_free_context(&m_AudioCodecContext);
+    }
+
+    if (m_VideoCodecContext)
+    {
+        avcodec_free_context(&m_VideoCodecContext);
+    }
+
+    if (m_SubtitlesCodecContext)
+    {
+        avcodec_free_context(&m_SubtitlesCodecContext);
+    }
 }
 
 void FfmpegDecoder::GetSubtitles(AVFormatContext* formatContext)

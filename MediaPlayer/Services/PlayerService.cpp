@@ -25,6 +25,7 @@
 #include "d3d11_3.h"
 #include "DirectXColors.h"
 #include "App.xaml.h"
+#include "Media/MediaUrlGetter.h"
 #include "winrt/Windows.ApplicationModel.h"
 #include "winrt/Windows.Storage.h"
 
@@ -170,6 +171,10 @@ namespace winrt::MediaPlayer::implementation
 
         m_UseFfmpeg = true;
         SwapChainPanel(SwapChainPanel());
+
+        //auto streamUrls = MediaUrlGetter::GetYoutubeStreamUrls(L"https://youtu.be/5Welk51oDWs?si=KL23vnMS3-CuvR1a");
+        //m_FfmpegDecoder.OpenByStreams(streamUrls[0], streamUrls[1]);
+
         m_FfmpegDecoder.OpenFile(path);
         m_SubTracks.Clear();
         for (auto& s : m_FfmpegDecoder.GetSubtitleStreams())
