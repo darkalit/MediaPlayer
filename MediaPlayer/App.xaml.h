@@ -20,7 +20,9 @@ namespace winrt::MediaPlayer::implementation
         static MediaPlayer::PlayerService GetPlayerService();
         static std::shared_ptr<DeviceResources> GetDeviceResources();
         static HWND GetMainWindow();
-        static MediaPlayer::PiPWindow OpenPiPWindow();
+        static Microsoft::UI::Xaml::Window OpenPiPWindow();
+        static Microsoft::UI::Xaml::Window OpenInternetResourceWindow();
+        static Microsoft::UI::Xaml::Window OpenRecorderWindow();
         static Microsoft::UI::Xaml::Window OpenMainWindow();
         static void HideWindow(Microsoft::UI::Xaml::Window const& window, bool hide);
 
@@ -32,7 +34,9 @@ namespace winrt::MediaPlayer::implementation
 
     private:
         static Microsoft::UI::Xaml::Window s_Window;
-        static MediaPlayer::PiPWindow s_PiPWindow;
+        static Microsoft::UI::Xaml::Window s_PiPWindow;
+        static Microsoft::UI::Xaml::Window s_InternetResourceWindow;
+        static Microsoft::UI::Xaml::Window s_RecorderWindow;
         static std::shared_ptr<DeviceResources> s_DeviceResources;
     };
 

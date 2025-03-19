@@ -1,0 +1,14 @@
+import "Framework/BindableBase.idl";
+import "Framework/DelegateCommand.idl";
+import "Models/MediaMetadata.idl";
+
+namespace MediaPlayer
+{
+    [default_interface]
+    unsealed runtimeclass InternetResourceViewModel : BindableBase
+    {
+        InternetResourceViewModel();
+
+        Microsoft.UI.Xaml.Input.ICommand LoadResource{ get; };
+    }
+}

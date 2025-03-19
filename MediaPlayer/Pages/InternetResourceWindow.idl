@@ -1,0 +1,12 @@
+import "ViewModels/InternetResourceViewModel.idl";
+
+namespace MediaPlayer
+{
+    [default_interface]
+    runtimeclass InternetResourceWindow : Microsoft.UI.Xaml.Window
+    {
+        InternetResourceWindow();
+        
+        InternetResourceViewModel ViewModel{ get; };
+    }
+}

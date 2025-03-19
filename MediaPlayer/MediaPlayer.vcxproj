@@ -207,6 +207,10 @@ xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     <ClInclude Include="Media\MediaUrlGetter.h" />
     <ClInclude Include="Media\XAudio2Player.h" />
     <ClInclude Include="Media\XAudioStreamCallback.h" />
+    <ClInclude Include="Pages\InternetResourceWindow.xaml.h">
+      <DependentUpon>Pages\InternetResourceWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="Pages\MainPage.xaml.h">
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -232,6 +236,7 @@ xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     <ClInclude Include="Converters\DurationToStringConverter.h" />
     <ClInclude Include="Services\PlayerService.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="ViewModels\InternetResourceViewModel.h" />
     <ClInclude Include="ViewModels\MainPageViewModel.h" />
     <ClInclude Include="ViewModels\MenuBarControlViewModel.h" />
     <ClInclude Include="ViewModels\PiPWindowViewModel.h" />
@@ -244,6 +249,9 @@ xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
       <SubType>Designer</SubType>
     </Page>
     <Page Include="MainWindow.xaml" />
+    <Page Include="Pages\InternetResourceWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Pages\MainPage.xaml">
       <SubType>Designer</SubType>
     </Page>
@@ -278,6 +286,10 @@ xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     <ClCompile Include="Media\MediaUrlGetter.cpp" />
     <ClCompile Include="Media\XAudio2Player.cpp" />
     <ClCompile Include="Media\XAudioStreamCallback.cpp" />
+    <ClCompile Include="Pages\InternetResourceWindow.xaml.cpp">
+      <DependentUpon>Pages\InternetResourceWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="Pages\MainPage.xaml.cpp">
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -306,6 +318,7 @@ xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     <ClCompile Include="Converters\DurationToStringConverter.cpp" />
     <ClCompile Include="Services\PlayerService.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="ViewModels\InternetResourceViewModel.cpp" />
     <ClCompile Include="ViewModels\MainPageViewModel.cpp" />
     <ClCompile Include="ViewModels\MenuBarControlViewModel.cpp" />
     <ClCompile Include="ViewModels\PiPWindowViewModel.cpp" />
@@ -327,6 +340,10 @@ xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </Midl>
     <Midl Include="Models\SubtitleStream.idl" />
+    <Midl Include="Pages\InternetResourceWindow.idl">
+      <DependentUpon>Pages\InternetResourceWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
     <Midl Include="Pages\MainPage.idl">
       <DependentUpon>Pages\MainPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -343,6 +360,7 @@ xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
       <SubType>Code</SubType>
     </Midl>
     <Midl Include="Services\PlayerService.idl" />
+    <Midl Include="ViewModels\InternetResourceViewModel.idl" />
     <Midl Include="ViewModels\MenuBarControlViewModel.idl" />
     <Midl Include="ViewModels\MainPageViewModel.idl" />
     <Midl Include="ViewModels\PiPWindowViewModel.idl" />
@@ -373,7 +391,6 @@ xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\yt-dlp.exe" />
-    <None Include="C:\Users\Danyil\Desktop\dlp\yt-dlp.exe" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

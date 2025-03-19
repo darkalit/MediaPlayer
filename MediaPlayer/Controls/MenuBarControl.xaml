@@ -11,6 +11,7 @@
     <MenuBar x:Name="MenuBar" HorizontalAlignment="Left" VerticalAlignment="Top">
         <MenuBarItem Title="File">
             <MenuFlyoutItem Icon="OpenFile" Command="{x:Bind ViewModel.OpenFiles}" Text="Open files"/>
+            <MenuFlyoutItem Icon="OpenFile" Command="{x:Bind ViewModel.OpenInternetResourceWindow}" Text="Open from url..."/>
             <MenuFlyoutItem x:Name="MenuItem_Exit" Icon="Cancel" Command="{x:Bind ViewModel.Exit}" Text="Exit"/>
         </MenuBarItem>
         <MenuBarItem Title="Playback">

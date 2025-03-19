@@ -4,6 +4,7 @@
 #include "microsoft.ui.xaml.window.h"
 
 #include "Pages/PiPWindow.xaml.h"
+#include "Pages/InternetResourceWindow.xaml.h"
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
@@ -12,7 +13,9 @@ using namespace Microsoft::UI::Xaml::Controls;
 namespace winrt::MediaPlayer::implementation
 {
     Window App::s_Window = nullptr;
-    MediaPlayer::PiPWindow App::s_PiPWindow = nullptr;
+    Window App::s_PiPWindow = nullptr;
+    Window App::s_InternetResourceWindow = nullptr;
+    Window App::s_RecorderWindow = nullptr;
     std::shared_ptr<DeviceResources> App::s_DeviceResources = nullptr;
 
     App::App()
@@ -36,6 +39,13 @@ namespace winrt::MediaPlayer::implementation
         GetPlayerService().Init();
 
         s_Window = make<MainWindow>();
+
+        s_Window.Closed([&](auto&&, auto&&)
+        {
+            if (s_InternetResourceWindow) s_InternetResourceWindow.Close();
+            if (s_RecorderWindow) s_RecorderWindow.Close();
+        });
+
         auto mainWindow = s_Window.try_as<MainWindow>();
         mainWindow->Navigate<MainPage>();
         s_Window.Activate();
@@ -61,11 +71,11 @@ namespace winrt::MediaPlayer::implementation
         return hwnd;
     }
 
-    MediaPlayer::PiPWindow App::OpenPiPWindow()
+    Window App::OpenPiPWindow()
     {
         if (!s_PiPWindow)
         {
-            s_PiPWindow = make<implementation::PiPWindow>();
+            s_PiPWindow = make<PiPWindow>();
             s_PiPWindow.Closed([&](auto&&, auto&&)
             {
                 s_PiPWindow = nullptr;
@@ -79,14 +89,44 @@ namespace winrt::MediaPlayer::implementation
         return s_PiPWindow;
     }
 
-    Microsoft::UI::Xaml::Window App::OpenMainWindow()
+    Window App::OpenInternetResourceWindow()
+    {
+        if (!s_InternetResourceWindow)
+        {
+            s_InternetResourceWindow = make<InternetResourceWindow>();
+            s_InternetResourceWindow.Closed([&](auto&&, auto&&) {
+                s_InternetResourceWindow = nullptr;
+            });
+        }
+
+        s_InternetResourceWindow.Activate();
+
+        return s_InternetResourceWindow;
+    }
+
+    Window App::OpenRecorderWindow()
+    {
+        if (!s_RecorderWindow)
+        {
+            s_RecorderWindow = make<InternetResourceWindow>();
+            s_RecorderWindow.Closed([&](auto&&, auto&&) {
+                s_RecorderWindow = nullptr;
+            });
+        }
+
+        s_RecorderWindow.Activate();
+
+        return s_RecorderWindow;
+    }
+
+    Window App::OpenMainWindow()
     {
         HideWindow(s_Window, false);
         s_PiPWindow.Close();
         return s_Window;
     }
 
-    void App::HideWindow(Microsoft::UI::Xaml::Window const& window, bool hide)
+    void App::HideWindow(Window const& window, bool hide)
     {
         auto windowNative = window.try_as<IWindowNative>();
 

@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "PlayerService.h"
 
+#include <stdbool.h>
+
 #include "PlayerService.g.cpp"
 
 #include "mfapi.h"
@@ -28,8 +30,11 @@
 #include "Media/MediaUrlGetter.h"
 #include "winrt/Windows.ApplicationModel.h"
 #include "winrt/Windows.Storage.h"
+#include "winrt/Windows.Web.Http.h"
 
-using namespace winrt::Windows::Foundation;
+using namespace winrt;
+using namespace Windows
+using namespace Foundation;
 
 namespace winrt::MediaPlayer::implementation
 {
@@ -97,6 +102,27 @@ namespace winrt::MediaPlayer::implementation
             0);
 
         State(PlayerServiceState::READY);
+    }
+
+    void PlayerService::AddSourceFromUrl(hstring const& url)
+    {
+        auto res = GetMetadataInternal(url);
+
+        m_Playlist.Append(res);
+
+        if (CurrentMediaIndex() == -1)
+        {
+            CurrentMediaIndex(0);
+        }
+
+        if (!HasSource())
+        {
+            SetSourceFromUrl(url);
+        }
+    }
+
+    void PlayerService::SetSourceFromUrl(hstring const& url)
+    {
     }
 
     void PlayerService::AddSource(hstring const& path, hstring const& displayName)
@@ -807,6 +833,25 @@ namespace winrt::MediaPlayer::implementation
         {
             m_UIDispatcherQueue = value;
         }
+    }
+
+    IAsyncOperation<bool> PlayerService::ResourceIsAvailable(hstring const& path)
+    {
+        Uri uri{ path };
+        Web::Http::HttpClient client;
+
+        auto res = co_await client.SendRequestAsync({ Web::Http::HttpMethod::Head(), uri });
+
+        if (res.IsSuccessStatusCode()) co_return true;
+
+        try
+        {
+            co_await Storage::StorageFile::GetFileFromPathAsync(path);
+            co_return true;
+        }
+        catch (const hresult_error&) {}
+
+        co_return false;
     }
 
     MediaMetadata PlayerService::GetMetadataInternal(

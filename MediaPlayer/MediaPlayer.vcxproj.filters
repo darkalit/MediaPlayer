@@ -17,7 +17,10 @@
     <Page Include="Pages\RecorderWindow.xaml">
       <Filter>Pages</Filter>
     </Page>
-    <Page Include="Pages\PiPWindow.xaml" />
+    <Page Include="Pages\InternetResourceWindow.xaml" />
+    <Page Include="Pages\PiPWindow.xaml">
+      <Filter>Pages</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />
@@ -63,7 +66,12 @@
     <Midl Include="ViewModels\RecorderViewModel.idl">
       <Filter>ViewModels</Filter>
     </Midl>
-    <Midl Include="ViewModels\PiPWindowViewModel.idl" />
+    <Midl Include="ViewModels\PiPWindowViewModel.idl">
+      <Filter>ViewModels</Filter>
+    </Midl>
+    <Midl Include="ViewModels\InternetResourceViewModel.idl">
+      <Filter>ViewModels</Filter>
+    </Midl>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -138,8 +146,13 @@
     <ClCompile Include="ViewModels\RecorderViewModel.cpp">
       <Filter>ViewModels</Filter>
     </ClCompile>
-    <ClCompile Include="ViewModels\PiPWindowViewModel.cpp" />
     <ClCompile Include="Media\MediaUrlGetter.cpp" />
+    <ClCompile Include="ViewModels\PiPWindowViewModel.cpp">
+      <Filter>ViewModels</Filter>
+    </ClCompile>
+    <ClCompile Include="ViewModels\InternetResourceViewModel.cpp">
+      <Filter>ViewModels</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -216,8 +229,13 @@
     <ClInclude Include="ViewModels\RecorderViewModel.h">
       <Filter>ViewModels</Filter>
     </ClInclude>
-    <ClInclude Include="ViewModels\PiPWindowViewModel.h" />
     <ClInclude Include="Media\MediaUrlGetter.h" />
+    <ClInclude Include="ViewModels\PiPWindowViewModel.h">
+      <Filter>ViewModels</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewModels\InternetResourceViewModel.h">
+      <Filter>ViewModels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
@@ -253,7 +271,9 @@
     <Image Include="Assets\LeftSkipIcon.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\PipModeIcon.png" />
+    <Image Include="Assets\PipModeIcon.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Assets">
@@ -292,8 +312,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="C:\Users\Danyil\Desktop\dlp\yt-dlp.exe" />
-    <None Include="Assets\yt-dlp.exe" />
+    <None Include="Assets\yt-dlp.exe">
+      <Filter>Assets</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />

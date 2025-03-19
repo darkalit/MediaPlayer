@@ -123,15 +123,12 @@ namespace winrt::MediaPlayer::implementation
 
         m_OpenRecorderWindowCommand = make<DelegateCommand>([&](auto&&)
         {
-            if (!m_RecorderWindow)
-            {
-                m_RecorderWindow = make<implementation::RecorderWindow>();
-                m_RecorderWindow.Closed([this](auto&&, auto&&) {
-                    m_RecorderWindow = nullptr;
-                });
-            }
+            App::OpenRecorderWindow();
+        });
 
-            m_RecorderWindow.Activate();
+        m_OpenInternetResourceWindowCommand = make<DelegateCommand>([&](auto&&)
+        {
+            App::OpenInternetResourceWindow();
         });
     }
 
@@ -177,5 +174,10 @@ namespace winrt::MediaPlayer::implementation
     Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::OpenRecorderWindow()
     {
         return m_OpenRecorderWindowCommand;
+    }
+
+    Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::OpenInternetResourceWindow()
+    {
+        return m_OpenInternetResourceWindowCommand;
     }
 }

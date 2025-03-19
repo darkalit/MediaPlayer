@@ -27,6 +27,8 @@ namespace MediaPlayer
         PlayerService();
         void Init();
 
+        void AddSourceFromUrl(String url);
+        void SetSourceFromUrl(String url);
         void AddSource(String path, String displayName);
         void SetSource(String path);
         void SetSubtitleIndex(Int32 index);
