@@ -30,7 +30,7 @@ bool FfmpegDecoder::HasSource()
     return m_AudioStreamIndex != -1 || m_VideoStreamIndex != -1;
 }
 
-MediaPlayer::MediaMetadata FfmpegDecoder::GetMetadata(hstring const& filepath)
+MediaPlayer::MediaMetadata FfmpegDecoder::GetMetadata(hstring const& filepath, MediaType mediaType)
 {
     AVFormatContext* formatContext = nullptr;
     int error = avformat_open_input(&formatContext, to_string(filepath).c_str(), nullptr, nullptr);
@@ -55,23 +55,31 @@ MediaPlayer::MediaMetadata FfmpegDecoder::GetMetadata(hstring const& filepath)
     metadata.IsSelected = false;
     metadata.AddedAt = clock::now();
 
-    const AVCodec* audioCodec = nullptr;
-    int audioIndex = av_find_best_stream(formatContext, AVMEDIA_TYPE_AUDIO, -1, -1, &audioCodec, 0);
+    AVCodecParameters* codecParams = nullptr;
 
-    AVCodecParameters* codecParams = formatContext->streams[audioIndex]->codecpar;
-    metadata.AudioChannelCount = codecParams->ch_layout.nb_channels;
-    metadata.AudioBitrate = codecParams->bit_rate;
-    metadata.AudioSampleRate = codecParams->sample_rate;
-    metadata.AudioSampleSize = av_get_bytes_per_sample(static_cast<AVSampleFormat>(codecParams->format));
+    if (mediaType & MediaType::AUDIO)
+    {
+        const AVCodec* audioCodec = nullptr;
+        int audioIndex = av_find_best_stream(formatContext, AVMEDIA_TYPE_AUDIO, -1, -1, &audioCodec, 0);
 
-    const AVCodec* videoCodec = nullptr;
-    int videoIndex = av_find_best_stream(formatContext, AVMEDIA_TYPE_VIDEO, -1, -1, &videoCodec, 0);
+        codecParams = formatContext->streams[audioIndex]->codecpar;
+        metadata.AudioChannelCount = codecParams->ch_layout.nb_channels;
+        metadata.AudioBitrate = codecParams->bit_rate;
+        metadata.AudioSampleRate = codecParams->sample_rate;
+        metadata.AudioSampleSize = av_get_bytes_per_sample(static_cast<AVSampleFormat>(codecParams->format));
+    }
 
-    codecParams = formatContext->streams[videoIndex]->codecpar;
-    metadata.VideoBitrate = codecParams->bit_rate;
-    metadata.VideoWidth = codecParams->width;
-    metadata.VideoHeight = codecParams->height;
-    metadata.VideoFrameRate = av_q2d(formatContext->streams[videoIndex]->avg_frame_rate);
+    if (mediaType & MediaType::VIDEO)
+    {
+        const AVCodec* videoCodec = nullptr;
+        int videoIndex = av_find_best_stream(formatContext, AVMEDIA_TYPE_VIDEO, -1, -1, &videoCodec, 0);
+
+        codecParams = formatContext->streams[videoIndex]->codecpar;
+        metadata.VideoBitrate = codecParams->bit_rate;
+        metadata.VideoWidth = codecParams->width;
+        metadata.VideoHeight = codecParams->height;
+        metadata.VideoFrameRate = av_q2d(formatContext->streams[videoIndex]->avg_frame_rate);
+    }
 
     AVDictionaryEntry* tag = nullptr;
     if ((tag = av_dict_get(formatContext->metadata, "author", nullptr, 0)))
@@ -100,7 +108,10 @@ void FfmpegDecoder::OpenByStreams(winrt::hstring const& video, winrt::hstring co
     int error = avformat_open_input(&videoContext, to_string(video).c_str(), nullptr, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenByStreams VIDEO avformat_open_input");
+        char buffer[AV_ERROR_MAX_STRING_SIZE] = {};
+        auto errStr = av_make_error_string(buffer, AV_ERROR_MAX_STRING_SIZE, error);
+        OutputDebugString(L"FfmpegDecoder::OpenByStreams VIDEO avformat_open_input\n");
+        OutputDebugString(to_hstring(errStr).c_str());
         return;
     }
 

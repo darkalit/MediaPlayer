@@ -5,6 +5,8 @@ namespace MediaPlayer
         Boolean IsSelected;
         Guid Id;
         String Path;
+        String AltUrl1;
+        String AltUrl2;
         UInt64 Duration; // duration in milliseconds
         Windows.Foundation.DateTime AddedAt;
 

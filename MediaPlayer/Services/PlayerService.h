@@ -27,7 +27,7 @@ namespace winrt::MediaPlayer::implementation
         ~PlayerService() override;
         void Init();
 
-
+        Windows::Foundation::IAsyncOperation<bool> ResourceIsAvailable(hstring const& path);
         void AddSourceFromUrl(hstring const& url);
         void SetSourceFromUrl(hstring const& url);
         void AddSource(hstring const& path, hstring const& displayName);
@@ -74,7 +74,6 @@ namespace winrt::MediaPlayer::implementation
         void UIDispatcher(Microsoft::UI::Dispatching::DispatcherQueue const& value);
 
     private:
-        Windows::Foundation::IAsyncOperation<bool> ResourceIsAvailable(hstring const& path);
         MediaMetadata GetMetadataInternal(hstring const& path);
         void VideoRender();
         void AudioRender();

@@ -10,10 +10,15 @@ namespace winrt::MediaPlayer::implementation
     {
         InternetResourceViewModel();
 
+        hstring ErrorMessage();
+        void ErrorMessage(hstring const& value);
+
         Microsoft::UI::Xaml::Input::ICommand LoadResource();
 
     private:
         MediaPlayer::PlayerService m_PlayerService;
+
+        hstring m_ErrorMessage;
 
         MediaPlayer::DelegateCommand m_LoadResourceCommand = nullptr;
     };

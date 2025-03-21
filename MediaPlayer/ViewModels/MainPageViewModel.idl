@@ -10,6 +10,8 @@ namespace MediaPlayer
     {
         MainPageViewModel();
         String Path{ get; };
+        String AltUrl1{ get; };
+        String AltUrl2{ get; };
         String Title{ get; };
         String AuthorAlbum{ get; };
         String VolumeText{ get; };

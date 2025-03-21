@@ -7,7 +7,50 @@
 
 using namespace winrt;
 
+winrt::MediaPlayer::MediaMetadata MediaUrlGetter::GetMetadata(winrt::hstring const& url)
+{
+    hstring cmd =
+        Windows::ApplicationModel::Package::Current().InstalledLocation().Path() +
+        L"\\Assets\\yt-dlp.exe " +
+        L"--skip-download --print-json " +
+        url;
+
+    std::string output = LaunchProcess(cmd);
+
+    OutputDebugString(to_hstring(output).c_str());
+    OutputDebugString(L"\n");
+
+    return {};
+}
+
 std::vector<hstring> MediaUrlGetter::GetYoutubeStreamUrls(hstring const& url)
+{
+    hstring cmd =
+        Windows::ApplicationModel::Package::Current().InstalledLocation().Path() +
+        L"\\Assets\\yt-dlp.exe " +
+        L"--skip-download -f \"bestvideo+bestaudio\" -g " +
+        url;
+
+    std::string output = LaunchProcess(cmd);
+
+    std::stringstream ss(output);
+
+    std::vector<hstring> res;
+    for (std::string t; std::getline(ss, t, '\n');)
+    {
+        res.push_back(to_hstring(t));
+    }
+
+    for (auto& str : res)
+    {
+        OutputDebugString(str.c_str());
+        OutputDebugString(L"\n");
+    }
+    
+    return res;
+}
+
+std::string MediaUrlGetter::LaunchProcess(winrt::hstring const& cmd)
 {
     SECURITY_ATTRIBUTES securityAttributes = {
         .nLength = sizeof(SECURITY_ATTRIBUTES),
@@ -19,13 +62,13 @@ std::vector<hstring> MediaUrlGetter::GetYoutubeStreamUrls(hstring const& url)
 
     if (!CreatePipe(&stdOutRd, &stdOutWr, &securityAttributes, 0))
     {
-        OutputDebugString(L"MediaUrlGetter::GetYoutubeStreamUrls Stdout pipe creation failed\n");
+        OutputDebugString(L"MediaUrlGetter::LaunchProcess Stdout pipe creation failed\n");
         return {};
     }
 
     if (!SetHandleInformation(stdOutRd, HANDLE_FLAG_INHERIT, 0))
     {
-        OutputDebugString(L"MediaUrlGetter::GetYoutubeStreamUrls SetHandleInformation failed\n");
+        OutputDebugString(L"MediaUrlGetter::LaunchProcess SetHandleInformation failed\n");
         return {};
     }
 
@@ -36,11 +79,6 @@ std::vector<hstring> MediaUrlGetter::GetYoutubeStreamUrls(hstring const& url)
     };
     PROCESS_INFORMATION processInfo;
 
-    hstring cmd =
-        Windows::ApplicationModel::Package::Current().InstalledLocation().Path() +
-        L"\\Assets\\yt-dlp.exe" +
-        L" -f \"bestvideo+bestaudio\" -g " +
-        url;
     LPWSTR command = new wchar_t[cmd.size() + 1];
     defer{ delete[] command; };
 
@@ -81,19 +119,5 @@ std::vector<hstring> MediaUrlGetter::GetYoutubeStreamUrls(hstring const& url)
         output += reinterpret_cast<char*>(buffer.data());
     }
 
-    std::stringstream ss(output);
-
-    std::vector<hstring> res;
-    for (std::string t; std::getline(ss, t, '\n');)
-    {
-        res.push_back(to_hstring(t));
-    }
-
-    for (auto& str : res)
-    {
-        OutputDebugString(str.c_str());
-        OutputDebugString(L"\n");
-    }
-    
-    return res;
+    return output;
 }

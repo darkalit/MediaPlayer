@@ -9,6 +9,8 @@ namespace MediaPlayer
     {
         InternetResourceViewModel();
 
+        String ErrorMessage;
+
         Microsoft.UI.Xaml.Input.ICommand LoadResource{ get; };
     }
 }

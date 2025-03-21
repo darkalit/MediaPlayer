@@ -86,6 +86,16 @@ namespace winrt::MediaPlayer::implementation
         return m_PlayerService.Metadata().Path;
     }
 
+    hstring MainPageViewModel::AltUrl1()
+    {
+        return m_PlayerService.Metadata().AltUrl1;
+    }
+
+    hstring MainPageViewModel::AltUrl2()
+    {
+        return m_PlayerService.Metadata().AltUrl2;
+    }
+
     hstring MainPageViewModel::Title()
     {
         auto title = m_PlayerService.Metadata().Title;

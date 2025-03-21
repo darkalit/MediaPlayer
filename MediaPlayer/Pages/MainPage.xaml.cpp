@@ -107,6 +107,11 @@ namespace winrt::MediaPlayer::implementation
         static double lastSliderValue = 0.0;
         int imageHeight = 120;
 
+        if (!ViewModel().AltUrl1().empty() || !ViewModel().AltUrl2().empty())
+        {
+            imageHeight = 0;
+        }
+
         auto slider = sender.as<Controls::Slider>();
         Point point = e.GetCurrentPoint(slider).Position();
 
@@ -129,11 +134,16 @@ namespace winrt::MediaPlayer::implementation
         }
         lastSliderValue = sliderValue;
 
+        if (!ViewModel().AltUrl1().empty() || !ViewModel().AltUrl2().empty())
+        {
+            co_return;
+        }
+
         auto frame = FfmpegDecoder::GetFrame(ViewModel().Path(), sliderValue * 1000, imageHeight);
 
         if (frame.Buffer.empty())
         {
-            OutputDebugString(L"MainPage::Slider_Timeline_PointerMoved GetFrame");
+            OutputDebugString(L"MainPage::Slider_Timeline_PointerMoved GetFrame\n");
             co_return;
         }
 

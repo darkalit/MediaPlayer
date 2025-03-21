@@ -27,6 +27,7 @@ namespace MediaPlayer
         PlayerService();
         void Init();
 
+        Windows.Foundation.IAsyncOperation<Boolean> ResourceIsAvailable(String url);
         void AddSourceFromUrl(String url);
         void SetSourceFromUrl(String url);
         void AddSource(String path, String displayName);

@@ -11,6 +11,7 @@
 
     <StackPanel Orientation="Vertical" Spacing="10" HorizontalAlignment="Stretch" VerticalAlignment="Center">
         <TextBlock
+            Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
             Foreground="Red"/>
         <TextBox
             x:Name="TextBox_Url"

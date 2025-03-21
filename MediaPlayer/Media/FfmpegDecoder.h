@@ -55,6 +55,13 @@ struct AudioSample
 //    winrt::hstring Title;
 //};
 
+enum MediaType : uint8_t
+{
+    AUDIO = 1 << 0,
+    VIDEO = 1 << 1,
+    BOTH = AUDIO | VIDEO,
+};
+
 class FfmpegDecoder
 {
 public:
@@ -62,7 +69,7 @@ public:
     ~FfmpegDecoder();
 
     bool HasSource();
-    static winrt::MediaPlayer::MediaMetadata GetMetadata(winrt::hstring const& filepath);
+    static winrt::MediaPlayer::MediaMetadata GetMetadata(winrt::hstring const& filepath, MediaType mediaType = MediaType::BOTH);
     void OpenByStreams(winrt::hstring const& video, winrt::hstring const& audio);
     void OpenFile(winrt::hstring const& filepath);
     void OpenSubtitle(winrt::hstring const& filepath);
