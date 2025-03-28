@@ -32,11 +32,20 @@ bool FfmpegDecoder::HasSource()
 
 MediaPlayer::MediaMetadata FfmpegDecoder::GetMetadata(hstring const& filepath, MediaType mediaType)
 {
+    av_log_set_level(AV_LOG_DEBUG);
     AVFormatContext* formatContext = nullptr;
-    int error = avformat_open_input(&formatContext, to_string(filepath).c_str(), nullptr, nullptr);
+    AVDictionary* options = nullptr;
+    av_dict_set(&options, "http_follow", "1", 0);
+    av_dict_set(&options, "user_agent", "Mozilla/5.0", 0);
+
+    int error = avformat_open_input(&formatContext, to_string(filepath).c_str(), nullptr, &options);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::GetMetadata avformat_open_input");
+        std::string errstr(AV_ERROR_MAX_STRING_SIZE, '\0');
+        av_make_error_string(errstr.data(), errstr.size(), error);
+        OutputDebugString(L"FfmpegDecoder::GetMetadata avformat_open_input: ");
+        OutputDebugString(to_hstring(errstr).c_str());
+        OutputDebugString(L"\n");
         return {};
     }
     defer{ avformat_close_input(&formatContext); };
@@ -495,7 +504,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
 
         while (m_FileOpened)
         {
-            if (m_DecodingPaused || (audioSamples.Size() > 18))
+            if (m_DecodingPaused || frames.Size() > 12)
             {
                 continue;
             }
@@ -630,6 +639,9 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                 }
             }
         }
+
+        m_VideoCV.notify_all();
+        m_AudioCV.notify_all();
     });
 }
 

@@ -75,6 +75,8 @@ void XAudio2Player::SubmitSample(AudioSample& sample)
 
     ProcessSample(sample);
 
+    if (sample.Buffer.empty()) return;
+
     auto audioData = new float[sample.Buffer.size()];
     std::copy(sample.Buffer.begin(), sample.Buffer.end(), audioData);
 

@@ -122,32 +122,53 @@ namespace winrt::MediaPlayer::implementation
 
         MediaMetadata res = {};
 
-        auto streamUrls = MediaUrlGetter::GetYoutubeStreamUrls(url);
-        res.AltUrl1 = streamUrls[0];
-        res.AltUrl2 = streamUrls[1];
+        auto type = MediaUrlGetter::GetType(url);
+        if (type == WebResourceType::Youtube)
+        {
+            auto streamUrls = MediaUrlGetter::GetYoutubeStreamUrls(url);
+            if (streamUrls.empty()) return;
 
-        auto videoMd = m_FfmpegDecoder.GetMetadata(res.AltUrl1, MediaType::VIDEO);
-        auto audioMd = m_FfmpegDecoder.GetMetadata(res.AltUrl2, MediaType::AUDIO);
+            res.AltUrl1 = streamUrls[0];
+            res.AltUrl2 = streamUrls[1];
 
-        res.AudioChannelCount = audioMd.AudioChannelCount;
-        res.AudioBitrate = audioMd.AudioBitrate;
-        res.AudioSampleRate = audioMd.AudioSampleRate;
-        res.AudioSampleSize = audioMd.AudioSampleSize;
+            auto videoMd = m_FfmpegDecoder.GetMetadata(res.AltUrl1, MediaType::VIDEO);
+            auto audioMd = m_FfmpegDecoder.GetMetadata(res.AltUrl2, MediaType::AUDIO);
 
-        res.VideoBitrate = videoMd.VideoBitrate;
-        res.VideoWidth = videoMd.VideoWidth;
-        res.VideoHeight = videoMd.VideoHeight;
-        res.VideoFrameRate = videoMd.VideoFrameRate;
+            res.AudioChannelCount = audioMd.AudioChannelCount;
+            res.AudioBitrate = audioMd.AudioBitrate;
+            res.AudioSampleRate = audioMd.AudioSampleRate;
+            res.AudioSampleSize = audioMd.AudioSampleSize;
+
+            res.VideoBitrate = videoMd.VideoBitrate;
+            res.VideoWidth = videoMd.VideoWidth;
+            res.VideoHeight = videoMd.VideoHeight;
+            res.VideoFrameRate = videoMd.VideoFrameRate;
+
+            res.Duration = audioMd.Duration > 0 ? audioMd.Duration : videoMd.Duration;
+            res.Author = !audioMd.Author.empty() ? audioMd.Author : videoMd.Author;
+            res.Title = !audioMd.Title.empty() ? audioMd.Title : videoMd.Title;
+            res.AlbumTitle = !audioMd.AlbumTitle.empty() ? audioMd.AlbumTitle : videoMd.AlbumTitle;
+        }
+        else if (type == WebResourceType::OneDrive)
+        {
+            hstring streamUrl = MediaUrlGetter::GetOneDriveStreamUrl(url);
+            res = m_FfmpegDecoder.GetMetadata(streamUrl);
+            res.AltUrl1 = streamUrl;
+        }
+        else
+        {
+            return;
+        }
 
         res.Path = url;
-        res.Id = Windows::Foundation::GuidHelper::CreateNewGuid();
+        res.Id = GuidHelper::CreateNewGuid();
         res.IsSelected = false;
         res.AddedAt = clock::now();
 
-        res.Duration = audioMd.Duration > 0 ? audioMd.Duration : videoMd.Duration;
-        res.Author = !audioMd.Author.empty() ? audioMd.Author : videoMd.Author;
-        res.Title = !audioMd.Title.empty() ? audioMd.Title : videoMd.Title;
-        res.AlbumTitle = !audioMd.AlbumTitle.empty() ? audioMd.AlbumTitle : videoMd.AlbumTitle;
+        if (res.Title.empty())
+        {
+            res.Title = res.Path;
+        }
 
         m_Playlist.Append(res);
 
@@ -170,7 +191,14 @@ namespace winrt::MediaPlayer::implementation
         m_UseFfmpeg = true;
         SwapChainPanel(SwapChainPanel());
 
-        m_FfmpegDecoder.OpenByStreams(Metadata().AltUrl1, Metadata().AltUrl2);
+        if (Metadata().AltUrl2.empty())
+        {
+            m_FfmpegDecoder.OpenFile(Metadata().AltUrl1);
+        }
+        else
+        {
+            m_FfmpegDecoder.OpenByStreams(Metadata().AltUrl1, Metadata().AltUrl2);
+        }
 
         m_SubTracks.Clear();
         for (auto& s : m_FfmpegDecoder.GetSubtitleStreams())
@@ -481,8 +509,7 @@ namespace winrt::MediaPlayer::implementation
         Stop();
         CurrentMediaIndex(CurrentMediaIndex() + 1);
         CurrentMediaIndex(CurrentMediaIndex() % m_Playlist.Size());
-        SetSource(Metadata().Path);
-        Start(0);
+        StartByIndex(CurrentMediaIndex());
     }
 
     void PlayerService::Prev()
@@ -495,8 +522,7 @@ namespace winrt::MediaPlayer::implementation
             CurrentMediaIndex(m_Playlist.Size());
         }
         CurrentMediaIndex(CurrentMediaIndex() - 1);
-        SetSource(Metadata().Path);
-        Start(0);
+        StartByIndex(CurrentMediaIndex());
     }
 
     void PlayerService::StartByIndex(int32_t index)
@@ -504,8 +530,16 @@ namespace winrt::MediaPlayer::implementation
         if (!HasSource()) return;
 
         CurrentMediaIndex(max(0, min(m_Playlist.Size() - 1, index)));
-        SetSource(Metadata().Path);
-        Start();
+
+        if (Metadata().AltUrl1.empty())
+        {
+            SetSource(Metadata().Path);
+        }
+        else
+        {
+            SetSourceFromUrl(Metadata().Path);
+        }
+        Start(0);
     }
 
     void PlayerService::DeleteByIndex(int32_t index)
@@ -535,7 +569,7 @@ namespace winrt::MediaPlayer::implementation
             CurrentMediaIndex(newCurrentMedia);
             Stop();
             SetSource(Metadata().Path);
-            Start();
+            Start(0);
         }
     }
 
@@ -940,6 +974,11 @@ namespace winrt::MediaPlayer::implementation
 
             if (m_ChangingSwapchain) continue;
 
+            //if (!m_FfmpegDecoder.GetVideoFrame(m_CurFrame))
+            //{
+            //    continue;
+            //}
+
             m_CurFrame = m_FrameQueue.Pop();
             m_LastFrameSize = { static_cast<float>(m_CurFrame.Width), static_cast<float>(m_CurFrame.Height) };
             auto deltaTime = std::chrono::steady_clock::now() - m_LastAudioSampleTime;
@@ -948,16 +987,16 @@ namespace winrt::MediaPlayer::implementation
             double diff = m_CurFrame.StartTime - frameStartTime;
             long long timestampDiff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(diff)).count();
 
-            if (m_CurAudioSample.StartTime <= 0.01)
-            {
-                continue;
-            }
+            //if (m_CurAudioSample.StartTime < 0.01)
+            //{
+            //    continue;
+            //}
 
             OutputDebugString(L"VideoRender: timestamp diff = ");
             OutputDebugString(to_hstring(timestampDiff).c_str());
             OutputDebugString(L"ms, delta = ");
-            OutputDebugString(to_hstring(deltaTime.count()).c_str());
-            OutputDebugString(L"ns, frame start time = ");
+            OutputDebugString(to_hstring(deltaTime.count() / 1000000.0).c_str());
+            OutputDebugString(L"ms, frame start time = ");
             OutputDebugString(to_hstring(frameStartTime).c_str());
             OutputDebugString(L"s, current frame start time = ");
             OutputDebugString(to_hstring(m_CurFrame.StartTime).c_str());
@@ -1061,17 +1100,14 @@ namespace winrt::MediaPlayer::implementation
                 return !m_Seeking;
             });
 
-            int maxSamples = 16;
+            int maxSamples = 12;
             if (m_AudioSamplesQueue.Size() < maxSamples) continue;
 
             m_CurAudioSample = {};
             m_CurAudioSample.Duration = 0;
             for (int i = 0; i < maxSamples; ++i)
             {
-                if (m_AudioSamplesQueue.Empty())
-                {
-                    break;
-                }
+                if (m_AudioSamplesQueue.Empty()) break;
 
                 auto sample = m_AudioSamplesQueue.Pop();
                 if (i == 0)
@@ -1082,10 +1118,10 @@ namespace winrt::MediaPlayer::implementation
                 m_CurAudioSample.Duration += sample.Duration;
                 m_CurAudioSample.Buffer.insert(m_CurAudioSample.Buffer.end(), sample.Buffer.begin(), sample.Buffer.end());
             }
-            m_LastAudioSampleTime = std::chrono::steady_clock::now();
 
             if (!m_CurAudioSample.Buffer.empty() && m_State != PlayerServiceState::PAUSED && m_State != PlayerServiceState::STOPPED)
             {
+                m_LastAudioSampleTime = std::chrono::steady_clock::now();
                 m_XAudio2Player.SubmitSample(m_CurAudioSample);
                 m_CurAudioSample = {};
             }

@@ -61,6 +61,8 @@ inline T& SharedQueue<T>::Front()
 template<typename T>
 inline void SharedQueue<T>::Clear()
 {
+    if (Size() == 0) return;
+
     while (!Empty())
     {
         Pop();

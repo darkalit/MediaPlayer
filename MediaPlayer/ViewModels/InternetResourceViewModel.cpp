@@ -3,6 +3,7 @@
 #include "InternetResourceViewModel.g.cpp"
 
 #include "App.xaml.h"
+#include "Media/MediaUrlGetter.h"
 
 namespace winrt::MediaPlayer::implementation
 {
@@ -11,10 +12,22 @@ namespace winrt::MediaPlayer::implementation
     {
         m_LoadResourceCommand = make<DelegateCommand>([&](IInspectable const& parameter) -> fire_and_forget
         {
+            ErrorMessage(L"");
+
             auto url = unbox_value<hstring>(parameter);
 
             OutputDebugString(url.c_str());
             OutputDebugString(L"\n");
+
+            switch(MediaUrlGetter::GetType(url))
+            {
+            case WebResourceType::Unknown:
+                ErrorMessage(L"This web resource cannot be used");
+                co_return;
+
+            default:
+                break;
+            }
 
             bool isAvailable = co_await m_PlayerService.ResourceIsAvailable(url);
             if (!isAvailable)

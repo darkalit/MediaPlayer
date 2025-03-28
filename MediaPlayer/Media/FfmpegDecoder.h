@@ -107,6 +107,11 @@ private:
     SwrContext* m_SwrContext;
     SwsContext* m_SwsContext;
 
+    std::mutex m_VideoM;
+    std::mutex m_AudioM;
+    std::condition_variable m_VideoCV;
+    std::condition_variable m_AudioCV;
+
     bool m_FileOpened = false;
     bool m_DecodingPaused = false;
 

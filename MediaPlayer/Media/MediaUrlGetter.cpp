@@ -1,11 +1,26 @@
 #include "pch.h"
 #include "MediaUrlGetter.h"
 
+#include "regex"
 #include "Utils.h"
 #include "winstring.h"
 #include "winrt/Windows.Storage.h"
+#include "winrt/Windows.Web.Http.h"
 
 using namespace winrt;
+
+WebResourceType MediaUrlGetter::GetType(winrt::hstring const& url)
+{
+    std::string surl = to_string(url);
+
+    static const std::regex oneDriveRegex(R"(^https?:\/\/1drv\.ms\/[a-zA-Z0-9\/\-\_!\.\?\=]+)");
+    static const std::regex ytRegex(R"((?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\?.*)?)");
+
+    if (std::regex_match(surl, oneDriveRegex)) return WebResourceType::OneDrive;
+    if (std::regex_match(surl, ytRegex)) return WebResourceType::Youtube;
+
+    return WebResourceType::Unknown;
+}
 
 winrt::MediaPlayer::MediaMetadata MediaUrlGetter::GetMetadata(winrt::hstring const& url)
 {
@@ -28,8 +43,8 @@ std::vector<hstring> MediaUrlGetter::GetYoutubeStreamUrls(hstring const& url)
     hstring cmd =
         Windows::ApplicationModel::Package::Current().InstalledLocation().Path() +
         L"\\Assets\\yt-dlp.exe " +
-        L"--skip-download -f \"bestvideo+bestaudio\" -g " +
-        url;
+        L"--print urls \"" +
+        url + L"\"";
 
     std::string output = LaunchProcess(cmd);
 
@@ -48,6 +63,20 @@ std::vector<hstring> MediaUrlGetter::GetYoutubeStreamUrls(hstring const& url)
     }
     
     return res;
+}
+
+winrt::hstring MediaUrlGetter::GetOneDriveStreamUrl(winrt::hstring const& url)
+{
+    std::string surl = to_string(url);
+    static const std::regex pattern(R"(s!(.*?)\?)");
+    std::smatch match;
+
+    if (!std::regex_search(surl, match, pattern))
+    {
+        return L"";
+    }
+
+    return L"https://api.onedrive.com/v1.0/shares/s!" + to_hstring(match[1].str()) + L"/root/content";
 }
 
 std::string MediaUrlGetter::LaunchProcess(winrt::hstring const& cmd)
