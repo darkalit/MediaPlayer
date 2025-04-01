@@ -7,8 +7,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
-    
-    <MenuBar x:Name="MenuBar" HorizontalAlignment="Left" VerticalAlignment="Top">
+
+    <MenuBar x:Name="MenuBar" HorizontalAlignment="Left" VerticalAlignment="Top" Loaded="OnLoad">
         <MenuBarItem Title="File">
             <MenuFlyoutItem Icon="OpenFile" Command="{x:Bind ViewModel.OpenFiles}" Text="Open files"/>
             <MenuFlyoutItem Icon="OpenFile" Command="{x:Bind ViewModel.OpenInternetResourceWindow}" Text="Open from url..."/>
@@ -34,10 +34,11 @@
         <MenuBarItem Title="Video">
             <MenuFlyoutItem Command="{x:Bind ViewModel.CreateSnapshotFile}" Text="Create snapshot file"/>
             <MenuFlyoutItem Command="{x:Bind ViewModel.OpenRecorderWindow}" Text="Record segment"/>
+            <MenuFlyoutSubItem x:Name="MenuSubItem_VideoEffects" Text="Effects"/>
         </MenuBarItem>
         <MenuBarItem Title="Subtitle">
             <MenuFlyoutItem Icon="OpenFile" Text="From file..." Command="{x:Bind ViewModel.OpenSubtitle}"/>
-            <MenuFlyoutSubItem x:Name="MenuSubItem_SubTrack"  Text="Sub Track"/>
+            <MenuFlyoutSubItem x:Name="MenuSubItem_SubTrack" Text="Sub Track"/>
         </MenuBarItem>
     </MenuBar>
 </UserControl>

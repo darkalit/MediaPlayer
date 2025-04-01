@@ -193,6 +193,7 @@ xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     <ClInclude Include="Converters\IsSelectedColorConverter.h" />
     <ClInclude Include="DirectX\DeviceResources.h" />
     <ClInclude Include="DirectX\DirectXUtils.h" />
+    <ClInclude Include="DirectX\ResourceManager.h" />
     <ClInclude Include="DirectX\TextRenderer.h" />
     <ClInclude Include="DirectX\TexturePlaneRenderer.h" />
     <ClInclude Include="Framework\BindableBase.h" />
@@ -273,6 +274,7 @@ xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     <ClCompile Include="Converters\IsSelectedColorConverter.cpp" />
     <ClCompile Include="DirectX\DeviceResources.cpp" />
     <ClCompile Include="DirectX\DirectXUtils.cpp" />
+    <ClCompile Include="DirectX\ResourceManager.cpp" />
     <ClCompile Include="DirectX\TextRenderer.cpp" />
     <ClCompile Include="DirectX\TexturePlaneRenderer.cpp" />
     <ClCompile Include="Framework\BindableBase.cpp" />
@@ -394,6 +396,14 @@ xcopy /y /d "$(ProjectDir)Assets\yt-dlp.exe" "$(OutDir)AppX\Assets\"</Command>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Assets\GrayscalePS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="Assets\PlanePS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Pixel</ShaderType>

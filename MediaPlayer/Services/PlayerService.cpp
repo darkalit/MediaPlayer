@@ -17,6 +17,8 @@
 
 #include "string"
 #include "iostream"
+#include "future"
+#include "regex"
 
 #include "Audioclient.h"
 #include "microsoft.ui.xaml.media.dxinterop.h"
@@ -30,6 +32,7 @@
 #include "Media/MediaUrlGetter.h"
 #include "winrt/Windows.ApplicationModel.h"
 #include "winrt/Windows.Storage.h"
+#include "winrt/Windows.Foundation.h"
 #include "winrt/Windows.Web.Http.h"
 
 using namespace winrt;
@@ -76,6 +79,7 @@ namespace winrt::MediaPlayer::implementation
     void PlayerService::Init()
     {
         m_DeviceResources = App::GetDeviceResources();
+        m_ResourceManager = App::GetResourceManager();
         m_TexturePlaneRenderer = std::make_shared<TexturePlaneRenderer>(m_DeviceResources);
         m_TextRenderer = std::make_shared<TextRenderer>(m_DeviceResources);
 
@@ -101,7 +105,14 @@ namespace winrt::MediaPlayer::implementation
             0,
             0);
 
+        FindShaders();
+
         State(PlayerServiceState::READY);
+    }
+
+    void PlayerService::SetVideoEffect(hstring const& name)
+    {
+        m_CurrentVideoEffect = name;
     }
 
     IAsyncOperation<bool> PlayerService::ResourceIsAvailable(hstring const& path)
@@ -896,9 +907,14 @@ namespace winrt::MediaPlayer::implementation
         return m_Playlist;
     }
 
-    Windows::Foundation::Collections::IObservableVector<SubtitleStream> PlayerService::SubTracks()
+    Collections::IObservableVector<SubtitleStream> PlayerService::SubTracks()
     {
         return m_SubTracks;
+    }
+
+    Collections::IVector<hstring> PlayerService::VideoEffectNames()
+    {
+        return single_threaded_vector(m_ResourceManager->GetShaderNames());
     }
 
     Microsoft::UI::Xaml::Controls::SwapChainPanel PlayerService::SwapChainPanel()
@@ -948,6 +964,35 @@ namespace winrt::MediaPlayer::implementation
         {
             m_UIDispatcherQueue = value;
         }
+    }
+
+    void PlayerService::FindShaders()
+    {
+        auto task = std::async(std::launch::async, [this]()
+        {
+            auto folder = Windows::ApplicationModel::Package::Current().InstalledLocation();
+            auto files = folder.GetFilesAsync().get();
+
+            std::regex shaderRegex(R"(^(.*)PS\.cso$)");
+
+            for (Storage::StorageFile const& file : files)
+            {
+                if (file.Name() == L"PlanePS.cso") continue;
+
+                std::string sFileName = to_string(file.Name());
+
+                std::smatch match;
+
+                if (std::regex_match(sFileName, match, shaderRegex))
+                {
+                    hstring name = to_hstring(match[1].str());
+
+                    m_ResourceManager->AddShader(name, L"PlaneVS.cso", file.Name());
+                }
+            }
+        });
+
+        task.get();
     }
 
     MediaMetadata PlayerService::GetMetadataInternal(
@@ -1077,7 +1122,7 @@ namespace winrt::MediaPlayer::implementation
 
             if (!m_CurFrame.Buffer.empty())
             {
-                m_TexturePlaneRenderer->Render();
+                m_TexturePlaneRenderer->Render(m_CurrentVideoEffect);
             }
 
             for (auto& sub : currentSubs)

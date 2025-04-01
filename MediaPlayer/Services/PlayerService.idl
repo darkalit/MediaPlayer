@@ -27,6 +27,7 @@ namespace MediaPlayer
         PlayerService();
         void Init();
 
+        void SetVideoEffect(String name);
         Windows.Foundation.IAsyncOperation<Boolean> ResourceIsAvailable(String url);
         void AddSourceFromUrl(String url);
         void SetSourceFromUrl(String url);
@@ -62,6 +63,7 @@ namespace MediaPlayer
         MediaMetadata Metadata { get; };
         Windows.Foundation.Collections.IVector<MediaMetadata> Playlist { get; };
         Windows.Foundation.Collections.IObservableVector<SubtitleStream> SubTracks { get; };
+        Windows.Foundation.Collections.IVector<String> VideoEffectNames { get; };
         Microsoft.UI.Xaml.Controls.SwapChainPanel SwapChainPanel;
         Microsoft.UI.Dispatching.DispatcherQueue UIDispatcher;
     }

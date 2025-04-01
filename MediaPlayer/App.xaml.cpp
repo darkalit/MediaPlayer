@@ -17,6 +17,7 @@ namespace winrt::MediaPlayer::implementation
     Window App::s_InternetResourceWindow = nullptr;
     Window App::s_RecorderWindow = nullptr;
     std::shared_ptr<DeviceResources> App::s_DeviceResources = nullptr;
+    std::shared_ptr<ResourceManager> App::s_ResourceManager = nullptr;
 
     App::App()
     {
@@ -35,6 +36,7 @@ namespace winrt::MediaPlayer::implementation
     void App::OnLaunched([[maybe_unused]] LaunchActivatedEventArgs const& e)
     {
         s_DeviceResources = std::make_shared<DeviceResources>();
+        s_ResourceManager = std::make_shared<ResourceManager>(s_DeviceResources);
 
         GetPlayerService().Init();
 
@@ -61,6 +63,11 @@ namespace winrt::MediaPlayer::implementation
     std::shared_ptr<DeviceResources> App::GetDeviceResources()
     {
         return s_DeviceResources;
+    }
+
+    std::shared_ptr<ResourceManager> App::GetResourceManager()
+    {
+        return s_ResourceManager;
     }
 
     HWND App::GetMainWindow()

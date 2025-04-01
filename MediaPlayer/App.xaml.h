@@ -7,6 +7,7 @@
 #include "Converters/DateToStringConverter.h"
 #include "MainWindow.xaml.h"
 #include "DirectX/DeviceResources.h"
+#include "DirectX/ResourceManager.h"
 #include "Services/PlayerService.h"
 
 namespace winrt::MediaPlayer::implementation
@@ -19,6 +20,7 @@ namespace winrt::MediaPlayer::implementation
 
         static MediaPlayer::PlayerService GetPlayerService();
         static std::shared_ptr<DeviceResources> GetDeviceResources();
+        static std::shared_ptr<ResourceManager> GetResourceManager();
         static HWND GetMainWindow();
         static Microsoft::UI::Xaml::Window OpenPiPWindow();
         static Microsoft::UI::Xaml::Window OpenInternetResourceWindow();
@@ -38,6 +40,7 @@ namespace winrt::MediaPlayer::implementation
         static Microsoft::UI::Xaml::Window s_InternetResourceWindow;
         static Microsoft::UI::Xaml::Window s_RecorderWindow;
         static std::shared_ptr<DeviceResources> s_DeviceResources;
+        static std::shared_ptr<ResourceManager> s_ResourceManager;
     };
 
     template <typename T>

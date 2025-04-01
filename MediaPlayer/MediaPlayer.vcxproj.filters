@@ -17,8 +17,10 @@
     <Page Include="Pages\RecorderWindow.xaml">
       <Filter>Pages</Filter>
     </Page>
-    <Page Include="Pages\InternetResourceWindow.xaml" />
     <Page Include="Pages\PiPWindow.xaml">
+      <Filter>Pages</Filter>
+    </Page>
+    <Page Include="Pages\InternetResourceWindow.xaml">
       <Filter>Pages</Filter>
     </Page>
   </ItemGroup>
@@ -146,12 +148,17 @@
     <ClCompile Include="ViewModels\RecorderViewModel.cpp">
       <Filter>ViewModels</Filter>
     </ClCompile>
-    <ClCompile Include="Media\MediaUrlGetter.cpp" />
     <ClCompile Include="ViewModels\PiPWindowViewModel.cpp">
       <Filter>ViewModels</Filter>
     </ClCompile>
     <ClCompile Include="ViewModels\InternetResourceViewModel.cpp">
       <Filter>ViewModels</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectX\ResourceManager.cpp">
+      <Filter>DirectX</Filter>
+    </ClCompile>
+    <ClCompile Include="Media\MediaUrlGetter.cpp">
+      <Filter>Media</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -229,12 +236,17 @@
     <ClInclude Include="ViewModels\RecorderViewModel.h">
       <Filter>ViewModels</Filter>
     </ClInclude>
-    <ClInclude Include="Media\MediaUrlGetter.h" />
     <ClInclude Include="ViewModels\PiPWindowViewModel.h">
       <Filter>ViewModels</Filter>
     </ClInclude>
     <ClInclude Include="ViewModels\InternetResourceViewModel.h">
       <Filter>ViewModels</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectX\ResourceManager.h">
+      <Filter>DirectX</Filter>
+    </ClInclude>
+    <ClInclude Include="Media\MediaUrlGetter.h">
+      <Filter>Media</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -324,6 +336,9 @@
       <Filter>Assets</Filter>
     </FxCompile>
     <FxCompile Include="Assets\PlaneVS.hlsl">
+      <Filter>Assets</Filter>
+    </FxCompile>
+    <FxCompile Include="Assets\GrayscalePS.hlsl">
       <Filter>Assets</Filter>
     </FxCompile>
   </ItemGroup>

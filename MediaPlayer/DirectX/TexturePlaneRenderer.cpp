@@ -3,12 +3,14 @@
 
 #include "d3d11_3.h"
 #include "DirectXUtils.h"
+#include "App.xaml.h"
 
 using namespace winrt;
 using namespace DirectX;
 
 TexturePlaneRenderer::TexturePlaneRenderer(const std::shared_ptr<DeviceResources>& deviceResources)
     : m_DeviceResources(deviceResources)
+    , m_ResourceManager(MediaPlayer::implementation::App::GetResourceManager())
 {
     CreateDeviceDependentResources();
     CreateWindowSizeDependentResources();
@@ -16,94 +18,54 @@ TexturePlaneRenderer::TexturePlaneRenderer(const std::shared_ptr<DeviceResources
 
 void TexturePlaneRenderer::CreateDeviceDependentResources()
 {
-    auto loadVSTask = DXUtils::ReadDataAsync(L"PlaneVS.cso");
-    auto loadPSTask = DXUtils::ReadDataAsync(L"PlanePS.cso");
+    m_ResourceManager->AddShader(L"Default", L"PlaneVS.cso", L"PlanePS.cso");
 
-    auto createVSTask = loadVSTask.then([this](const std::vector<uint8_t>& fileData)
-    {
-        check_hresult(m_DeviceResources->GetD3DDevice()->CreateVertexShader(
-            fileData.data(),
-            fileData.size(),
-            nullptr,
-            m_VertexShader.put()
-        ));
+    D3D11_SAMPLER_DESC samplerDesc = {
+        .Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+        .AddressU = D3D11_TEXTURE_ADDRESS_CLAMP,
+        .AddressV = D3D11_TEXTURE_ADDRESS_CLAMP,
+        .AddressW = D3D11_TEXTURE_ADDRESS_CLAMP,
+        .MipLODBias = 0.0f,
+        .MaxAnisotropy = 1,
+        .ComparisonFunc = D3D11_COMPARISON_NEVER,
+        .BorderColor = { 1.0f, 1.0f, 1.0f, 1.0f },
+        .MinLOD = 0.0f,
+        .MaxLOD = FLT_MAX,
+    };
 
-        static constexpr D3D11_INPUT_ELEMENT_DESC vertexDesc[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "UV", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        };
+    check_hresult(m_DeviceResources->GetD3DDevice()->CreateSamplerState(&samplerDesc, m_SamplerState.put()));
 
-        check_hresult(m_DeviceResources->GetD3DDevice()->CreateInputLayout(
-            vertexDesc,
-            ARRAYSIZE(vertexDesc),
-            fileData.data(),
-            fileData.size(),
-            m_InputLayout.put()
-        ));
-    });
+    static constexpr float vertexData[] = {
+        -1.0f, -1.0f, 0.0f, 1.0f,
+        -1.0f, 1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, 1.0f, 1.0f
+    };
 
-    auto createPSTask = loadPSTask.then([this](const std::vector<uint8_t>& fileData)
-    {
-        check_hresult(m_DeviceResources->GetD3DDevice()->CreatePixelShader(
-            fileData.data(),
-            fileData.size(),
-            nullptr,
-            m_PixelShader.put()
-        ));
+    CD3D11_BUFFER_DESC vertexBufferDesc(
+        sizeof(vertexData),
+        D3D11_BIND_VERTEX_BUFFER
+    );
 
-        D3D11_SAMPLER_DESC samplerDesc = {
-            .Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
-            .AddressU = D3D11_TEXTURE_ADDRESS_CLAMP,
-            .AddressV = D3D11_TEXTURE_ADDRESS_CLAMP,
-            .AddressW = D3D11_TEXTURE_ADDRESS_CLAMP,
-            .MipLODBias = 0.0f,
-            .MaxAnisotropy = 1,
-            .ComparisonFunc = D3D11_COMPARISON_NEVER,
-            .BorderColor = { 1.0f, 1.0f, 1.0f, 1.0f },
-            .MinLOD = 0.0f,
-            .MaxLOD = FLT_MAX,
-        };
+    D3D11_SUBRESOURCE_DATA vertexBufferData = {
+        .pSysMem = vertexData,
+        .SysMemPitch = 0,
+        .SysMemSlicePitch = 0,
+    };
 
-        check_hresult(m_DeviceResources->GetD3DDevice()->CreateSamplerState(&samplerDesc, m_SamplerState.put()));
-    });
+    check_hresult(m_DeviceResources->GetD3DDevice()->CreateBuffer(
+        &vertexBufferDesc,
+        &vertexBufferData,
+        m_VertexBuffer.put()
+    ));
 
-    auto createPlaneTask = (createVSTask && createPSTask).then([this]()
-    {
-        static constexpr float vertexData[] = {
-            -1.0f, -1.0f, 0.0f, 1.0f,
-            -1.0f, 1.0f, 0.0f, 0.0f,
-            1.0f, 1.0f, 1.0f, 0.0f,
-            -1.0f, -1.0f, 0.0f, 1.0f,
-            1.0f, 1.0f, 1.0f, 0.0f,
-            1.0f, -1.0f, 1.0f, 1.0f
-        };
+    m_Stride = 4 * sizeof(float);
+    m_Offset = 0;
+    m_VerticesCount = sizeof(vertexData) / m_Stride;
 
-        CD3D11_BUFFER_DESC vertexBufferDesc(
-            sizeof(vertexData),
-            D3D11_BIND_VERTEX_BUFFER
-        );
-
-        D3D11_SUBRESOURCE_DATA vertexBufferData = {
-            .pSysMem = vertexData,
-            .SysMemPitch = 0,
-            .SysMemSlicePitch = 0,
-        };
-
-        check_hresult(m_DeviceResources->GetD3DDevice()->CreateBuffer(
-            &vertexBufferDesc,
-            &vertexBufferData,
-            m_VertexBuffer.put()
-        ));
-
-        m_Stride = 4 * sizeof(float);
-        m_Offset = 0;
-        m_VerticesCount = sizeof(vertexData) / m_Stride;
-    });
-
-    createPlaneTask.then([this]()
-    {
-        m_LoadingComplete = true;
-    });
+    m_LoadingComplete = true;
 }
 
 void TexturePlaneRenderer::CreateWindowSizeDependentResources()
@@ -113,10 +75,7 @@ void TexturePlaneRenderer::CreateWindowSizeDependentResources()
 void TexturePlaneRenderer::ReleaseDeviceDependentResources()
 {
     m_LoadingComplete = false;
-    m_InputLayout->Release();
     m_VertexBuffer->Release();
-    m_VertexShader->Release();
-    m_PixelShader->Release();
     m_SamplerState->Release();
 }
 
@@ -147,7 +106,7 @@ void TexturePlaneRenderer::SetImage(const uint8_t* data, uint32_t width, uint32_
     }
 }
 
-void TexturePlaneRenderer::Render()
+void TexturePlaneRenderer::Render(winrt::hstring const& shaderName)
 {
     if (!m_LoadingComplete || !m_DeviceResources)
     {
@@ -165,11 +124,13 @@ void TexturePlaneRenderer::Render()
         &m_Offset
     );
 
-    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    context->IASetInputLayout(m_InputLayout.get());
+    auto shader = m_ResourceManager->GetShader(shaderName);
 
-    context->VSSetShader(m_VertexShader.get(), nullptr, 0);
-    context->PSSetShader(m_PixelShader.get(), nullptr, 0);
+    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    context->IASetInputLayout(shader->InputLayout.get());
+
+    context->VSSetShader(shader->VertexShader.get(), nullptr, 0);
+    context->PSSetShader(shader->PixelShader.get(), nullptr, 0);
 
     ID3D11ShaderResourceView* srvs[] = { m_ImageShaderResourceView.get() };
     context->PSSetShaderResources(0, 1, srvs);

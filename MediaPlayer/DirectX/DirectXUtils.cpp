@@ -8,6 +8,8 @@
 #include "pplawait.h"
 #include "vector"
 #include "string"
+#include "mutex"
+#include "future"
 
 using namespace winrt;
 using namespace Windows::Foundation;
@@ -17,7 +19,7 @@ using namespace concurrency;
 
 namespace DXUtils
 {
-    concurrency::task<std::vector<uint8_t>> ReadDataAsync(const std::wstring& filename)
+    concurrency::task<std::vector<uint8_t>> ReadDataAsync(winrt::hstring const& filename)
     {
         auto folder = Windows::ApplicationModel::Package::Current().InstalledLocation();
 
@@ -28,6 +30,22 @@ namespace DXUtils
         DataReader::FromBuffer(fileBuffer).ReadBytes(buffer);
 
         co_return buffer;
+    }
+
+    std::vector<uint8_t> ReadData(winrt::hstring const& filename)
+    {
+        auto task = std::async(std::launch::async, [filename]() -> std::vector<uint8_t>
+        {
+            auto folder = Windows::ApplicationModel::Package::Current().InstalledLocation();
+            auto file = folder.GetFileAsync(filename).get();
+            IBuffer fileBuffer = FileIO::ReadBufferAsync(file).get();
+            std::vector<uint8_t> buffer(fileBuffer.Length());
+            DataReader::FromBuffer(fileBuffer).ReadBytes(buffer);
+
+            return buffer;
+        });
+
+        return task.get();
     }
 
     float ConvertDipsToPixels(float dips, float dpi)

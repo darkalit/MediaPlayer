@@ -13,13 +13,27 @@ namespace winrt::MediaPlayer::implementation
     {
         m_ViewModel = make<MediaPlayer::implementation::MenuBarControlViewModel>();
         DataContext(ViewModel());
-
-        ViewModel().SubTracks().VectorChanged({ this, &MenuBarControl::OnSubTracksVectorChanged });
     }
 
     MediaPlayer::MenuBarControlViewModel MenuBarControl::ViewModel()
     {
         return m_ViewModel;
+    }
+
+    void MenuBarControl::OnLoad(winrt::Windows::Foundation::IInspectable const& sender, winrt::Microsoft::UI::Xaml::RoutedEventArgs const& e)
+    {
+        ViewModel().SubTracks().VectorChanged({ this, &MenuBarControl::OnSubTracksVectorChanged });
+
+        for (auto const& vfx : ViewModel().VideoEffects())
+        {
+            Controls::RadioMenuFlyoutItem radioItem;
+            radioItem.Text(vfx);
+            radioItem.GroupName(L"VideoEffectsGroup");
+            radioItem.Command(ViewModel().SetVideoEffect());
+            radioItem.CommandParameter(box_value(vfx));
+
+            MenuSubItem_VideoEffects().Items().Append(radioItem);
+        }
     }
 
     void MenuBarControl::OnSubTracksVectorChanged(

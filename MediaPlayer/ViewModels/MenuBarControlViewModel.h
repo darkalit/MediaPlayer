@@ -11,7 +11,9 @@ namespace winrt::MediaPlayer::implementation
         MenuBarControlViewModel();
 
         winrt::Windows::Foundation::Collections::IObservableVector<SubtitleStream> SubTracks();
+        winrt::Windows::Foundation::Collections::IVector<hstring> VideoEffects();
 
+        Microsoft::UI::Xaml::Input::ICommand SetVideoEffect();
         Microsoft::UI::Xaml::Input::ICommand CreateSnapshotFile();
         Microsoft::UI::Xaml::Input::ICommand ChangePlaybackMode();
         Microsoft::UI::Xaml::Input::ICommand ChangePlaybackSpeed();
@@ -24,6 +26,7 @@ namespace winrt::MediaPlayer::implementation
 
     private:
         MediaPlayer::PlayerService m_PlayerService;
+        MediaPlayer::DelegateCommand m_SetVideoEffectCommand = nullptr;
         MediaPlayer::DelegateCommand m_CreateSnapshotFileCommand = nullptr;
         MediaPlayer::DelegateCommand m_ChangePlaybackModeCommand = nullptr;
         MediaPlayer::DelegateCommand m_ChangePlaybackSpeedCommand = nullptr;

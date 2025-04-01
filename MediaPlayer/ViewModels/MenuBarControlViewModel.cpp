@@ -21,6 +21,12 @@ namespace winrt::MediaPlayer::implementation
     MenuBarControlViewModel::MenuBarControlViewModel()
         : m_PlayerService(App::GetPlayerService())
     {
+        m_SetVideoEffectCommand = make<DelegateCommand>([&](IInspectable const& parameter)
+        {
+            auto s = unbox_value<hstring>(parameter);
+            m_PlayerService.SetVideoEffect(s);
+        });
+
         m_CreateSnapshotFileCommand = make<DelegateCommand>([&](auto&&)
         {
             m_PlayerService.CreateSnapshot();
@@ -135,6 +141,16 @@ namespace winrt::MediaPlayer::implementation
     winrt::Windows::Foundation::Collections::IObservableVector<SubtitleStream> MenuBarControlViewModel::SubTracks()
     {
         return m_PlayerService.SubTracks();
+    }
+
+    winrt::Windows::Foundation::Collections::IVector<hstring> MenuBarControlViewModel::VideoEffects()
+    {
+        return m_PlayerService.VideoEffectNames();
+    }
+
+    Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::SetVideoEffect()
+    {
+        return m_SetVideoEffectCommand;
     }
 
     Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::CreateSnapshotFile()

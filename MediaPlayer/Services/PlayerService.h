@@ -27,6 +27,7 @@ namespace winrt::MediaPlayer::implementation
         ~PlayerService() override;
         void Init();
 
+        void SetVideoEffect(hstring const& name);
         Windows::Foundation::IAsyncOperation<bool> ResourceIsAvailable(hstring const& path);
         void AddSourceFromUrl(hstring const& url);
         void SetSourceFromUrl(hstring const& url);
@@ -68,12 +69,14 @@ namespace winrt::MediaPlayer::implementation
         void Metadata(MediaMetadata const& value);
         Windows::Foundation::Collections::IVector<MediaMetadata> Playlist();
         Windows::Foundation::Collections::IObservableVector<SubtitleStream> SubTracks();
+        Windows::Foundation::Collections::IVector<hstring> VideoEffectNames();
         Microsoft::UI::Xaml::Controls::SwapChainPanel SwapChainPanel();
         void SwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& value);
         Microsoft::UI::Dispatching::DispatcherQueue UIDispatcher();
         void UIDispatcher(Microsoft::UI::Dispatching::DispatcherQueue const& value);
 
     private:
+        void FindShaders();
         MediaMetadata GetMetadataInternal(hstring const& path);
         void VideoRender();
         void AudioRender();
@@ -111,6 +114,7 @@ namespace winrt::MediaPlayer::implementation
         std::chrono::time_point<std::chrono::steady_clock> m_LastAudioSampleTime;
 
         std::shared_ptr<DeviceResources> m_DeviceResources;
+        std::shared_ptr<ResourceManager> m_ResourceManager;
         std::shared_ptr<TexturePlaneRenderer> m_TexturePlaneRenderer;
         std::shared_ptr<TextRenderer> m_TextRenderer;
         com_ptr<ID3D11ShaderResourceView> m_ShaderResourceView;
@@ -119,6 +123,8 @@ namespace winrt::MediaPlayer::implementation
         com_ptr<MediaEngineWrapper> m_MediaEngineWrapper;
         Microsoft::UI::Xaml::Controls::SwapChainPanel m_SwapChainPanel;
         Microsoft::UI::Dispatching::DispatcherQueue m_UIDispatcherQueue = nullptr;
+
+        hstring m_CurrentVideoEffect = L"Default";
 
         FfmpegDecoder m_FfmpegDecoder;
         XAudio2Player m_XAudio2Player;
