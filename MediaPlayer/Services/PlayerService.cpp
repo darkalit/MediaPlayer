@@ -19,6 +19,7 @@
 #include "iostream"
 #include "future"
 #include "regex"
+#include "ranges"
 
 #include "Audioclient.h"
 #include "microsoft.ui.xaml.media.dxinterop.h"
@@ -80,6 +81,12 @@ namespace winrt::MediaPlayer::implementation
     {
         m_DeviceResources = App::GetDeviceResources();
         m_ResourceManager = App::GetResourceManager();
+
+        m_AudioEffectsMap = {
+            { L"Default", L"default" },
+            { L"Echo", L"aecho=0.8:0.88:60:0.4" },
+        };
+
         m_TexturePlaneRenderer = std::make_shared<TexturePlaneRenderer>(m_DeviceResources);
         m_TextRenderer = std::make_shared<TextRenderer>(m_DeviceResources);
 
@@ -113,6 +120,12 @@ namespace winrt::MediaPlayer::implementation
     void PlayerService::SetVideoEffect(hstring const& name)
     {
         m_CurrentVideoEffect = name;
+    }
+
+    void PlayerService::SetAudioEffect(hstring const& name)
+    {
+        m_CurrentAudioEffect = name;
+        m_FfmpegDecoder.SetAudioFilter(m_AudioEffectsMap[m_CurrentAudioEffect]);
     }
 
     IAsyncOperation<bool> PlayerService::ResourceIsAvailable(hstring const& path)
@@ -915,6 +928,12 @@ namespace winrt::MediaPlayer::implementation
     Collections::IVector<hstring> PlayerService::VideoEffectNames()
     {
         return single_threaded_vector(m_ResourceManager->GetShaderNames());
+    }
+
+    Collections::IVector<hstring> PlayerService::AudioEffectNames()
+    {
+        auto view = m_AudioEffectsMap | std::views::keys;
+        return single_threaded_vector(std::vector(view.begin(), view.end()));
     }
 
     Microsoft::UI::Xaml::Controls::SwapChainPanel PlayerService::SwapChainPanel()

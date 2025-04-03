@@ -28,6 +28,7 @@ namespace winrt::MediaPlayer::implementation
         void Init();
 
         void SetVideoEffect(hstring const& name);
+        void SetAudioEffect(hstring const& name);
         Windows::Foundation::IAsyncOperation<bool> ResourceIsAvailable(hstring const& path);
         void AddSourceFromUrl(hstring const& url);
         void SetSourceFromUrl(hstring const& url);
@@ -70,6 +71,7 @@ namespace winrt::MediaPlayer::implementation
         Windows::Foundation::Collections::IVector<MediaMetadata> Playlist();
         Windows::Foundation::Collections::IObservableVector<SubtitleStream> SubTracks();
         Windows::Foundation::Collections::IVector<hstring> VideoEffectNames();
+        Windows::Foundation::Collections::IVector<hstring> AudioEffectNames();
         Microsoft::UI::Xaml::Controls::SwapChainPanel SwapChainPanel();
         void SwapChainPanel(Microsoft::UI::Xaml::Controls::SwapChainPanel const& value);
         Microsoft::UI::Dispatching::DispatcherQueue UIDispatcher();
@@ -125,6 +127,8 @@ namespace winrt::MediaPlayer::implementation
         Microsoft::UI::Dispatching::DispatcherQueue m_UIDispatcherQueue = nullptr;
 
         hstring m_CurrentVideoEffect = L"Default";
+        hstring m_CurrentAudioEffect = L"Default";
+        std::map<hstring, hstring> m_AudioEffectsMap = {};
 
         FfmpegDecoder m_FfmpegDecoder;
         XAudio2Player m_XAudio2Player;

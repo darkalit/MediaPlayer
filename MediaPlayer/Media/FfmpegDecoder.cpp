@@ -7,6 +7,10 @@ extern "C" {
 #include "libswresample/swresample.h"
 #include "libswscale/swscale.h"
 #include "libavutil/imgutils.h"
+#include "libavfilter/avfilter.h"
+#include "libavfilter/buffersrc.h"
+#include "libavfilter/buffersink.h"
+#include "libavutil/channel_layout.h"
 }
 
 #include "Utils.h"
@@ -494,13 +498,16 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
     m_DecodingThread = std::thread([&]()
     {
         OutputDebugString(L"New decode thread\n");
+        int error = 0;
 
         auto frame = av_frame_alloc();
         defer{ av_frame_free(&frame); };
 
+        auto filtFrame = av_frame_alloc();
+        defer{ av_frame_free(&filtFrame); };
+
         auto packet = av_packet_alloc();
         defer{ av_packet_free(&packet); };
-        int error = 0;
 
         while (m_FileOpened)
         {
@@ -589,6 +596,13 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                         int outSamples = swr_get_out_samples(m_SwrContext, frame->nb_samples);
                         uint8_t* buffer = nullptr;
                         av_samples_alloc(&buffer, nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 1);
+                        defer {
+                            if (buffer)
+                            {
+                                av_free(buffer);
+                            }
+                        };
+
                         outSamples = swr_convert(
                             m_SwrContext,
                             &buffer,
@@ -596,16 +610,62 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                             frame->data,
                             frame->nb_samples);
                         int dataSize = av_samples_get_buffer_size(nullptr, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 0);
-                        //int dataSize = outSamples * m_ChannelLayout.nb_channels * 2;
-                        float* floatBuffer = reinterpret_cast<float*>(buffer);
 
-                        sample.Buffer.insert(sample.Buffer.end(), floatBuffer, floatBuffer + dataSize / sizeof(float));
-
-                        if (buffer)
+                        if (m_FilterDescStr == L"default")
                         {
-                            av_free(buffer);
+                            float* floatBuffer = reinterpret_cast<float*>(buffer);
+                            sample.Buffer.insert(sample.Buffer.end(), floatBuffer, floatBuffer + dataSize / sizeof(float));
+                        }
+                        else
+                        {
+                            AVFrame* convFrame = av_frame_alloc();
+                            defer { av_frame_free(&convFrame); };
+                            convFrame->nb_samples = outSamples;
+                            convFrame->ch_layout = m_ChannelLayout;
+                            convFrame->format = m_SampleFormat;
+                            convFrame->sample_rate = MediaConfig::AudioSampleRate;
+
+                            av_samples_fill_arrays(convFrame->data, convFrame->linesize, buffer, m_ChannelLayout.nb_channels, outSamples, m_SampleFormat, 0);
+
+                            error = av_buffersrc_add_frame_flags(m_BufferSrcCtx, convFrame, AV_BUFFERSRC_FLAG_KEEP_REF);
+                            if (error < 0)
+                            {
+                                char err[AV_ERROR_MAX_STRING_SIZE] = {};
+                                auto errStr = av_make_error_string(err, AV_ERROR_MAX_STRING_SIZE, error);
+                                OutputDebugString(to_hstring(errStr).c_str());
+                                continue;
+                            }
+
+                            error = av_buffersink_get_frame(m_BufferSinkCtx, filtFrame);
+                            if (error < 0)
+                            {
+                                continue;
+                            }
+
+                            int filtOutSamples = swr_get_out_samples(m_SwrContext, filtFrame->nb_samples);
+                            uint8_t* filtBuffer = nullptr;
+                            av_samples_alloc(&filtBuffer, nullptr, m_ChannelLayout.nb_channels, filtOutSamples, m_SampleFormat, 1);
+                            defer {
+                                if (filtBuffer)
+                                {
+                                    av_free(filtBuffer);
+                                }
+                            };
+
+                            filtOutSamples = swr_convert(
+                                m_SwrContext,
+                                &filtBuffer,
+                                filtOutSamples,
+                                filtFrame->data,
+                                filtFrame->nb_samples);
+                            int filtDataSize = av_samples_get_buffer_size(nullptr, m_ChannelLayout.nb_channels, filtOutSamples, m_SampleFormat, 0);
+
+                            float* floatBuffer = reinterpret_cast<float*>(filtBuffer);
+
+                            sample.Buffer.insert(sample.Buffer.end(), floatBuffer, floatBuffer + filtDataSize / sizeof(float));
                         }
                     }
+
                     double timeBase = av_q2d(context->streams[m_AudioStreamIndex]->time_base);
                     sample.Duration = packet->duration * timeBase;
                     sample.StartTime = packet->pts * timeBase;
@@ -694,6 +754,15 @@ void FfmpegDecoder::Seek(uint64_t time)
             avcodec_flush_buffers(codecContext);
         }
     }
+}
+
+void FfmpegDecoder::SetAudioFilter(winrt::hstring const& filterStr)
+{
+    std::lock_guard lock(m_Mutex);
+
+    m_FilterDescStr = filterStr;
+    FreeFilters();
+    InitAudioFilter(m_FilterDescStr);
 }
 
 void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start, uint64_t end)
@@ -1025,6 +1094,85 @@ void FfmpegDecoder::Free()
     if (m_SubtitlesCodecContext)
     {
         avcodec_free_context(&m_SubtitlesCodecContext);
+    }
+
+    FreeFilters();
+}
+
+void FfmpegDecoder::FreeFilters()
+{
+    if (m_FilterGraph)
+    {
+        avfilter_graph_free(&m_FilterGraph);    
+    }
+}
+
+void FfmpegDecoder::InitAudioFilter(winrt::hstring const& filterStr)
+{
+    if (filterStr == L"default") return;
+
+    int error = 0;
+    m_FilterGraph = avfilter_graph_alloc();
+    if (!m_FilterGraph)
+    {
+        OutputDebugString(L"FfmpegDecoder::SetupDecoding avfilter_graph_alloc");
+        return;
+    }
+
+    const AVFilter* bufferSrc = avfilter_get_by_name("buffersrc");
+    const AVFilter* bufferSink = avfilter_get_by_name("buffersink");
+    m_BufferSrcCtx = nullptr;
+    m_BufferSinkCtx = nullptr;
+
+    AVFilterInOut* outF = avfilter_inout_alloc();
+    defer{ avfilter_inout_free(&outF); };
+
+    AVFilterInOut* inF = avfilter_inout_alloc();
+    defer{ avfilter_inout_free(&inF); };
+
+    char args[512];
+    snprintf(args, sizeof(args),
+        "time_base=1/%d:sample_rate=%d:sample_fmt=flt:channel_layout=stereo",
+        MediaConfig::AudioSampleRate, MediaConfig::AudioSampleRate);
+    // m_SampleFormat
+    // MediaConfig::AudioChannels
+    error = avfilter_graph_create_filter(&m_BufferSrcCtx, bufferSrc, "in", args, nullptr, m_FilterGraph);
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::SetupDecoding avfilter_graph_create_filter SRC");
+        return;
+    }
+
+    error = avfilter_graph_create_filter(&m_BufferSinkCtx, bufferSink, "out", nullptr, nullptr, m_FilterGraph);
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::SetupDecoding avfilter_graph_create_filter SINK");
+        return;
+    }
+
+    outF->name = av_strdup("in");
+    outF->filter_ctx = m_BufferSrcCtx;
+    outF->pad_idx = 0;
+    outF->next = nullptr;
+
+    inF->name = av_strdup("out");
+    inF->filter_ctx = m_BufferSinkCtx;
+    inF->pad_idx = 0;
+    inF->next = nullptr;
+
+    //std::string filterDesc = "aecho=0.8:0.88:60:0.4";
+    error = avfilter_graph_parse_ptr(m_FilterGraph, to_string(filterStr).c_str(), &inF, &outF, nullptr);
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::SetupDecoding avfilter_graph_parse_ptr");
+        return;
+    }
+
+    error = avfilter_graph_config(m_FilterGraph, nullptr);
+    if (error < 0)
+    {
+        OutputDebugString(L"FfmpegDecoder::SetupDecoding avfilter_graph_config");
+        return;
     }
 }
 
