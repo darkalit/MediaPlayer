@@ -27,6 +27,12 @@ namespace winrt::MediaPlayer::implementation
             m_PlayerService.SetVideoEffect(s);
         });
 
+        m_SetAudioEffectCommand = make<DelegateCommand>([&](IInspectable const& parameter)
+        {
+            auto s = unbox_value<hstring>(parameter);
+            m_PlayerService.SetAudioEffect(s);
+        });
+
         m_CreateSnapshotFileCommand = make<DelegateCommand>([&](auto&&)
         {
             m_PlayerService.CreateSnapshot();
@@ -148,9 +154,19 @@ namespace winrt::MediaPlayer::implementation
         return m_PlayerService.VideoEffectNames();
     }
 
+    winrt::Windows::Foundation::Collections::IVector<hstring> MenuBarControlViewModel::AudioEffects()
+    {
+        return m_PlayerService.AudioEffectNames();
+    }
+
     Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::SetVideoEffect()
     {
         return m_SetVideoEffectCommand;
+    }
+
+    Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::SetAudioEffect()
+    {
+        return m_SetAudioEffectCommand;
     }
 
     Microsoft::UI::Xaml::Input::ICommand MenuBarControlViewModel::CreateSnapshotFile()

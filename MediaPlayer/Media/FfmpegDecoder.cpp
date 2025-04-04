@@ -45,11 +45,7 @@ MediaPlayer::MediaMetadata FfmpegDecoder::GetMetadata(hstring const& filepath, M
     int error = avformat_open_input(&formatContext, to_string(filepath).c_str(), nullptr, &options);
     if (error != 0)
     {
-        std::string errstr(AV_ERROR_MAX_STRING_SIZE, '\0');
-        av_make_error_string(errstr.data(), errstr.size(), error);
-        OutputDebugString(L"FfmpegDecoder::GetMetadata avformat_open_input: ");
-        OutputDebugString(to_hstring(errstr).c_str());
-        OutputDebugString(L"\n");
+        FfmpegLogError(error, L"FfmpegDecoder::GetMetadata avformat_open_input");
         return {};
     }
     defer{ avformat_close_input(&formatContext); };
@@ -57,7 +53,7 @@ MediaPlayer::MediaMetadata FfmpegDecoder::GetMetadata(hstring const& filepath, M
     error = avformat_find_stream_info(formatContext, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::GetMetadata avformat_find_stream_info");
+        FfmpegLogError(error, L"FfmpegDecoder::GetMetadata avformat_find_stream_info");
         return {};
     }
 
@@ -121,31 +117,28 @@ void FfmpegDecoder::OpenByStreams(winrt::hstring const& video, winrt::hstring co
     int error = avformat_open_input(&videoContext, to_string(video).c_str(), nullptr, nullptr);
     if (error != 0)
     {
-        char buffer[AV_ERROR_MAX_STRING_SIZE] = {};
-        auto errStr = av_make_error_string(buffer, AV_ERROR_MAX_STRING_SIZE, error);
-        OutputDebugString(L"FfmpegDecoder::OpenByStreams VIDEO avformat_open_input\n");
-        OutputDebugString(to_hstring(errStr).c_str());
+        FfmpegLogError(error, L"FfmpegDecoder::OpenByStreams VIDEO avformat_open_input");
         return;
     }
 
     error = avformat_find_stream_info(videoContext, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenByStreams VIDEO avformat_find_stream_info");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenByStreams VIDEO avformat_find_stream_info");
         return;
     }
 
     error = avformat_open_input(&audioContext, to_string(audio).c_str(), nullptr, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO avformat_open_input");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenByStreams AUDIO avformat_open_input");
         return;
     }
 
     error = avformat_find_stream_info(audioContext, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO avformat_find_stream_info");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenByStreams AUDIO avformat_find_stream_info");
         return;
     }
 
@@ -155,7 +148,7 @@ void FfmpegDecoder::OpenByStreams(winrt::hstring const& video, winrt::hstring co
     m_AudioStreamIndex = av_find_best_stream(audioContext, AVMEDIA_TYPE_AUDIO, -1, -1, &audioCodec, 0);
     if (m_AudioStreamIndex < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO av_find_best_stream");
+        FfmpegLogError(m_AudioStreamIndex, L"FfmpegDecoder::OpenByStreams AUDIO av_find_best_stream");
         return;
     }
 
@@ -169,14 +162,14 @@ void FfmpegDecoder::OpenByStreams(winrt::hstring const& video, winrt::hstring co
     error = avcodec_parameters_to_context(m_AudioCodecContext, audioContext->streams[m_AudioStreamIndex]->codecpar);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO avcodec_parameters_to_context");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenByStreams AUDIO avcodec_parameters_to_context");
         return;
     }
 
     error = avcodec_open2(m_AudioCodecContext, audioCodec, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO avcodec_open2");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenByStreams AUDIO avcodec_open2");
         return;
     }
 
@@ -195,14 +188,14 @@ void FfmpegDecoder::OpenByStreams(winrt::hstring const& video, winrt::hstring co
         0, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO swr_alloc_set_opts2");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenByStreams AUDIO swr_alloc_set_opts2");
         return;
     }
 
     error = swr_init(m_SwrContext);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenByStreams AUDIO swr_init");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenByStreams AUDIO swr_init");
         return;
     }
 
@@ -221,14 +214,14 @@ void FfmpegDecoder::OpenByStreams(winrt::hstring const& video, winrt::hstring co
         error = avcodec_parameters_to_context(m_VideoCodecContext, videoContext->streams[m_VideoStreamIndex]->codecpar);
         if (error != 0)
         {
-            OutputDebugString(L"FfmpegDecoder::OpenByStreams VIDEO avcodec_parameters_to_context");
+            FfmpegLogError(error, L"FfmpegDecoder::OpenByStreams VIDEO avcodec_parameters_to_context");
             return;
         }
 
         error = avcodec_open2(m_VideoCodecContext, videoCodec, nullptr);
         if (error != 0)
         {
-            OutputDebugString(L"FfmpegDecoder::OpenByStreams VIDEO avcodec_open2");
+            FfmpegLogError(error, L"FfmpegDecoder::OpenByStreams VIDEO avcodec_open2");
             return;
         }   
             
@@ -260,7 +253,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
     int error = avformat_open_input(&context, to_string(filepath).c_str(), nullptr, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenFile avformat_open_input");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenFile avformat_open_input");
         return;
     }
     defer{ m_FileOpened = true; };
@@ -268,7 +261,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
     error = avformat_find_stream_info(context, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenFile avformat_find_stream_info");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenFile avformat_find_stream_info");
         return;
     }
 
@@ -284,7 +277,7 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
     m_AudioStreamIndex = av_find_best_stream(context, AVMEDIA_TYPE_AUDIO, -1, -1, &audioCodec, 0);
     if (m_AudioStreamIndex < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Audio av_find_best_stream");
+        FfmpegLogError(m_AudioStreamIndex, L"FfmpegDecoder::OpenFile Audio av_find_best_stream");
         return;
     }
 
@@ -298,14 +291,14 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
     error = avcodec_parameters_to_context(m_AudioCodecContext, context->streams[m_AudioStreamIndex]->codecpar);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Audio avcodec_parameters_to_context");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenFile Audio avcodec_parameters_to_context");
         return;
     }
 
     error = avcodec_open2(m_AudioCodecContext, audioCodec, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Audio avcodec_open2");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenFile Audio avcodec_open2");
         return;
     }
 
@@ -324,14 +317,14 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         0, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Audio swr_alloc_set_opts2");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenFile Audio swr_alloc_set_opts2");
         return;
     }
 
     error = swr_init(m_SwrContext);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenFile Audio swr_init");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenFile Audio swr_init");
         return;
     }
 
@@ -350,14 +343,14 @@ void FfmpegDecoder::OpenFile(hstring const& filepath)
         error = avcodec_parameters_to_context(m_VideoCodecContext, context->streams[m_VideoStreamIndex]->codecpar);
         if (error != 0)
         {
-            OutputDebugString(L"FfmpegDecoder::OpenFile Video avcodec_parameters_to_context");
+            FfmpegLogError(error, L"FfmpegDecoder::OpenFile Video avcodec_parameters_to_context");
             return;
         }
 
         error = avcodec_open2(m_VideoCodecContext, videoCodec, nullptr);
         if (error != 0)
         {
-            OutputDebugString(L"FfmpegDecoder::OpenFile Video avcodec_open2");
+            FfmpegLogError(error, L"FfmpegDecoder::OpenFile Video avcodec_open2");
             return;
         }
 
@@ -394,21 +387,21 @@ void FfmpegDecoder::OpenSubtitle(winrt::hstring const& filepath)
     int error = avformat_open_input(&m_SubtitleFormatContext, to_string(filepath).c_str(), nullptr, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenSubtitle avformat_open_input");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenSubtitle avformat_open_input");
         return;
     }
 
     error = avformat_find_stream_info(m_SubtitleFormatContext, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenSubtitle avformat_find_stream_info");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenSubtitle avformat_find_stream_info");
         return;
     }
 
     m_CurrentSubSteamIndex = av_find_best_stream(m_SubtitleFormatContext, AVMEDIA_TYPE_SUBTITLE, -1, -1, nullptr, 0);
     if (m_CurrentSubSteamIndex < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles av_find_best_stream");
+        FfmpegLogError(m_CurrentSubSteamIndex, L"FfmpegDecoder::OpenSubtitle Subtitles av_find_best_stream");
         return;
     }
 
@@ -424,14 +417,14 @@ void FfmpegDecoder::OpenSubtitle(winrt::hstring const& filepath)
     error = avcodec_parameters_to_context(m_SubtitlesCodecContext, m_SubtitleFormatContext->streams[m_CurrentSubSteamIndex]->codecpar);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_parameters_to_context");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_parameters_to_context");
         return;
     }
 
     error = avcodec_open2(m_SubtitlesCodecContext, subtitlesCodec, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_open2");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_open2");
         return;
     }
 }
@@ -474,14 +467,14 @@ void FfmpegDecoder::OpenSubtitle(unsigned int subtitleIndex)
     int error = avcodec_parameters_to_context(m_SubtitlesCodecContext, context->streams[subtitleIndex]->codecpar);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_parameters_to_context");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_parameters_to_context");
         return;
     }
 
     error = avcodec_open2(m_SubtitlesCodecContext, subtitlesCodec, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_open2");
+        FfmpegLogError(error, L"FfmpegDecoder::OpenSubtitle Subtitles avcodec_open2");
         return;
     }
 
@@ -540,7 +533,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                     error = avcodec_send_packet(m_VideoCodecContext, packet);
                     if (error != 0)
                     {
-                        OutputDebugString(L"FfmpegDecoder::GetNextFrame avcodec_send_packet");
+                        FfmpegLogError(error, L"FfmpegDecoder::GetNextFrame avcodec_send_packet");
                         continue;
                     }
 
@@ -558,7 +551,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                             1);
                         if (error < 0)
                         {
-                            OutputDebugString(L"FfmpegDecoder::GetNextFrame av_image_alloc");
+                            FfmpegLogError(error, L"FfmpegDecoder::GetNextFrame av_image_alloc");
                             continue;
                         }
                         defer{ av_freep(&data[0]); };
@@ -630,9 +623,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                             error = av_buffersrc_add_frame_flags(m_BufferSrcCtx, convFrame, AV_BUFFERSRC_FLAG_KEEP_REF);
                             if (error < 0)
                             {
-                                char err[AV_ERROR_MAX_STRING_SIZE] = {};
-                                auto errStr = av_make_error_string(err, AV_ERROR_MAX_STRING_SIZE, error);
-                                OutputDebugString(to_hstring(errStr).c_str());
+                                FfmpegLogError(error, L"");
                                 continue;
                             }
 
@@ -677,7 +668,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                     error = PushSubtitle(subs, context, packet);
                     if (error < 0)
                     {
-                        OutputDebugString(L"FfmpegDecoder::SetupDecoding Subtitles PushSubtitle");
+                        FfmpegLogError(error, L"FfmpegDecoder::SetupDecoding Subtitles PushSubtitle");
                         continue;
                     }
                 }
@@ -692,7 +683,7 @@ void FfmpegDecoder::SetupDecoding(SharedQueue<VideoFrame>& frames, SharedQueue<S
                         error = PushSubtitle(subs, m_SubtitleFormatContext, packet);
                         if (error < 0)
                         {
-                            OutputDebugString(L"FfmpegDecoder::SetupDecoding Subtitles PushSubtitle");
+                            FfmpegLogError(error, L"FfmpegDecoder::SetupDecoding Subtitles PushSubtitle");
                             continue;
                         }
                     }
@@ -758,6 +749,8 @@ void FfmpegDecoder::Seek(uint64_t time)
 
 void FfmpegDecoder::SetAudioFilter(winrt::hstring const& filterStr)
 {
+    if (!HasSource()) return;
+
     std::lock_guard lock(m_Mutex);
 
     m_FilterDescStr = filterStr;
@@ -771,7 +764,7 @@ void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start
     int error = avformat_open_input(&inContext, to_string(filepath).c_str(), nullptr, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::RecordSegment avformat_open_input");
+        FfmpegLogError(error, L"FfmpegDecoder::RecordSegment avformat_open_input");
         return;
     }
     defer{ avformat_close_input(&inContext); };
@@ -779,7 +772,7 @@ void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start
     error = avformat_find_stream_info(inContext, nullptr);
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::RecordSegment avformat_find_stream_info");
+        FfmpegLogError(error, L"FfmpegDecoder::RecordSegment avformat_find_stream_info");
         return;
     }
 
@@ -790,7 +783,7 @@ void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start
     error = av_seek_frame(inContext, -1, startPts, AVSEEK_FLAG_BACKWARD);
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::RecordSegment av_seek_frame");
+        FfmpegLogError(error, L"FfmpegDecoder::RecordSegment av_seek_frame");
         return;
     }
     avformat_flush(inContext);
@@ -800,7 +793,7 @@ void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start
     error = avformat_alloc_output_context2(&outContext, nullptr, nullptr, outFilename.c_str());
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::RecordSegment avformat_alloc_output_context2");
+        FfmpegLogError(error, L"FfmpegDecoder::RecordSegment avformat_alloc_output_context2");
         return;
     }
     defer{ avformat_free_context(outContext); };
@@ -829,7 +822,7 @@ void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start
         error = avcodec_parameters_copy(outStream->codecpar, inStream->codecpar);
         if (error < 0)
         {
-            OutputDebugString(L"FfmpegDecoder::RecordSegment avcodec_parameters_copy");
+            FfmpegLogError(error, L"FfmpegDecoder::RecordSegment avcodec_parameters_copy");
             return;
         }
 
@@ -841,7 +834,7 @@ void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start
         error = avio_open(&outContext->pb, outFilename.c_str(), AVIO_FLAG_WRITE);
         if (error < 0)
         {
-            OutputDebugString(L"FfmpegDecoder::RecordSegment avio_open");
+            FfmpegLogError(error, L"FfmpegDecoder::RecordSegment avio_open");
             return;
         }
     }
@@ -853,7 +846,7 @@ void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start
     error = avformat_write_header(outContext, nullptr);
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::RecordSegment avformat_write_header");
+        FfmpegLogError(error, L"FfmpegDecoder::RecordSegment avformat_write_header");
         return;
     }
     defer{ av_write_trailer(outContext); };
@@ -894,9 +887,10 @@ void FfmpegDecoder::RecordSegment(winrt::hstring const& filepath, uint64_t start
         packet.pos = -1;
         packet.stream_index = streamMapping[inStreamIndex];
 
-        if (av_interleaved_write_frame(outContext, &packet) < 0)
+        error = av_interleaved_write_frame(outContext, &packet);
+        if (error < 0)
         {
-            OutputDebugString(L"FfmpegDecoder::RecordSegment av_interleaved_write_frame");
+            FfmpegLogError(error, L"FfmpegDecoder::RecordSegment av_interleaved_write_frame");
             break;
         }
     }
@@ -908,7 +902,7 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos,
     int error = avformat_open_input(&context, to_string(filepath).c_str(), nullptr, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::GetFrame avformat_open_input");
+        FfmpegLogError(error, L"FfmpegDecoder::GetFrame avformat_open_input");
         return {};
     }
     defer{ avformat_close_input(&context); };
@@ -916,7 +910,7 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos,
     error = avformat_find_stream_info(context, nullptr);
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::GetFrame avformat_find_stream_info");
+        FfmpegLogError(error, L"FfmpegDecoder::GetFrame avformat_find_stream_info");
         return {};
     }
 
@@ -926,7 +920,7 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos,
     error = av_seek_frame(context, -1, startPts, AVSEEK_FLAG_BACKWARD);
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::GetFrame av_seek_frame");
+        FfmpegLogError(error, L"FfmpegDecoder::GetFrame av_seek_frame");
         return {};
     }
     avformat_flush(context);
@@ -950,14 +944,14 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos,
     error = avcodec_parameters_to_context(codecContext, codecPar);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::GetFrame avcodec_parameters_to_context");
+        FfmpegLogError(error, L"FfmpegDecoder::GetFrame avcodec_parameters_to_context");
         return {};
     }
 
     error = avcodec_open2(codecContext, codec, nullptr);
     if (error != 0)
     {
-        OutputDebugString(L"FfmpegDecoder::GetFrame avcodec_open2");
+        FfmpegLogError(error, L"FfmpegDecoder::GetFrame avcodec_open2");
         return {};
     }
 
@@ -974,17 +968,9 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos,
         if (packet->stream_index != videoStreamId) continue;
 
         error = avcodec_send_packet(codecContext, packet);
-        if (error == AVERROR(EAGAIN))
+        if (error == AVERROR(EAGAIN) || error == AVERROR_EOF || error == AVERROR(EINVAL))
         {
-            OutputDebugString(L"AVERROR(EAGAIN)");
-        }
-        if (error == AVERROR_EOF)
-        {
-            OutputDebugString(L"AVERROR_EOF");
-        }
-        if (error == AVERROR(EINVAL))
-        {
-            OutputDebugString(L"AVERROR(EINVAL)");
+            FfmpegLogError(error, L"");
         }
         if (error < 0) continue;
 
@@ -1035,7 +1021,7 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos,
         1);
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::GetFrame av_image_alloc");
+        FfmpegLogError(error, L"FfmpegDecoder::GetFrame av_image_alloc");
         return {};
     }
     defer{ av_freep(&data[0]); };
@@ -1057,6 +1043,16 @@ VideoFrame FfmpegDecoder::GetFrame(winrt::hstring const& filepath, uint64_t pos,
     outFrame.StartTime = 0;
 
     return outFrame;
+}
+
+void FfmpegDecoder::FfmpegLogError(int error, winrt::hstring const& message)
+{
+    char buffer[AV_ERROR_MAX_STRING_SIZE] = {};
+    auto errStr = av_make_error_string(buffer, AV_ERROR_MAX_STRING_SIZE, error);
+    OutputDebugString(message.c_str());
+    OutputDebugString(L" : ");
+    OutputDebugString(to_hstring(errStr).c_str());
+    OutputDebugString(L"\n");
 }
 
 void FfmpegDecoder::Free()
@@ -1119,8 +1115,8 @@ void FfmpegDecoder::InitAudioFilter(winrt::hstring const& filterStr)
         return;
     }
 
-    const AVFilter* bufferSrc = avfilter_get_by_name("buffersrc");
-    const AVFilter* bufferSink = avfilter_get_by_name("buffersink");
+    const AVFilter* bufferSrc = avfilter_get_by_name("abuffer");
+    const AVFilter* bufferSink = avfilter_get_by_name("abuffersink");
     m_BufferSrcCtx = nullptr;
     m_BufferSinkCtx = nullptr;
 
@@ -1139,14 +1135,14 @@ void FfmpegDecoder::InitAudioFilter(winrt::hstring const& filterStr)
     error = avfilter_graph_create_filter(&m_BufferSrcCtx, bufferSrc, "in", args, nullptr, m_FilterGraph);
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::SetupDecoding avfilter_graph_create_filter SRC");
+        FfmpegLogError(error, L"FfmpegDecoder::SetupDecoding avfilter_graph_create_filter SRC");
         return;
     }
 
     error = avfilter_graph_create_filter(&m_BufferSinkCtx, bufferSink, "out", nullptr, nullptr, m_FilterGraph);
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::SetupDecoding avfilter_graph_create_filter SINK");
+        FfmpegLogError(error, L"FfmpegDecoder::SetupDecoding avfilter_graph_create_filter SINK");
         return;
     }
 
@@ -1164,14 +1160,14 @@ void FfmpegDecoder::InitAudioFilter(winrt::hstring const& filterStr)
     error = avfilter_graph_parse_ptr(m_FilterGraph, to_string(filterStr).c_str(), &inF, &outF, nullptr);
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::SetupDecoding avfilter_graph_parse_ptr");
+        FfmpegLogError(error, L"FfmpegDecoder::SetupDecoding avfilter_graph_parse_ptr");
         return;
     }
 
     error = avfilter_graph_config(m_FilterGraph, nullptr);
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::SetupDecoding avfilter_graph_config");
+        FfmpegLogError(error, L"FfmpegDecoder::SetupDecoding avfilter_graph_config");
         return;
     }
 }
@@ -1206,7 +1202,7 @@ int FfmpegDecoder::PushSubtitle(SharedQueue<SubtitleItem>& subs, AVFormatContext
     int error = avcodec_decode_subtitle2(m_SubtitlesCodecContext, &subtitle, &gotSub, packet);
     if (error < 0)
     {
-        OutputDebugString(L"FfmpegDecoder::PushSubtitle Subtitles avcodec_decode_subtitle2");
+        FfmpegLogError(error, L"FfmpegDecoder::PushSubtitle Subtitles avcodec_decode_subtitle2");
         return error;
     }
     defer{ avsubtitle_free(&subtitle); };

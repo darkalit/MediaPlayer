@@ -10,7 +10,9 @@ namespace MediaPlayer
         MenuBarControlViewModel();
         IObservableVector<SubtitleStream> SubTracks{ get; };
         IVector<String> VideoEffects{ get; };
+        IVector<String> AudioEffects{ get; };
         Microsoft.UI.Xaml.Input.ICommand SetVideoEffect{ get; };
+        Microsoft.UI.Xaml.Input.ICommand SetAudioEffect{ get; };
         Microsoft.UI.Xaml.Input.ICommand CreateSnapshotFile{ get; };
         Microsoft.UI.Xaml.Input.ICommand ChangePlaybackMode{ get; };
         Microsoft.UI.Xaml.Input.ICommand ChangePlaybackSpeed{ get; };

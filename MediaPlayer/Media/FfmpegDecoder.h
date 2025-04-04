@@ -84,6 +84,7 @@ public:
     void SetAudioFilter(winrt::hstring const& filterStr);
     static void RecordSegment(winrt::hstring const& filepath, uint64_t start, uint64_t end);
     static VideoFrame GetFrame(winrt::hstring const& filepath, uint64_t pos, int height = 240);
+    static void FfmpegLogError(int error, winrt::hstring const& message);
 
 private:
     void Free();

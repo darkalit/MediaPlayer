@@ -608,55 +608,56 @@ namespace winrt::MediaPlayer::implementation
 
     void PlayerService::Start()
     {
-        m_FfmpegDecoder.PauseDecoding(true);
-        if (!HasSource()) return;
+        Start(Position());
+        //m_FfmpegDecoder.PauseDecoding(true);
+        //if (!HasSource()) return;
 
-        try
-        {
-            if (CurrentMediaIndex() > -1 && Position() >= Metadata().Duration)
-            {
-                Stop();
-                return;
-            }
-            
-            double position = static_cast<double>(Position()) / 1000.0;
-            if (m_UseFfmpeg)
-            {
-                {
-                    std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
-                    m_Seeking = true;
-                }
-                m_SeekCV.notify_all();
-                
-                m_FfmpegDecoder.Seek(Position());
-                m_XAudio2Player.Start();
-                m_FrameQueue.Clear();
-                m_AudioSamplesQueue.Clear();
-                m_SubtitleQueue.Clear();
+        //try
+        //{
+        //    if (CurrentMediaIndex() > -1 && Position() >= Metadata().Duration)
+        //    {
+        //        Stop();
+        //        return;
+        //    }
+        //    
+        //    double position = static_cast<double>(Position()) / 1000.0;
+        //    if (m_UseFfmpeg)
+        //    {
+        //        {
+        //            std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
+        //            m_Seeking = true;
+        //        }
+        //        m_SeekCV.notify_all();
+        //        
+        //        m_FfmpegDecoder.Seek(Position());
+        //        m_XAudio2Player.Start();
+        //        m_FrameQueue.Clear();
+        //        m_AudioSamplesQueue.Clear();
+        //        m_SubtitleQueue.Clear();
 
-                {
-                    std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
-                    m_Seeking = false;
-                }
-                m_SeekCV.notify_all();
-            }
-            else
-            {
-                m_MediaEngineWrapper->Start(position);
-            }
-            PlaybackSpeed(m_PlaybackSpeed);
-        }
-        catch (const hresult_error& e)
-        {
-            std::wcerr << L"PlayerService::Start: Failed to start media;\n" << e.message() << '\n';
-        }
+        //        {
+        //            std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
+        //            m_Seeking = false;
+        //        }
+        //        m_SeekCV.notify_all();
+        //    }
+        //    else
+        //    {
+        //        m_MediaEngineWrapper->Start(position);
+        //    }
+        //    PlaybackSpeed(m_PlaybackSpeed);
+        //}
+        //catch (const hresult_error& e)
+        //{
+        //    std::wcerr << L"PlayerService::Start: Failed to start media;\n" << e.message() << '\n';
+        //}
 
-        State(PlayerServiceState::PLAYING);
-        m_FfmpegDecoder.PauseDecoding(false);
+        //State(PlayerServiceState::PLAYING);
+        //m_FfmpegDecoder.PauseDecoding(false);
 
-        auto md = Metadata();
-        md.IsSelected = true;
-        Metadata(md);
+        //auto md = Metadata();
+        //md.IsSelected = true;
+        //Metadata(md);
     }
 
     void PlayerService::Start(uint64_t timePos)
@@ -688,6 +689,7 @@ namespace winrt::MediaPlayer::implementation
                 m_FrameQueue.Clear();
                 m_AudioSamplesQueue.Clear();
                 m_SubtitleQueue.Clear();
+                m_LastAudioSampleTime = std::chrono::steady_clock::now();
 
                 {
                     std::scoped_lock lock(m_VideoMutex, m_AudioMutex);
@@ -1072,7 +1074,7 @@ namespace winrt::MediaPlayer::implementation
             OutputDebugString((to_hstring(m_FrameQueue.Size()) + L" " + to_hstring(m_AudioSamplesQueue.Size())).c_str());
             OutputDebugString(L"\n");
 
-            if (timestampDiff > 800)
+            if (timestampDiff > 800 && m_AudioSamplesQueue.Size() < 24)
             {
                 deltaTime = std::chrono::duration<long long, std::nano>(0);
                 frameStartTime = m_CurFrame.StartTime;

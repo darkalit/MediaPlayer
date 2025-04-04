@@ -36,6 +36,9 @@
             <MenuFlyoutItem Command="{x:Bind ViewModel.OpenRecorderWindow}" Text="Record segment"/>
             <MenuFlyoutSubItem x:Name="MenuSubItem_VideoEffects" Text="Effects"/>
         </MenuBarItem>
+        <MenuBarItem Title="Audio">
+            <MenuFlyoutSubItem x:Name="MenuSubItem_AudioEffects" Text="Effects"/>
+        </MenuBarItem>
         <MenuBarItem Title="Subtitle">
             <MenuFlyoutItem Icon="OpenFile" Text="From file..." Command="{x:Bind ViewModel.OpenSubtitle}"/>
             <MenuFlyoutSubItem x:Name="MenuSubItem_SubTrack" Text="Sub Track"/>

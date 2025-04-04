@@ -34,6 +34,17 @@ namespace winrt::MediaPlayer::implementation
 
             MenuSubItem_VideoEffects().Items().Append(radioItem);
         }
+
+        for (auto const& sfx : ViewModel().AudioEffects())
+        {
+            Controls::RadioMenuFlyoutItem radioItem;
+            radioItem.Text(sfx);
+            radioItem.GroupName(L"AudioEffectsGroup");
+            radioItem.Command(ViewModel().SetAudioEffect());
+            radioItem.CommandParameter(box_value(sfx));
+
+            MenuSubItem_AudioEffects().Items().Append(radioItem);
+        }
     }
 
     void MenuBarControl::OnSubTracksVectorChanged(
